@@ -6,9 +6,13 @@ from num2words import num2words
 from docxtpl import DocxTemplate, RichText
 import os
 from fastapi.middleware.cors import CORSMiddleware # 1. Importar el middleware
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
+from database import inicializar_db, guardar_demanda, listar_historial, obtener_demanda_por_id
+import os
 
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
-
+inicializar_db()
 # Agregar el middleware de CORS
 app.add_middleware(
     CORSMiddleware,
@@ -160,6 +164,13 @@ def generar_demanda(datos: DatosDemanda, background_tasks: BackgroundTasks):
         doc = DocxTemplate(ruta_plantilla)
         doc.render(datos_procesados) # Renderiza texto plano, más seguro a prueba de fallos
         doc.save(ruta_salida)
+
+        # 💾 Guardar en Base de Datos para el Historial
+        payload_dict = datos.model_dump() if hasattr(datos, "model_dump") else datos.dict()
+        payload_dict["MontoTotal"] = liquidacion_total  # Guardamos el total calculado
+        
+        id_guardado = guardar_demanda(payload=payload_dict, ruta_archivo=ruta_salida)
+        print(f"Demanda guardada en BD con ID: {id_guardado}")
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno al procesar el documento: {str(e)}")
@@ -167,6 +178,33 @@ def generar_demanda(datos: DatosDemanda, background_tasks: BackgroundTasks):
     return FileResponse(
         path=ruta_salida, 
         filename=f"demanda_{nombre_limpio}.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+@app.get("/historial", summary="Obtener el historial de demandas")
+def get_historial():
+    """Devuelve la lista con todas las demandas generadas previamente."""
+    return listar_historial()
+
+
+@app.get("/descargar-demanda/{demanda_id}", summary="Re-descargar una demanda del historial")
+def descargar_demanda_historica(demanda_id: int):
+    """Busca el archivo en el historial por su ID y lo entrega para descarga."""
+    registro = obtener_demanda_por_id(demanda_id)
+    
+    if not registro:
+        raise HTTPException(status_code=404, detail="No se encontró el registro en la base de datos.")
+    
+    ruta_archivo = registro["ruta_archivo"]
+    
+    if not os.path.exists(ruta_archivo):
+        raise HTTPException(status_code=404, detail="El archivo físico .docx ya no existe en el servidor.")
+        
+    nombre_descarga = f"Demanda_{registro['nombre_actor']}_vs_{registro['nombre_demandado']}.docx".replace(" ", "_")
+
+    return FileResponse(
+        path=ruta_archivo,
+        filename=nombre_descarga,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
     
