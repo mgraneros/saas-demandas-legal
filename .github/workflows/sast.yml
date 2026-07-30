@@ -1,0 +1,91 @@
+name: DevSecOps Native Security Scan
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security_audit:
+    name: Bandit SAST & Dependency Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # Permiso necesario para crear GitHub Issues automáticos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies & Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      # 1. Auditoría de Dependencias (Estándares OWASP / Vulnerabilidades conocidas)
+      - name: OWASP Dependency Check (pip-audit)
+        run: |
+          pip-audit -r requirements.txt
+
+      # 2. Análisis Estático (Bandit) con generación de reporte en formato JSON
+      - name: Run Bandit Scan
+        id: bandit_scan
+        continue-on-error: true # Permite que el workflow continúe para procesar y crear el Issue si hay fallas
+        run: |
+          bandit -r . -f json -o bandit-results.json
+
+      # 3. Creación Automática de GitHub Issue si Bandit detecta vulnerabilidades Medias/Altas
+      - name: Create Security Issue on Failure
+        if: steps.bandit_scan.outcome == 'failure' || steps.bandit_scan.outcome == 'success'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (!fs.existsSync('bandit-results.json')) {
+              console.log('No se encontró el reporte de Bandit.');
+              return;
+            }
+
+            const results = JSON.parse(fs.readFileSync('bandit-results.json', 'utf8'));
+            
+            // Filtrar hallazgos con severidad MEDIUM o HIGH
+            const highOrMediumFindings = results.results.filter(
+              item => item.issue_severity === 'MEDIUM' || item.issue_severity === 'HIGH'
+            );
+
+            if (highOrMediumFindings.length === 0) {
+              console.log('No se encontraron vulnerabilidades de nivel Medio o Alto.');
+              return;
+            }
+
+            // Construir el cuerpo del Issue con el detalle de las líneas afectadas
+            let issueBody = `## ⚠️ Alerta de Seguridad Detectada por Bandit\n\n`;
+            issueBody += `Se detectaron vulnerabilidades en el último Pull Request (#${context.payload.pull_request.number}).\n\n`;
+            issueBody += `| Severidad | Archivo | Línea | Problema | Código Afectado |\n`;
+            issueBody += `| :--- | :--- | :--- | :--- | :--- |\n`;
+
+            highOrMediumFindings.forEach(issue => {
+              const codeSnippet = issue.more_info ? issue.issue_text : 'N/A';
+              issueBody += `| **${issue.issue_severity}** | \`${issue.filename}\` | ${issue.line_number} | ${issue.issue_text} | \`${issue.code.trim()}\` |\n`;
+            });
+
+            issueBody += `\n\n> *Este issue fue generado automáticamente por el Pipeline de DevSecOps Nativo.*`;
+
+            // Crear el Issue en el repositorio con las etiquetas correspondientes
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 [Alerta de Seguridad] Vulnerabilidades detectadas en PR #${context.payload.pull_request.number}`,
+              body: issueBody,
+              labels: ['Alerta de Seguridad', 'bug']
+            });
+
+      # 4. Fallar el Job de manera explícita si se detectaron vulnerabilidades para bloquear el Merge
+      - name: Enforce Security Standard
+        run: |
+          bandit -r . -l --severity-level medium

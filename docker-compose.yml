@@ -1,0 +1,17 @@
+
+version: '3.8'
+
+services:
+  web-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saas_legal_api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Montaje de volumen para que los cambios en plantillas o código se reflejen localmente
+      - .:/app
+    environment:
+      - ENV=development
+    restart: unless-stopped

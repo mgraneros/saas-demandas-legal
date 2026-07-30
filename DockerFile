@@ -1,0 +1,38 @@
+# Usar imagen oficial de Python liviana y estable
+FROM python:3.10-slim
+
+# Evitar que Python escriba archivos .pyc en disco y forzar stdout/stderr sin buffer
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Definir el directorio de trabajo
+WORKDIR /app
+
+# Instalar dependencias del sistema necesarias
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar e instalar requerimientos
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Crear usuario no privilegiado para ejecutar la app (Buenas prácticas de DevSecOps)
+RUN adduser --disabled-password --gecos "" appuser
+
+# Copiar el código fuente del proyecto
+COPY . .
+
+# Asegurar que la carpeta templates/ exista y asignar permisos de lectura a appuser
+RUN mkdir -p /app/templates && \
+    chown -R appuser:appuser /app
+
+# Cambiar al usuario no root
+USER appuser
+
+# Exponer el puerto de FastAPI
+EXPOSE 8000
+
+# Comando para ejecutar Uvicorn en producción
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
