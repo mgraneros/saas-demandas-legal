@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Demandas Legal - Panel Operativo</title>
+    <!-- Importamos Bootstrap para un diseño limpio y rápido -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row">
+        <!-- Columna Izquierda: Formulario de Carga -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Carga de Datos</h5>
+                </div>
+                <div class="card-body">
+                    <form id="formularioDemanda">
+    
+    <!-- 1. Datos del Actor -->
+    <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
+    <div class="row mb-3">
+        <div class="col-md-6 mb-2"><label class="form-label small">Nombre</label><input type="text" class="form-control form-control-sm" id="NombreActor" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">DNI</label><input type="number" class="form-control form-control-sm" id="DniActor" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Domicilio</label><input type="text" class="form-control form-control-sm" id="DomicilioActor" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Vehículo</label><input type="text" class="form-control form-control-sm" id="VehiculoActor" required></div>
+    </div>
+
+    <!-- 2. Datos Demandado y Seguro -->
+    <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
+    <div class="row mb-3">
+        <div class="col-md-6 mb-2"><label class="form-label small">Nombre Demandado</label><input type="text" class="form-control form-control-sm" id="NombreDemandado" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Domicilio Demandado</label><input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required></div>
+        <div class="col-md-12 mb-2"><label class="form-label small">Vehículo Demandado</label><input type="text" class="form-control form-control-sm" id="AutoDemandado" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Aseguradora</label><input type="text" class="form-control form-control-sm" id="NombreAseguradora" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">CUIT Aseguradora</label><input type="text" class="form-control form-control-sm" id="CuitAseguradora" required></div>
+        <div class="col-md-12 mb-2"><label class="form-label small">Domicilio Aseguradora</label><input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required></div>
+    </div>
+
+    <!-- 3. Hechos y Lesiones -->
+    <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
+    <div class="row mb-3">
+        <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="text" class="form-control form-control-sm" id="FechaHecho" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
+        <div class="col-md-12 mb-2"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Detalle Lesiones</label><input type="text" class="form-control form-control-sm" id="LesionesDetalles" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Listado Secuelas</label><input type="text" class="form-control form-control-sm" id="ListadoSecuelas" required></div>
+    </div>
+
+    <!-- 4. Prueba y Atención -->
+    <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
+    <div class="row mb-3">
+        <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centro Médico</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="text" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
+        <div class="col-md-12 mb-2"><label class="form-label small">Lista Documental (Separada por comas)</label><input type="text" class="form-control form-control-sm" id="ListaDocumental" required></div>
+    </div>
+
+    <!-- 5. Competencia y Liquidación -->
+    <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
+    <div class="row mb-3">
+        <div class="col-md-12 mb-2">
+            <label class="form-label small">Opción de Competencia</label>
+            <select class="form-select form-select-sm" id="OpcionCompetencia">
+                <option value="1">1 - Juez del lugar del hecho</option>
+                <option value="2">2 - Juez del domicilio del demandado</option>
+                <option value="3">3 - Juez del domicilio de la aseguradora</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Daño Material ($)</label><input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" step="0.01" required></div>
+        <div class="col-md-6 mb-2"><label class="form-label small">Incapacidad (%)</label><input type="number" class="form-control form-control-sm" id="PuntosdeIncapacidad" step="0.01" required></div>
+    </div>
+
+    <div class="d-grid gap-2 mt-4">
+        <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
+        <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
+    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Panel de Auditoría -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Auditoría y Cálculos</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Los resultados estructurados de la API aparecerán aquí antes de generar el documento final.</p>
+                    <pre id="resultadoAuditoria" class="bg-dark text-success p-3 rounded" style="min-height: 300px; max-height: 600px; overflow-y: auto;">
+Esperando ejecución...
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // URL de tu API local
+    const API_URL = "http://127.0.0.1:8000";
+
+    // Centralizamos la captura de datos del formulario de los 24 campos
+    function obtenerPayloadFormulario() {
+        return {
+            "NombreActor": document.getElementById("NombreActor").value,
+            "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
+            "DomicilioActor": document.getElementById("DomicilioActor").value,
+            "VehiculoActor": document.getElementById("VehiculoActor").value,
+            
+            "NombreDemandado": document.getElementById("NombreDemandado").value,
+            "DomicilioDemandado": document.getElementById("DomicilioDemandado").value,
+            "AutoDemandado": document.getElementById("AutoDemandado").value,
+            "NombreAseguradora": document.getElementById("NombreAseguradora").value,
+            "CuitAseguradora": document.getElementById("CuitAseguradora").value,
+            "DomicilioAseguradora": document.getElementById("DomicilioAseguradora").value,
+            
+            "FechaHecho": document.getElementById("FechaHecho").value,
+            "LugarHecho": document.getElementById("LugarHecho").value,
+            "DescripcionHechos": document.getElementById("DescripcionHechos").value,
+            "LesionesDetalles": document.getElementById("LesionesDetalles").value,
+            "ListadoSecuelas": document.getElementById("ListadoSecuelas").value,
+            
+            "CentroMedico": document.getElementById("CentroMedico").value,
+            "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
+            "TallerNombre": document.getElementById("TallerNombre").value,
+            "DirecciónTaller": document.getElementById("DirecciónTaller").value,
+            "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
+            "ListaDocumental": document.getElementById("ListaDocumental").value,
+            
+            "OpcionCompetencia": parseInt(document.getElementById("OpcionCompetencia").value) || 1,
+            "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
+            "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
+        };
+    }
+
+    // Modificamos ejecutarPreview para usar el recolector de datos reales
+    async function ejecutarPreview() {
+        const payload = obtenerPayloadFormulario();
+        const resultadoBox = document.getElementById("resultadoAuditoria");
+        
+        resultadoBox.textContent = "Validando datos con el servidor...";
+
+        try {
+            const response = await fetch(`${API_URL}/preview-demanda/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(JSON.stringify(errorData, null, 2));
+            }
+
+            const data = await response.json();
+            // Formateamos el JSON para que se vea bien en el panel negro
+            resultadoBox.textContent = JSON.stringify(data.datos_para_revision, null, 4);
+            
+            // Habilitamos el botón de descarga si el preview fue exitoso
+            document.getElementById("btnGenerarWord").disabled = false;
+
+        } catch (error) {
+            resultadoBox.textContent = `Error de validación:\n${error.message}`;
+            document.getElementById("btnGenerarWord").disabled = true;
+        }
+    }
+
+    // Función para descargar el Word
+    async function descargarWord() {
+        const payload = obtenerPayloadFormulario();
+        const resultadoBox = document.getElementById("resultadoAuditoria");
+        
+        resultadoBox.textContent += "\n\nGenerando documento Word...";
+
+        try {
+            const response = await fetch(`${API_URL}/generar-demanda/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Error en el servidor al generar el documento.");
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            // Genera el nombre del archivo dinámicamente con el nombre del actor
+            a.download = `Demanda_${payload.NombreActor.replace(/\s+/g, '_')}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            resultadoBox.textContent += "\n¡Documento generado y descargado con éxito!";
+
+        } catch (error) {
+            resultadoBox.textContent += `\nError crítico: ${error.message}`;
+        }
+    }
+</script>
