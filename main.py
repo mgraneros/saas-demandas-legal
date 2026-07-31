@@ -90,8 +90,14 @@ def monto_a_letras_legal(monto: float) -> str:
 @app.post("/generar-demanda/")
 def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends(get_db)):
     ruta_plantilla = "templates/Borrador_Demanda_Auto_Moto.docx"
+    
+    # Crear carpeta dedicada para las demandas si no existe
+    carpeta_salida = "demandas_generadas"
+    os.makedirs(carpeta_salida, exist_ok=True)
+
     nombre_limpio = datos.NombreActor.replace(' ', '_')
-    ruta_salida = f"temp_{nombre_limpio}.docx"
+    # Guardar el archivo dentro de la carpeta creada
+    ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
 
     # 3. Lógica Matemática Dura
     valor_punto = 2000000.0
@@ -220,15 +226,14 @@ def get_historial(db: Session = Depends(get_db)):
 
 @app.get("/descargar-demanda/{demanda_id}", summary="Re-descargar una demanda del historial")
 def descargar_demanda_historica(demanda_id: int, db: Session = Depends(get_db)):
-    """Busca el archivo en el historial por su ID y lo entrega para descarga."""
     registro = db.query(DemandaGenerada).filter(DemandaGenerada.id == demanda_id).first()
     
     if not registro:
         raise HTTPException(status_code=404, detail="No se encontró el registro en la base de datos.")
     
-    # Armamos la ruta del archivo temp
     nombre_limpio = registro.nombre_actor.replace(' ', '_')
-    ruta_archivo = f"temp_{nombre_limpio}.docx"
+    # 📍 Buscamos dentro de la carpeta dedicada:
+    ruta_archivo = os.path.join("demandas_generadas", f"temp_{nombre_limpio}.docx")
     
     if not os.path.exists(ruta_archivo):
         raise HTTPException(status_code=404, detail="El archivo físico .docx ya no existe en el servidor.")
