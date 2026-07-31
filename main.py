@@ -1,4 +1,5 @@
 import os
+<<<<<<< Updated upstream
 from datetime import datetime, timedelta
 from docx import Document
 from docx.shared import Mm
@@ -14,6 +15,10 @@ from sqlalchemy.orm import Session
 import bcrypt
 import models
 from models import DemandaGenerada
+=======
+from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware # 1. Importar el middleware
+>>>>>>> Stashed changes
 
 # Módulos propios del proyecto
 from database import get_db
@@ -112,31 +117,45 @@ PARRAFOS_COMPETENCIA = {
 }
 
 # 2. El modelo ahora solo pide lo estrictamente necesario para calcular
+from pydantic import BaseModel
+from typing import Optional
+
 class DatosDemanda(BaseModel):
+    # 1. Datos del Actor
     NombreActor: str
     DniActor: int
-    OpcionCompetencia: int  # 1, 2, o 3 desde el checkbox del frontend
-    PuntosdeIncapacidad: float
-    LiquiDanoMaterialNum: float
     DomicilioActor: str
+    VehiculoActor: str
+    
+    # 2. Datos Demandado y Seguro
     NombreDemandado: str
     DomicilioDemandado: str
     AutoDemandado: str
-    FechaHecho: str
     NombreAseguradora: str
     CuitAseguradora: str
     DomicilioAseguradora: str
+    
+# 3. Hechos y Lesiones
+    FechaHecho: str
+    LugarHecho: str
     DescripcionHechos: str
-    LesionesDetalles: str
-    ListadoSecuelas: str
-    VehiculoActor: str
-    TallerNombre: str
-    DirecciónTaller: str
-    ListaDocumental: str
+    LesionesDetalles: str  
+    PorcentajeDanoPsicologico: str
+    ListadoSecuelas: str  
+    
+    # 4. Prueba y Atención
+    Intervencion: str
     CentroMedico: str
     CentroMedicoDireccion: str
-    LugarHecho: str
+    TallerNombre: str
+    DirecciónTaller: str
     FechaPresupuesto: str
+    ListaDocumental: str
+    
+    # 5. Competencia y Liquidación
+    OpcionCompetencia: str
+    LiquiDanoMaterialNum: float
+    PuntosdeIncapacidad: float
 
 def formatear_moneda(valor: float) -> str:
     """Convierte un float al formato argentino $ X.XXX,XX"""
@@ -429,7 +448,7 @@ def preview_demanda(datos: DatosDemanda):
                 "FechaHecho": datos.FechaHecho,
                 "LugarHecho": datos.LugarHecho,
                 "DescripcionHechos": datos.DescripcionHechos,
-                "LesionesDetalles": datos.LesionesDetalles,
+                "LesionesDetalles": datos.ListadoSecuelas,
                 "ListadoSecuelas": datos.ListadoSecuelas
             },
             "4_PRUEBA_Y_ATENCION": {
