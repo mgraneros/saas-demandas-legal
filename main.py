@@ -1,15 +1,17 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware  
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from docx import Document
+from docx.shared import Mm
 from num2words import num2words
-from docxtpl import DocxTemplate, RichText
+from docxtpl import DocxTemplate, RichText, InlineImage
+from sqlalchemy.orm import Session
 import os
-from fastapi.middleware.cors import CORSMiddleware # 1. Importar el middleware
-from fastapi.responses import FileResponse
-from fastapi import HTTPException
-from database import inicializar_db, guardar_demanda, listar_historial, obtener_demanda_por_id
-import os
+
+# Módulos propios del proyecto
+from database import inicializar_db, get_db
+from models import DemandaGenerada
 
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
 inicializar_db()
@@ -86,7 +88,7 @@ def monto_a_letras_legal(monto: float) -> str:
     return texto_final
 
 @app.post("/generar-demanda/")
-def generar_demanda(datos: DatosDemanda, background_tasks: BackgroundTasks):
+def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends(get_db)):
     ruta_plantilla = "templates/Borrador_Demanda_Auto_Moto.docx"
     nombre_limpio = datos.NombreActor.replace(' ', '_')
     ruta_salida = f"temp_{nombre_limpio}.docx"
@@ -160,47 +162,78 @@ def generar_demanda(datos: DatosDemanda, background_tasks: BackgroundTasks):
 
     # ¡ATENCIÓN! HEMOS ELIMINADO EL PASO 6 TEMPORALMENTE (Sin RichText ni amarillo)
 
+    
     try:
         doc = DocxTemplate(ruta_plantilla)
-        doc.render(datos_procesados) # Renderiza texto plano, más seguro a prueba de fallos
+
+        # 🖼️ Carga e inyección del logo dinámico (TAREA 4)
+        ruta_logo = "assets/logo_defecto.png"
+        if os.path.exists(ruta_logo):
+            logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40))
+        else:
+            logo_imagen = ""
+            
+        datos_procesados["logo_estudio"] = logo_imagen
+
+        # Renderizado y guardado del Word
+        doc.render(datos_procesados)
         doc.save(ruta_salida)
 
-        # 💾 Guardar en Base de Datos para el Historial
-        payload_dict = datos.model_dump() if hasattr(datos, "model_dump") else datos.dict()
-        payload_dict["MontoTotal"] = liquidacion_total  # Guardamos el total calculado
-        
-        id_guardado = guardar_demanda(payload=payload_dict, ruta_archivo=ruta_salida)
-        print(f"Demanda guardada en BD con ID: {id_guardado}")
-            
+        # 🛡️ CAPTURA DE AUDITORÍA Y PERSISTENCIA (AQUÍ VA EL CÓDIGO)
+        ip_cliente = request.client.host if request.client else "Desconocida"
+        user_agent_cliente = request.headers.get("user-agent", "Desconocido")
+
+        try:
+            dni_val = int(datos.DniActor) if hasattr(datos, "DniActor") and datos.DniActor else None
+        except (ValueError, TypeError):
+            dni_val = None
+
+        nueva_demanda = DemandaGenerada(
+            dni_actor=dni_val,
+            nombre_actor=datos.NombreActor,
+            estado_operativo="Generada",
+            ip_origen=ip_cliente,
+            user_agent=user_agent_cliente
+        )
+
+        db.add(nueva_demanda)
+        db.commit()
+        db.refresh(nueva_demanda)
+
+        print(f"🔒 [AUDITORÍA] Registro #{nueva_demanda.id} guardado. IP: {ip_cliente} | User-Agent: {user_agent_cliente}")
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno al procesar el documento: {str(e)}")
 
     return FileResponse(
-        path=ruta_salida, 
+        path=ruta_salida,
         filename=f"demanda_{nombre_limpio}.docx",
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
 @app.get("/historial", summary="Obtener el historial de demandas")
-def get_historial():
-    """Devuelve la lista con todas las demandas generadas previamente."""
-    return listar_historial()
+def get_historial(db: Session = Depends(get_db)):
+    """Devuelve la lista con todas las demandas generadas previamente desde el ORM."""
+    registros = db.query(DemandaGenerada).order_by(DemandaGenerada.id.desc()).all()
+    return registros
 
 
 @app.get("/descargar-demanda/{demanda_id}", summary="Re-descargar una demanda del historial")
-def descargar_demanda_historica(demanda_id: int):
+def descargar_demanda_historica(demanda_id: int, db: Session = Depends(get_db)):
     """Busca el archivo en el historial por su ID y lo entrega para descarga."""
-    registro = obtener_demanda_por_id(demanda_id)
+    registro = db.query(DemandaGenerada).filter(DemandaGenerada.id == demanda_id).first()
     
     if not registro:
         raise HTTPException(status_code=404, detail="No se encontró el registro en la base de datos.")
     
-    ruta_archivo = registro["ruta_archivo"]
+    # Armamos la ruta del archivo temp
+    nombre_limpio = registro.nombre_actor.replace(' ', '_')
+    ruta_archivo = f"temp_{nombre_limpio}.docx"
     
     if not os.path.exists(ruta_archivo):
         raise HTTPException(status_code=404, detail="El archivo físico .docx ya no existe en el servidor.")
         
-    nombre_descarga = f"Demanda_{registro['nombre_actor']}_vs_{registro['nombre_demandado']}.docx".replace(" ", "_")
+    nombre_descarga = f"Demanda_{nombre_limpio}.docx"
 
     return FileResponse(
         path=ruta_archivo,
