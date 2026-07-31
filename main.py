@@ -1,20 +1,91 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Depends
-from fastapi.middleware.cors import CORSMiddleware  
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+import os
+from datetime import datetime, timedelta
 from docx import Document
 from docx.shared import Mm
+from docxtpl import DocxTemplate, InlineImage, RichText
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from num2words import num2words
-from docxtpl import DocxTemplate, RichText, InlineImage
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
-import os
-
-# Módulos propios del proyecto
-from database import inicializar_db, get_db
+import bcrypt
+import models
 from models import DemandaGenerada
 
+# Módulos propios del proyecto
+from database import get_db
+import models
+
+# 1. Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
-inicializar_db()
+
+# 2. Configuración JWT
+SECRET_KEY = "tu_clave_secreta_super_segura_aqui_cambiar_en_produccion"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # El token durará 24 horas
+
+# 3. Esquema OAuth2 para Swagger UI
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# 4. Funciones de encriptación con bcrypt
+def get_password_hash(password: str) -> str:
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(pwd_bytes, salt)
+    return hashed.decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    pwd_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+# 5. Modelos Pydantic para Autenticación
+class UsuarioCreate(BaseModel):
+    email: EmailStr
+    password: str
+    nombre_estudio: str | None = None
+
+class UsuarioResponse(BaseModel):
+    id: int
+    email: str
+    nombre_estudio: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# 6. Dependencia para obtener el usuario autenticado
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No se pudieron validar las credenciales de autenticación.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    if usuario is None:
+        raise credentials_exception
+    return usuario
+
 # Agregar el middleware de CORS
 app.add_middleware(
     CORSMiddleware,
@@ -87,8 +158,43 @@ def monto_a_letras_legal(monto: float) -> str:
     
     return texto_final
 
+@app.post("/register", response_model=UsuarioResponse, summary="Registrar nuevo usuario")
+def registrar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    if db_usuario:
+        raise HTTPException(status_code=400, detail="El email ya se encuentra registrado.")
+    
+    hashed_pwd = get_password_hash(usuario.password)
+    nuevo_usuario = models.Usuario(
+        email=usuario.email,
+        hashed_password=hashed_pwd,
+        nombre_estudio=usuario.nombre_estudio
+    )
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+    return nuevo_usuario
+
+
+@app.post("/token", response_model=Token, summary="Iniciar sesión y obtener JWT")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
+    if not usuario or not verify_password(form_data.password, usuario.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": usuario.email, "id": usuario.id},
+        expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
 @app.post("/generar-demanda/")
-def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends(get_db)):
+def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends(get_db), current_user: models.Usuario = Depends(get_current_user)):
     ruta_plantilla = "templates/Borrador_Demanda_Auto_Moto.docx"
     
     # Crear carpeta dedicada para las demandas si no existe
@@ -194,14 +300,14 @@ def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends
         except (ValueError, TypeError):
             dni_val = None
 
-        nueva_demanda = DemandaGenerada(
+        nueva_demanda = models.DemandaGenerada(
+            usuario_id=current_user.id,  # 👈 Acá vinculamos la demanda al usuario logueado
             dni_actor=dni_val,
             nombre_actor=datos.NombreActor,
             estado_operativo="Generada",
             ip_origen=ip_cliente,
             user_agent=user_agent_cliente
         )
-
         db.add(nueva_demanda)
         db.commit()
         db.refresh(nueva_demanda)
@@ -218,10 +324,38 @@ def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends
     )
 
 @app.get("/historial", summary="Obtener el historial de demandas")
-def get_historial(db: Session = Depends(get_db)):
-    """Devuelve la lista con todas las demandas generadas previamente desde el ORM."""
-    registros = db.query(DemandaGenerada).order_by(DemandaGenerada.id.desc()).all()
+def get_historial(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    """Devuelve la lista con las demandas generadas pertenencientes al usuario autenticado."""
+    registros = (
+        db.query(models.DemandaGenerada)
+        .filter(models.DemandaGenerada.usuario_id == current_user.id)
+        .order_by(models.DemandaGenerada.id.desc())
+        .all()
+    )
     return registros
+
+# 🔄 WORKFLOW: Endpoint para actualizar el estado operativo de una demanda
+@app.patch("/demanda/{demanda_id}/estado", summary="Actualizar estado operativo de una demanda")
+def actualizar_estado_demanda(demanda_id: int, nuevo_estado: str, db: Session = Depends(get_db)):
+    """
+    Estados permitidos recomendados: 'Generada', 'Presentada', 'En Notificacion', 'Archivada'
+    """
+    registro = db.query(DemandaGenerada).filter(DemandaGenerada.id == demanda_id).first()
+    
+    if not registro:
+        raise HTTPException(status_code=404, detail="No se encontró la demanda especificada.")
+        
+    registro.estado_operativo = nuevo_estado
+    db.commit()
+    db.refresh(registro)
+    
+    return {
+        "mensaje": f"Estado de la demanda #{demanda_id} actualizado a '{nuevo_estado}' con éxito.",
+        "demanda": registro
+    }
 
 
 @app.get("/descargar-demanda/{demanda_id}", summary="Re-descargar una demanda del historial")
