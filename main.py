@@ -166,7 +166,7 @@ def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends
     try:
         doc = DocxTemplate(ruta_plantilla)
 
-        # 🖼️ Carga e inyección del logo dinámico (TAREA 4)
+        # 🖼️ TAREA 4: Carga e inyección del logo dinámico
         ruta_logo = "assets/logo_defecto.png"
         if os.path.exists(ruta_logo):
             logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40))
@@ -175,11 +175,11 @@ def generar_demanda(datos: DatosDemanda, request: Request, db: Session = Depends
             
         datos_procesados["logo_estudio"] = logo_imagen
 
-        # Renderizado y guardado del Word
+        # Renderizado del Word
         doc.render(datos_procesados)
         doc.save(ruta_salida)
 
-        # 🛡️ CAPTURA DE AUDITORÍA Y PERSISTENCIA (AQUÍ VA EL CÓDIGO)
+        # 🛡️ CAPTURA DE AUDITORÍA Y PERSISTENCIA (SQLAlchemy)
         ip_cliente = request.client.host if request.client else "Desconocida"
         user_agent_cliente = request.headers.get("user-agent", "Desconocido")
 
