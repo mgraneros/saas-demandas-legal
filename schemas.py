@@ -101,3 +101,14 @@ class PlantillaOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DemandaHistorial(BaseModel):
+    id: int
+    nombre_actor: str
+    archivo_generado: str
+    # Si tenés un campo de fecha en tu modelo DemandaGenerada (ej: fecha_creacion), podés descomentar la línea de abajo:
+    # fecha_creacion: datetime 
+
+    class Config:
+        from_attributes = True

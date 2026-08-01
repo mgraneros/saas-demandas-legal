@@ -14,13 +14,15 @@ from sqlalchemy.orm import Session
 import bcrypt
 
 # Módulos propios del proyecto
-from database import get_db
+from database import get_db, engine
 import models
 import schemas  # 👈 Esquemas centralizados en schemas.py
 
 # 1. Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
 
+# ⚠️ ESTA LÍNEA CREA LAS TABLAS AUTOMÁTICAMENTE EN LA BASE DE DATOS
+models.Base.metadata.create_all(bind=engine)
 # Agregar el middleware de CORS
 app.add_middleware(
     CORSMiddleware,
@@ -154,25 +156,34 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
 # RUTAS DE DEMANDAS E HISTORIAL
 # ==========================================
 
+
 @app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
 def generar_demanda(
-    datos: schemas.DatosDemanda, 
-    request: Request, 
-    db: Session = Depends(get_db), 
+    datos: schemas.DatosDemanda,
+    request: Request,
+    db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
 
     if not suscripcion:
-        suscripcion = models.Suscripcion(usuario_id=current_user.id, plan="Free", demandas_restantes=3)
-        db.add(suscripcion)
-        db.commit()
-        db.refresh(suscripcion)
-
-    if suscripcion.demandas_restantes <= 0:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Has alcanzado el límite de demandas de tu plan. Actualizá tu suscripción para continuar."
+            detail="No posees una suscripción activa. Este servicio requiere un plan mensual pago para su uso."
+        )
+
+    if not suscripcion.activa:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu suscripción se encuentra inactiva. Por favor, renová tu plan para continuar."
+        )
+
+    if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
+        suscripcion.activa = False
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu suscripción mensual ha expirado. Por favor, actualizá tu pago para recuperar el acceso ilimitado."
         )
 
     plantilla = db.query(models.Plantilla).filter(
@@ -288,17 +299,19 @@ def generar_demanda(
             nombre_actor=datos.NombreActor,
             estado_operativo="Generada",
             ip_origen=ip_cliente,
-            user_agent=user_agent_cliente
+            user_agent=user_agent_cliente,
+            archivo_generado=ruta_salida
         )
         db.add(nueva_demanda)
 
-        suscripcion.demandas_restantes -= 1
+        if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
+            suscripcion.demandas_restantes -= 1
 
         nuevo_log = models.AuditoriaLog(
             usuario_id=current_user.id,
             accion="GENERAR_DEMANDA",
             ip_origen=ip_cliente,
-            detalles=f"Demanda para {datos.NombreActor} generada con plantilla ID {plantilla.id}. Restantes: {suscripcion.demandas_restantes}"
+            detalles=f"Demanda para {datos.NombreActor} generada con plantilla ID {plantilla.id}."
         )
         db.add(nuevo_log)
 
@@ -315,6 +328,21 @@ def generar_demanda(
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
+
+@app.get("/mis-demandas/", response_model=List[schemas.DemandaHistorial], summary="Ver historial de demandas generadas")
+def obtener_historial_demandas(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    print(f"-> Usuario autenticado ID: {current_user.id} ({current_user.email})")
+    
+    demandas = db.query(models.DemandaGenerada).filter(
+        models.DemandaGenerada.usuario_id == current_user.id
+    ).all()
+    
+    print(f"-> Demandas encontradas en BD: {len(demandas)}")
+    
+    return demandas
 
 @app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas del usuario con filtros y paginación")
 def obtener_historial(
@@ -644,3 +672,70 @@ def preview_demanda(datos: schemas.DatosDemanda):
             }
         }
     }
+
+@app.post("/simular-pago/", summary="Simular pago exitoso y renovar suscripción por 30 días")
+def simular_pago(
+    plan: str = "Pro",
+    demandas: int = 50,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    """
+    Simula una pasarela de pago exitosa (como Mercado Pago o Stripe). 
+    Actualiza la suscripción del usuario actual, activándola, otorgando 
+    nuevos créditos y extendiendo la fecha de expiración 30 días a partir de hoy.
+    """
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
+
+    if not suscripcion:
+        suscripcion = models.Suscripcion(usuario_id=current_user.id)
+        db.add(suscripcion)
+
+    suscripcion.plan = plan
+    suscripcion.demandas_restantes = demandas
+    suscripcion.activa = True
+    suscripcion.fecha_inicio = datetime.utcnow()
+    suscripcion.fecha_expiracion = datetime.utcnow() + timedelta(days=30)
+    
+    db.commit()
+    db.refresh(suscripcion)
+
+    return {
+        "mensaje": "¡Pago simulado con éxito!",
+        "usuario": current_user.email,
+        "plan": suscripcion.plan,
+        "demandas_restantes": suscripcion.demandas_restantes,
+        "fecha_inicio": suscripcion.fecha_inicio,
+        "fecha_expiracion": suscripcion.fecha_expiracion
+    }
+@app.get("/descargar-demanda/{demanda_id}", summary="Descargar un documento generado específico por su ID")
+def descargar_demanda_por_id(
+    demanda_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Buscar la demanda asegurando que pertenezca al usuario autenticado
+    demanda = db.query(models.DemandaGenerada).filter(
+        models.DemandaGenerada.id == demanda_id,
+        models.DemandaGenerada.usuario_id == current_user.id
+    ).first()
+
+    if not demanda:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="La demanda especificada no existe o no tenés permisos para acceder a ella."
+        )
+
+    if not demanda.archivo_generado or not os.path.exists(demanda.archivo_generado):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El archivo físico asociado a esta demanda ya no se encuentra disponible en el servidor."
+        )
+
+    nombre_archivo = os.path.basename(demanda.archivo_generado)
+
+    return FileResponse(
+        path=demanda.archivo_generado,
+        filename=nombre_archivo,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )

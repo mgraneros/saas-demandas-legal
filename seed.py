@@ -1,6 +1,8 @@
-# seed.py
-from database import SessionLocal
-from models import Plantilla
+from database import engine, SessionLocal
+from models import Base, Plantilla
+
+# Crea las tablas en la base de datos si aún no existen
+Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 

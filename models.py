@@ -1,8 +1,7 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from database import Base
-
 # --- TABLA DE USUARIOS ---
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -53,22 +52,24 @@ class DemandaGenerada(Base):
     # Relaciones
     usuario = relationship("Usuario", back_populates="demandas")
     plantilla = relationship("Plantilla", back_populates="demandas")
-
+    archivo_generado = Column(String, nullable=True)
 
 # --- TABLA DE SUSCRIPCIONES Y PLANES ---
 class Suscripcion(Base):
     __tablename__ = "suscripciones"
 
     id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), unique=True, nullable=False)
-    plan = Column(String, default="Free")             # "Free", "Pro", "Premium"
-    demandas_restantes = Column(Integer, default=3)   # Límite mensual (ej: 3 para Free)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), unique=True)
+    plan = Column(String, default="Free")
+    demandas_restantes = Column(Integer, default=3)
+    
+    # Campos para la gestión mensual
     fecha_inicio = Column(DateTime, default=datetime.utcnow)
-    fecha_vencimiento = Column(DateTime, nullable=True)
+    fecha_expiracion = Column(DateTime, nullable=True)
+    activa = Column(Boolean, default=True)
 
-    # Relaciones
-    usuario = relationship("Usuario", back_populates="suscripcion")
-
+    # Cambiamos esto para evitar el conflicto de nombres:
+    usuario = relationship("Usuario")
 
 # --- TABLA DE LOGS DE AUDITORÍA ---
 class AuditoriaLog(Base):
