@@ -832,3 +832,42 @@ def obtener_estadisticas_admin(
         "total_demandas_generadas": total_demandas,
         "suscripciones_activas": suscripciones_activas
     }
+
+@app.get("/descargar-demanda/{demanda_id}", summary="Descargar archivo Word de una demanda del historial por su ID")
+def descargar_demanda_por_id(
+    demanda_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # 1. Buscar la demanda en la base de datos
+    demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
+    
+    if not demanda:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="La demanda solicitada no existe."
+        )
+        
+    # 2. Validar que la demanda pertenezca al usuario logueado (o que sea administrador)
+    if demanda.usuario_id != current_user.id and not getattr(current_user, "es_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. No tenés permisos para descargar este archivo."
+        )
+        
+    # 3. Obtener la ruta del archivo físico 
+    # ⚠️ Ajustá 'archivo_path' por el nombre real de tu columna en models.py (ej: ruta_archivo, nombre_archivo)
+    file_path = getattr(demanda, "archivo_path", None) or getattr(demanda, "ruta_archivo", None)
+    
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El archivo físico correspondiente no se encuentra en el servidor."
+        )
+        
+    # 4. Retornar el archivo como respuesta descargable
+    return FileResponse(
+        path=file_path,
+        filename=os.path.basename(file_path),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
