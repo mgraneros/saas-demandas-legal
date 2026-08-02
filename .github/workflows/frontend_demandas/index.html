@@ -349,7 +349,7 @@ Esperando ejecución...
     // URL de tu API local
     const API_URL = "http://127.0.0.1:8000";
 
-<<<<<<< Updated upstream
+
     // Lógica para sumar dinámicamente los porcentajes de incapacidad desde la sección 3
     function calcularIncapacidad() {
         let total = 0;
@@ -360,7 +360,7 @@ Esperando ejecución...
     }
 
     // Centralizamos la captura de datos del formulario
-=======
+
     // Automatización: Calcular el porcentaje de incapacidad máximo según las lesiones seleccionadas
     document.addEventListener('DOMContentLoaded', () => {
         const checkboxesLesion = document.querySelectorAll('.lesion-checkbox');
@@ -384,7 +384,6 @@ Esperando ejecución...
         });
     });
 
->>>>>>> Stashed changes
     function obtenerPayloadFormulario() {
         // Capturar TODAS las lesiones seleccionadas
         const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked'))
@@ -431,24 +430,22 @@ Esperando ejecución...
             "DirecciónTaller": document.getElementById("DirecciónTaller").value,
             "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
             
-<<<<<<< Updated upstream
+
             // Captura de botones de radio y campos numéricos de la sección 5
-            "OpcionCompetencia": parseInt(document.querySelector('input[name="OpcionCompetencia"]:checked').value) || 1,
-=======
+            "OpcionCompetencia": parseInt(document.querySelector('input[name="OpcionCompetencia"]:checked').value) || 1, 
             // Lista documental generada desde los checkboxes
             "ListaDocumental": documentosSeleccionados,
-            
             "OpcionCompetencia": competencia,
->>>>>>> Stashed changes
+
             "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
             "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
         };
     }
 
-<<<<<<< Updated upstream
+
     // Ejecutar Preview
-=======
->>>>>>> Stashed changes
+
+
     async function ejecutarPreview() {
         const payload = obtenerPayloadFormulario();
         const resultadoBox = document.getElementById("resultadoAuditoria");
@@ -493,10 +490,10 @@ Esperando ejecución...
         }
     }
 
-<<<<<<< Updated upstream
+
     // Descargar Word
-=======
->>>>>>> Stashed changes
+
+
     async function descargarWord() {
         const payload = obtenerPayloadFormulario();
         const resultadoBox = document.getElementById("resultadoAuditoria");
