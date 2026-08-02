@@ -84,11 +84,15 @@ class DatosDemanda(BaseModel):
 
 class DemandaHistorialOut(BaseModel):
     id: int
-    plantilla_id: Optional[int]
-    nombre_actor: Optional[str]
-    dni_actor: Optional[int]
+    plantilla_id: Optional[int] = None
+    nombre_actor: Optional[str] = None
+    dni_actor: Optional[int] = None
     estado_operativo: str
     fecha_creacion: datetime
+    download_url: str  # 📌 Nueva línea para la URL directa de descarga
+
+    class Config:
+        from_attributes = True  # Pydantic v2 (o orm_mode = True en Pydantic v1)
 
     class Config:
         from_attributes = True
@@ -107,8 +111,11 @@ class DemandaHistorial(BaseModel):
     id: int
     nombre_actor: str
     archivo_generado: str
-    # Si tenés un campo de fecha en tu modelo DemandaGenerada (ej: fecha_creacion), podés descomentar la línea de abajo:
-    # fecha_creacion: datetime 
+    fecha_creacion: Optional[datetime] = None  # 📌 Activado para el historial
+    download_url: str                          # 📌 Nuevo campo para el link directo
+
+    class Config:
+        from_attributes = True
 
     class Config:
         from_attributes = True

@@ -344,7 +344,17 @@ def obtener_historial_demandas(
     
     print(f"-> Demandas encontradas en BD: {len(demandas)}")
     
-    return demandas
+    resultado = []
+    for d in demandas:
+        resultado.append({
+            "id": d.id,
+            "nombre_actor": d.nombre_actor,
+            "archivo_generado": getattr(d, "archivo_generado", "N/A"),
+            "fecha_creacion": d.fecha_creacion,
+            "download_url": f"/descargar-demanda/{d.id}"
+        })
+        
+    return resultado
 
 @app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas del usuario con filtros y paginación")
 def obtener_historial(
