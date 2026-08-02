@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from num2words import num2words
 from sqlalchemy.orm import Session
+import mercadopago
 import bcrypt
 
 # Módulos propios del proyecto
@@ -20,6 +21,7 @@ import schemas  # 👈 Esquemas centralizados en schemas.py
 
 # 1. Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
+sdk = mercadopago.SDK("TEST-tu-access-token-de-mercado-pago")
 
 # ⚠️ ESTA LÍNEA CREA LAS TABLAS AUTOMÁTICAMENTE EN LA BASE DE DATOS
 models.Base.metadata.create_all(bind=engine)
@@ -739,3 +741,94 @@ def descargar_demanda_por_id(
         filename=nombre_archivo,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+@app.post("/crear-preferencia-suscripcion/", summary="Crear preferencia de pago en Mercado Pago")
+def crear_preferencia_suscripcion(
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Configuración de los ítem de la suscripción
+    preference_data = {
+        "items": [
+            {
+                "title": "Suscripción Mensual - SaaS Demandas Legales",
+                "quantity": 1,
+                "currency_id": "ARS",
+                "unit_price": 15000.0  # Precio mensual de ejemplo
+            }
+        ],
+        "payer": {
+            "email": current_user.email
+        },
+        "back_urls": {
+            "success": "http://127.0.0.1:8000/pago-exitoso",
+            "failure": "http://127.0.0.1:8000/pago-fallido",
+            "pending": "http://127.0.0.1:8000/pago-pendiente"
+        },
+        "auto_return": "approved",
+        "external_reference": str(current_user.id) # Guardamos el ID del usuario para identificarlo después
+    }
+
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response["response"]
+        
+        return {
+            "preference_id": preference["id"],
+            "init_point": preference["init_point"] # Este es el link al que redirigís al usuario para pagar
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al conectar con la pasarela de pagos: {str(e)}"
+        )
+    from datetime import datetime, timedelta
+
+@app.post("/webhook-mercadopago/", summary="Recibir notificaciones de pago de Mercado Pago")
+def webhook_mercadopago(request: Request, db: Session = Depends(get_db)):
+    # Mercado Pago envía datos en formato JSON o query params
+    data = request.query_params
+    
+    # Verificamos si es una notificación de pago
+    if data.get("type") == "payment" or data.get("topic") == "payment":
+        payment_id = data.get("id") or data.get("data.id")
+        
+        # Consultamos el pago a la API de Mercado Pago para verificar su estado real
+        payment_info = sdk.payment().get(payment_id)
+        payment = payment_info.get("response")
+        
+        if payment and payment.get("status") == "approved":
+            user_id = int(payment.get("external_reference"))
+            
+            # Buscamos la suscripción de ese usuario
+            suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
+            
+            if suscripcion:
+                suscripcion.activa = True
+                # Si ya tenía una fecha de expiración futura, le sumamos 30 días más; si no, desde ahora.
+                base_date = suscripcion.fecha_expiracion if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion > datetime.utcnow() else datetime.utcnow()
+                suscripcion.fecha_expiracion = base_date + timedelta(days=30)
+                
+                db.commit()
+                print(f"✅ Suscripción renovada con éxito para el usuario ID: {user_id}")
+                
+    return {"status": "ok"}
+@app.get("/admin/estadisticas", summary="Estadísticas globales para el panel de administración")
+def obtener_estadisticas_admin(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Verificamos si el usuario actual es administrador
+    if not getattr(current_user, "es_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Se requieren permisos de administrador."
+        )
+
+    total_usuarios = db.query(models.Usuario).count()
+    total_demandas = db.query(models.DemandaGenerada).count()
+    suscripciones_activas = db.query(models.Suscripcion).filter(models.Suscripcion.activa == True).count()
+
+    return {
+        "total_usuarios": total_usuarios,
+        "total_demandas_generadas": total_demandas,
+        "suscripciones_activas": suscripciones_activas
+    }
