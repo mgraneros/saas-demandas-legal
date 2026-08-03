@@ -14,16 +14,19 @@ from sqlalchemy.orm import Session
 import mercadopago
 import bcrypt
 from dotenv import load_dotenv
+import httpx
+from fastapi import FastAPI, Request, HTTPException
 
 # Módulos propios del proyecto
 from database import get_db, engine
 import models
 import schemas  # 👈 Esquemas centralizados en schemas.py
 
+load_dotenv()
+
 # 1. Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
-sdk = mercadopago.SDK("TEST-tu-access-token-de-mercado-pago")
-
+sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 # ⚠️ ESTA LÍNEA CREA LAS TABLAS AUTOMÁTICAMENTE EN LA BASE DE DATOS
 models.Base.metadata.create_all(bind=engine)
 # Agregar el middleware de CORS
@@ -758,7 +761,7 @@ def crear_preferencia_suscripcion(
     current_user: models.Usuario = Depends(get_current_user)
 ):
     sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
-    
+
     preference_data = {
         "items": [
             {
@@ -772,9 +775,9 @@ def crear_preferencia_suscripcion(
             "email": current_user.email
         },
         "back_urls": {
-            "success": "http://127.0.0.1:8000/pago-exitoso",
-            "failure": "http://127.0.0.1:8000/pago-fallido",
-            "pending": "http://127.0.0.1:8000/pago-pendiente"
+            "success": "https://snide-uranium-hungrily.ngrok-free.dev/pago-exitoso",
+            "failure": "https://snide-uranium-hungrily.ngrok-free.dev/pago-fallido",
+            "pending": "https://snide-uranium-hungrily.ngrok-free.dev/pago-pendiente"
         },
         "auto_return": "approved",
         "external_reference": str(current_user.id)  # Guardamos el ID del usuario para identificarlo después
@@ -782,79 +785,98 @@ def crear_preferencia_suscripcion(
 
     try:
         preference_response = sdk.preference().create(preference_data)
+        print("RESPUESTA DE MERCADO PAGO:", preference_response)
+
+        if preference_response.get("status") not in [200, 201]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Error de Mercado Pago: {preference_response}"
+            )
+
         preference = preference_response["response"]
-        
+
         return {
             "preference_id": preference["id"],
             "init_point": preference["init_point"]  # Link al que redirigís al usuario para pagar
         }
-        
+
     except Exception as e:
+        print("EXCEPCIÓN CAPTURADA:", str(e))
         raise HTTPException(
             status_code=500,
             detail=f"Error al conectar con la pasarela de pagos: {str(e)}"
         )
-    from datetime import datetime, timedelta
+    
 
-@app.post("/webhook/mercadopago", summary="Recibir notificaciones de pago de Mercado Pago")
-async def webhook_mercadopago(request: Request, db: Session = Depends(get_db)):
+@app.post("/webhook/mercadopago")
+async def mercadopago_webhook(request: Request):
     try:
-        # Intentar obtener datos por JSON (Webhooks modernos) o usar Query Params (IPN clásico)
-        try:
-            body = await request.json()
-        except Exception:
-            body = {}
+        body = await request.json()
+        print("-> Webhook recibido de Mercado Pago:", body)
 
-        data = body or request.query_params
-
-        topic = data.get("type") or data.get("topic")
-        action = data.get("action")
+        # Identificar el tipo de notificación (soporta formato moderno y clásico)
+        topic = body.get("type") or body.get("topic")
+        action = body.get("action")
         
         payment_id = None
-        if action in ["payment.created", "payment.updated"]:
-            payment_id = data.get("data", {}).get("id")
-        elif topic == "payment":
-            payment_id = data.get("id") or data.get("data", {}).get("id")
 
-        if not payment_id:
-            payment_id = request.query_params.get("id") or request.query_params.get("data.id")
+        # Formato moderno (action: payment.created / payment.updated)
+        if action and "payment" in action:
+            data = body.get("data", {})
+            payment_id = data.get("id")
+        
+        # Formato clásico (type: payment o topic: payment)
+        elif topic == "payment":
+            payment_id = body.get("id") or body.get("data", {}).get("id")
+        
+        # Formato IPN clásico con resource URL
+        elif "resource" in body:
+            resource_url = body.get("resource")
+            if "payments" in resource_url:
+                payment_id = resource_url.split("/")[-1]
 
         if not payment_id:
             return {"status": "ignored", "message": "No se encontró el ID de pago"}
 
-        # Consultar el pago en la API oficial de Mercado Pago
-        payment_info = sdk.payment().get(payment_id)
-        payment = payment_info.get("response")
+        # Token de acceso de Mercado Pago
+        mp_access_token = os.getenv("MP_ACCESS_TOKEN", "TU_ACCESS_TOKEN_DE_MERCADO_PAGO")
 
-        if payment and payment.get("status") == "approved":
-            external_ref = payment.get("external_reference")
-            if external_ref:
-                user_id = int(external_ref)
-                
-                # Buscar la suscripción del usuario de forma segura
-                suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
-                
-                # Si no existe registro de suscripción previo, lo creamos automáticamente
-                if not suscripcion:
-                    suscripcion = models.Suscripcion(usuario_id=user_id, activa=False)
-                    db.add(suscripcion)
-                    db.commit()
-                    db.refresh(suscripcion)
+        # Consultar los detalles reales del pago a la API de Mercado Pago
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Bearer {mp_access_token}"}
+            response = await client.get(f"https://api.mercadopago.com/v1/payments/{payment_id}", headers=headers)
+            
+            if response.status_code != 200:
+                return {"status": "error", "message": "No se pudo consultar el pago en Mercado Pago"}
+            
+            payment_data = response.json()
 
-                suscripcion.activa = True
-                
-                # Si ya tenía una fecha de expiración futura, sumamos 30 días más; si no, desde ahora.
-                base_date = suscripcion.fecha_expiracion if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion > datetime.utcnow() else datetime.utcnow()
-                suscripcion.fecha_expiracion = base_date + timedelta(days=30)
-                
-                db.commit()
-                print(f"✅ Suscripción renovada con éxito para el usuario ID: {user_id}")
+        status = payment_data.get("status") # ej: "approved", "rejected", "pending"
+        status_detail = payment_data.get("status_detail") # ej: "cc_rejected_insufficient_amount", "bad_security_code"
+        external_reference = payment_data.get("external_reference") # ID de tu usuario o suscripción
 
-        return {"status": "ok"}
-        
+        print(f"💰 Pago {payment_id} | Estado: {status} | Detalle: {status_detail} | Ref Usuario: {external_reference}")
+
+        # 1. Pago Aprobado
+        if status == "approved" and external_reference:
+            # TODO: Actualizar base de datos -> Suscripción ACTIVA
+            print(f"✅ Suscripción activada para el usuario ID: {external_reference}")
+
+        # 2. Pago Pendiente o En Proceso
+        elif status in ["pending", "in_process"] and external_reference:
+            # TODO: Actualizar base de datos -> Suscripción PENDIENTE
+            print(f"⏳ Pago en proceso/pendiente para el usuario ID: {external_reference}")
+
+        # 3. Pago Rechazado (Acá podés usar el status_detail que testeamos)
+        elif status == "rejected" and external_reference:
+            # TODO: Actualizar base de datos -> Suscripción RECHAZADA
+            print(f"❌ Pago rechazado ({status_detail}) para el usuario ID: {external_reference}")
+
+        return {"status": "success"}
+
     except Exception as e:
-        print(f"❌ Error en webhook: {str(e)}")
-        return {"status": "error", "detail": str(e)}
+        print(f"❌ Error crítico en webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 @app.get("/admin/estadisticas", summary="Estadísticas globales para el panel de administración")
 def obtener_estadisticas_admin(
     db: Session = Depends(get_db),
