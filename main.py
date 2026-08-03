@@ -15,6 +15,7 @@ import mercadopago
 import bcrypt
 from dotenv import load_dotenv
 import httpx
+from models import Usuario as User
 from fastapi import FastAPI, Request, HTTPException
 
 # Módulos propios del proyecto
@@ -163,7 +164,7 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
 # ==========================================
 
 
-@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
+@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD", operation_id="crear_nueva_demanda")
 def generar_demanda(
     datos: schemas.DatosDemanda,
     request: Request,
@@ -579,28 +580,44 @@ def actualizar_estado_demanda(demanda_id: int, nuevo_estado: str, db: Session = 
     }
 
 
-@app.get("/descargar-demanda/{demanda_id}", summary="Re-descargar una demanda del historial")
-def descargar_demanda_historica(demanda_id: int, db: Session = Depends(get_db)):
-    registro = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
-    
-    if not registro:
-        raise HTTPException(status_code=404, detail="No se encontró el registro en la base de datos.")
-    
-    nombre_limpio = registro.nombre_actor.replace(' ', '_')
-    # 📍 Buscamos dentro de la carpeta dedicada:
-    ruta_archivo = os.path.join("demandas_generadas", f"temp_{nombre_limpio}.docx")
-    
-    if not os.path.exists(ruta_archivo):
-        raise HTTPException(status_code=404, detail="El archivo físico .docx ya no existe en el servidor.")
-        
-    nombre_descarga = f"Demanda_{nombre_limpio}.docx"
+from fastapi.responses import FileResponse
 
+@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word generado", operation_id="descargar_demanda_por_id")
+def descargar_demanda(
+    demanda_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # 1. Buscar el registro de la demanda en la base de datos
+    demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
+    
+    if not demanda:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="La demanda especificada no existe en la base de datos."
+        )
+    
+    # 2. Control de seguridad: Verificar que la demanda pertenezca al usuario autenticado
+    if demanda.usuario_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tenés autorización para descargar este documento."
+        )
+    
+    # 3. Verificar que el archivo físico exista en el servidor
+    if not os.path.exists(demanda.ruta_archivo):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El archivo físico ya no se encuentra disponible en el servidor."
+        )
+    
+    # 4. Devolver el archivo como respuesta descargable
+    nombre_archivo = os.path.basename(demanda.ruta_archivo)
     return FileResponse(
-        path=ruta_archivo,
-        filename=nombre_descarga,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        path=demanda.ruta_archivo,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=nombre_archivo
     )
-
 @app.get("/plantillas", response_model=List[schemas.PlantillaOut], summary="Listar plantillas de demandas disponibles")
 def obtener_plantillas(
     db: Session = Depends(get_db),
