@@ -20,313 +20,181 @@
                 </div>
                 <div class="card-body">
                     <form id="formularioDemanda">
-    
-<<<<<<< Updated upstream
-<!-- 1. Datos del Actor -->
-<h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
-<div class="row mb-3">
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Nombre</label>
-        <input type="text" class="form-control form-control-sm" id="NombreActor" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">DNI</label>
-        <input type="text" 
-               class="form-control form-control-sm" 
-               id="DniActor" 
-               pattern="\d{7,8}" 
-               maxlength="8" 
-               minlength="7" 
-               title="Ingrese un DNI válido de 7 u 8 números" 
-               oninput="this.value = this.value.replace(/[^0-9]/g, '')" 
-               required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Domicilio</label>
-        <input type="text" class="form-control form-control-sm" id="DomicilioActor" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Vehículo</label>
-        <input type="text" class="form-control form-control-sm" id="VehiculoActor" required>
-=======
-    <!-- 1. Datos del Actor -->
-    <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
-    <div class="row mb-3">
-        <div class="col-md-6 mb-2"><label class="form-label small">Nombre</label><input type="text" class="form-control form-control-sm" id="NombreActor" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">DNI</label><input type="number" class="form-control form-control-sm" id="DniActor" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Domicilio</label><input type="text" class="form-control form-control-sm" id="DomicilioActor" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Vehículo (marca, modelo, dominio)</label><input type="text" class="form-control form-control-sm" id="VehiculoActor" required></div>
-    </div>
+                        
+                        <!-- 1. Datos del Actor -->
+                        <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small">Nombre</label>
+                                <input type="text" class="form-control form-control-sm" id="NombreActor" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small">DNI</label>
+                                <input type="text" class="form-control form-control-sm" id="DniActor" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small">Domicilio</label>
+                                <input type="text" class="form-control form-control-sm" id="DomicilioActor" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small">Vehículo (marca, modelo, dominio)</label>
+                                <input type="text" class="form-control form-control-sm" id="VehiculoActor" required>
+                            </div>
+                        </div>
 
-    <!-- 2. Datos Demandado y Seguro -->
-    <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
-    <div class="row mb-3">
-        <div class="col-md-6 mb-2"><label class="form-label small">Nombre Demandado</label><input type="text" class="form-control form-control-sm" id="NombreDemandado" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Domicilio Demandado</label><input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required></div>
-        <div class="col-md-12 mb-2"><label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label><input type="text" class="form-control form-control-sm" id="AutoDemandado" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Aseguradora</label><input type="text" class="form-control form-control-sm" id="NombreAseguradora" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">CUIT Aseguradora</label><input type="text" class="form-control form-control-sm" id="CuitAseguradora" required></div>
-        <div class="col-md-12 mb-2"><label class="form-label small">Domicilio Aseguradora</label><input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required></div>
-    </div>
+                        <!-- 2. Datos Demandado y Seguro -->
+                        <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2"><label class="form-label small">Nombre Demandado</label><input type="text" class="form-control form-control-sm" id="NombreDemandado" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Domicilio Demandado</label><input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required></div>
+                            <div class="col-md-12 mb-2"><label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label><input type="text" class="form-control form-control-sm" id="AutoDemandado" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Aseguradora</label><input type="text" class="form-control form-control-sm" id="NombreAseguradora" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">CUIT Aseguradora</label><input type="text" class="form-control form-control-sm" id="CuitAseguradora" required></div>
+                            <div class="col-md-12 mb-2"><label class="form-label small">Domicilio Aseguradora</label><input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required></div>
+                        </div>
 
-    <!-- 3. Hechos y Lesiones -->
-    <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
-    <div class="row mb-3">
-        <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="text" class="form-control form-control-sm" id="FechaHecho" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
-        <div class="col-md-12 mb-3"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
-        
-<!-- Bloque de "Tipo de Lesión" por este -->
-<div class="col-md-12 mb-3">
-    <label class="form-label fw-bold small text-secondary">Tipo de Lesión</label>
-    <div class="form-check">
-        <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion25" value="CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (Hombro, Rodilla, Pecho, Craneal)" data-porcentaje="25">
-        <label class="form-check-label small" for="lesion25">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion30" value="TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE" data-porcentaje="30">
-        <label class="form-check-label small" for="lesion30">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion35" value="ESGUINCE FRACTURA, HEMORRAGIA" data-porcentaje="35">
-        <label class="form-check-label small" for="lesion35">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
-    </div>
-</div>
+                        <!-- 3. Hechos y Lesiones -->
+                        <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="text" class="form-control form-control-sm" id="FechaHecho" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
+                            <div class="col-md-12 mb-3"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold small text-secondary">Tipo de Lesión</label>
+                                <div class="form-check">
+                                    <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion25" value="CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (Hombro, Rodilla, Pecho, Craneal)" data-porcentaje="25">
+                                    <label class="form-check-label small" for="lesion25">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion30" value="TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE" data-porcentaje="30">
+                                    <label class="form-check-label small" for="lesion30">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion35" value="ESGUINCE FRACTURA, HEMORRAGIA" data-porcentaje="35">
+                                    <label class="form-check-label small" for="lesion35">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
+                                </div>
+                            </div>
 
-        <div class="col-md-12 mb-3">
-            <label class="form-label fw-bold small text-secondary">Porcentaje Daño Psicológico</label>
-            <div class="d-flex gap-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico10" value="10%">
-                    <label class="form-check-label small" for="psico10">10%</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico15" value="15%">
-                    <label class="form-check-label small" for="psico15">15%</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico20" value="20%">
-                    <label class="form-check-label small" for="psico20">20%</label>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12 mb-2">
-            <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
-            <!-- A este input le devolvemos su ID correcto para las lesiones -->
-            <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
-        </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold small text-secondary">Porcentaje Daño Psicológico</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="dano_psicologico" id="psico10" value="10%">
+                                        <label class="form-check-label small" for="psico10">10%</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="dano_psicologico" id="psico15" value="15%">
+                                        <label class="form-check-label small" for="psico15">15%</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="dano_psicologico" id="psico20" value="20%">
+                                        <label class="form-check-label small" for="psico20">20%</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mb-2">
+                                <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
+                                <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label small">Listado de Secuelas</label>
+                                <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
+                            </div>
+                        </div>
 
-        <div class="col-md-12 mb-3">
-            <label class="form-label small">Listado de Secuelas</label>
-            <!-- Creamos un nuevo textarea exclusivo para las secuelas -->
-            <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
-        </div>
-    
-    </div>
-
-    <!-- 4. Prueba y Atención -->
-    <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
-    <div class="row mb-3">
-        <div class="col-md-12 mb-3">
-            <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
-            <div class="d-flex gap-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
-                    <label class="form-check-label small" for="int_same">Solo SAME</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
-                    <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
-        <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="text" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
-        
-        <div class="col-md-12 mb-2 mt-2">
-            <label class="form-label fw-bold small text-secondary">Prueba Documental</label>
-            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background-color: #fff;">
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small" for="doc1">Acta de Mediación</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small" for="doc2">DNI Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small" for="doc3">Licencia de Conducir Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small" for="doc5">Denuncia Administrativa Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small" for="doc6">Certificado de Cobertura Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small" for="doc7">DNI Demandado</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small" for="doc10">Póliza de Seguro Demandado</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small" for="doc11">Croquis del lugar del siniestro</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small" for="doc12">Imágenes Daños Vehículo Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small" for="doc14">Imágenes Lesiones Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small" for="doc15">Imágenes Momento del Siniestro</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small" for="doc16">Actuaciones Sumariales</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small" for="doc17">Constancias de Atención Médica Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small" for="doc18">Estudios Médicos Actor</label></div>
-                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small" for="doc19">Video del momento del siniestro</label></div>
-            </div>
-        </div>
->>>>>>> Stashed changes
-    </div>
-</div>
-
-<<<<<<< Updated upstream
-<!-- 2. Datos Demandado y Seguro -->
-<h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
-<div class="row mb-3">
-    <!-- Datos del Demandado -->
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Nombre Demandado</label>
-        <input type="text" class="form-control form-control-sm" id="NombreDemandado" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">DNI Demandado</label>
-        <input type="text" 
-               class="form-control form-control-sm" 
-               id="DniDemandado" 
-               pattern="\d{7,8}" 
-               maxlength="8" 
-               minlength="7"
-               title="Ingrese un DNI válido de 7 u 8 números" 
-               oninput="this.value = this.value.replace(/[^0-9]/g, '')" 
-               required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Domicilio Demandado</label>
-        <input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Vehículo Demandado</label>
-        <input type="text" class="form-control form-control-sm" id="AutoDemandado" required>
-    </div>
-    
-    <!-- Datos de la Aseguradora -->
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Aseguradora</label>
-        <input type="text" class="form-control form-control-sm" id="NombreAseguradora" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">CUIT Aseguradora</label>
-        <input type="text" 
-               class="form-control form-control-sm" 
-               id="CuitAseguradora" 
-               pattern="\d{11}" 
-               maxlength="11" 
-               minlength="11"
-               title="Ingrese los 11 números del CUIT sin guiones" 
-               oninput="this.value = this.value.replace(/[^0-9]/g, '')" 
-               required>
-    </div>
-    <div class="col-md-12 mb-2">
-        <label class="form-label small">Domicilio Aseguradora</label>
-        <input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required>
-    </div>
-</div>
-
-<!-- 3. Hechos y Lesiones -->
-<h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
-<div class="row mb-3">
-    <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="text" class="form-control form-control-sm" id="FechaHecho" required></div>
-    <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
-    <div class="col-md-12 mb-2"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
-    <div class="col-md-12 mt-3 mb-2">
-        <label class="form-label small fw-bold">Tipo de Lesión</label>
-        <div class="form-check">
-            <input class="form-check-input lesion-checkbox" type="checkbox" value="25" id="lesion1" onchange="calcularIncapacidad()">
-            <label class="form-check-label small" for="lesion1">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input lesion-checkbox" type="checkbox" value="30" id="lesion2" onchange="calcularIncapacidad()">
-            <label class="form-check-label small" for="lesion2">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input lesion-checkbox" type="checkbox" value="35" id="lesion3" onchange="calcularIncapacidad()">
-            <label class="form-check-label small" for="lesion3">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
-        </div>
-=======
-    <!-- 5. Competencia y Liquidación -->
-    <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
-    <div class="row mb-3">
-        <div class="col-md-12 mb-3">
-            <label class="form-label fw-bold small text-secondary">Competencia</label>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="competencia" id="comp_hecho" value="Lugar del hecho">
-                <label class="form-check-label small" for="comp_hecho">Lugar del hecho</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="competencia" id="comp_demandado" value="Domicilio del demandado">
-                <label class="form-check-label small" for="comp_demandado">Domicilio del demandado</label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="competencia" id="comp_citada" value="Domicilio de la citada">
-                <label class="form-check-label small" for="comp_citada">Domicilio de la citada (Aseguradora)</label>
-            </div>
-        </div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Monto Presupuesto Reparación ($)</label><input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" step="0.01" required></div>
-        <div class="col-md-6 mb-2"><label class="form-label small">Incapacidad (%)</label><input type="number" class="form-control form-control-sm" id="PuntosdeIncapacidad" step="0.01" required></div>
->>>>>>> Stashed changes
-    </div>
-</div>
-    
-    <div class="col-md-6 mb-2"><label class="form-label small">Detalle Lesiones</label><input type="text" class="form-control form-control-sm" id="LesionesDetalles" required></div>
-    <div class="col-md-6 mb-2"><label class="form-label small">Listado Secuelas</label><input type="text" class="form-control form-control-sm" id="ListadoSecuelas" required></div>
-    
-    <!-- Tipo de Lesión movido correctamente a la sección 3 -->
- 
-
-<!-- 4. Prueba y Atención -->
-<h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
-<div class="row mb-3">
-    <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
-    <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centro Médico</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
-    <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
-    <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
-    <div class="col-md-6 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="text" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
-    <div class="col-md-12 mb-2"><label class="form-label small">Lista Documental (Separada por comas)</label><input type="text" class="form-control form-control-sm" id="ListaDocumental" required></div>
-</div>
+                        <!-- 4. Prueba y Atención -->
+                        <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
+                                        <label class="form-check-label small" for="int_same">Solo SAME</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
+                                        <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
+                            <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="text" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
+                            
+                            <div class="col-md-12 mb-2 mt-2">
+                                <label class="form-label fw-bold small text-secondary">Prueba Documental</label>
+                                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background-color: #fff;">
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small" for="doc1">Acta de Mediación</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small" for="doc2">DNI Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small" for="doc3">Licencia de Conducir Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small" for="doc5">Denuncia Administrativa Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small" for="doc6">Certificado de Cobertura Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small" for="doc7">DNI Demandado</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small" for="doc10">Póliza de Seguro Demandado</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small" for="doc11">Croquis del lugar del siniestro</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small" for="doc12">Imágenes Daños Vehículo Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small" for="doc14">Imágenes Lesiones Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small" for="doc15">Imágenes Momento del Siniestro</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small" for="doc16">Actuaciones Sumariales</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small" for="doc17">Constancias de Atención Médica Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small" for="doc18">Estudios Médicos Actor</label></div>
+                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small" for="doc19">Video del momento del siniestro</label></div>
+                                </div>
+                            </div>
+                        </div>
 
 <!-- 5. Competencia y Liquidación -->
-<h6 class="text-primary border-bottom pb-2 mt-4">5. Competencia y Liquidación</h6>
-<div class="row mb-3">
-    <div class="col-md-12 mb-3">
-        <label class="form-label small fw-bold">Competencia</label>
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="OpcionCompetencia" id="comp1" value="1" checked>
-            <label class="form-check-label small" for="comp1">Lugar del hecho</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="OpcionCompetencia" id="comp2" value="2">
-            <label class="form-check-label small" for="comp2">Domicilio del demandado</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="OpcionCompetencia" id="comp3" value="3">
-            <label class="form-check-label small" for="comp3">Domicilio de la citada (Aseguradora)</label>
-        </div>
-    </div>
-    
-    <div class="col-md-6 mb-2">
-        <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
-        <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small fw-bold">Incapacidad Total (%)</label>
-        <!-- Este campo es de solo lectura y se llena automáticamente con la función JS -->
-        <input type="number" class="form-control form-control-sm bg-light" id="PuntosdeIncapacidad" value="0" readonly>
-    </div>
-</div>
+                        <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold small text-secondary">Competencia</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia1" value="Lugar del hecho" checked>
+                                    <label class="form-check-label small" for="competencia1">
+                                        Lugar del hecho
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia2" value="Domicilio del demandado">
+                                    <label class="form-check-label small" for="competencia2">
+                                        Domicilio del demandado
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia3" value="Domicilio de la citada (Aseguradora)">
+                                    <label class="form-check-label small" for="competencia3">
+                                        Domicilio de la citada (Aseguradora)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
+                                <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold">Incapacidad Total (%)</label>
+                                <input type="number" class="form-control form-control-sm bg-light" id="PuntosdeIncapacidad" value="0" readonly>
+                            </div>
+                        </div>
 
-<div class="d-grid gap-2 mt-4">
-    <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
-    <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
-</div>
+                        <!-- Botones de Acción -->
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
+                            <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
+                        </div>
                     </form>
-                </div>
-            </div>
-        </div>
+                </div> <!-- Fin de card-body -->
+            </div> <!-- Fin de card -->
+        </div> <!-- Fin de col-md-7 -->
 
         <!-- Columna Derecha: Panel de Auditoría -->
         <div class="col-md-5">
@@ -341,25 +209,13 @@ Esperando ejecución...
                     </pre>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+        </div> <!-- Fin de col-md-5 -->
+        
+    </div> <!-- Fin de row -->
+</div> <!-- Fin de container -->
 
 <script>
-    // URL de tu API local
     const API_URL = "http://127.0.0.1:8000";
-
-
-    // Lógica para sumar dinámicamente los porcentajes de incapacidad desde la sección 3
-    function calcularIncapacidad() {
-        let total = 0;
-        document.querySelectorAll('.lesion-checkbox:checked').forEach(checkbox => {
-            total += parseFloat(checkbox.value);
-        });
-        document.getElementById('PuntosdeIncapacidad').value = total;
-    }
-
-    // Centralizamos la captura de datos del formulario
 
     // Automatización: Calcular el porcentaje de incapacidad máximo según las lesiones seleccionadas
     document.addEventListener('DOMContentLoaded', () => {
@@ -370,7 +226,6 @@ Esperando ejecución...
             checkbox.addEventListener('change', () => {
                 let maxPorcentaje = 0;
                 
-                // Iterar sobre todas las casillas de lesión que estén seleccionadas
                 document.querySelectorAll('.lesion-checkbox:checked').forEach(checked => {
                     const porcentaje = parseInt(checked.getAttribute('data-porcentaje'));
                     if (porcentaje > maxPorcentaje) {
@@ -378,27 +233,16 @@ Esperando ejecución...
                     }
                 });
 
-                // Autocompletar el campo de Incapacidad con el valor más alto
                 inputIncapacidad.value = maxPorcentaje > 0 ? maxPorcentaje : '';
             });
         });
     });
 
     function obtenerPayloadFormulario() {
-        // Capturar TODAS las lesiones seleccionadas
-        const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked'))
-                                .map(cb => cb.value)
-                                .join(' | ');
-                                
-        // Capturar los valores de los Radio Buttons
+        const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
         const danoPsico = document.querySelector('input[name="dano_psicologico"]:checked')?.value || "";
         const intervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "";
-        const competencia = document.querySelector('input[name="competencia"]:checked')?.value || "";
-
-        // Capturar todos los checkboxes documentales seleccionados y unirlos en un string
-        const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked'))
-                                             .map(cb => cb.value)
-                                             .join(', ');
+        const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value).join(', ');
 
         return {
             "NombreActor": document.getElementById("NombreActor").value,
@@ -417,7 +261,6 @@ Esperando ejecución...
             "LugarHecho": document.getElementById("LugarHecho").value,
             "DescripcionHechos": document.getElementById("DescripcionHechos").value,
             
-            // Campos estructurados actualizados
             "TipoLesion": tipoLesion,
             "PorcentajeDanoPsicologico": danoPsico,
             "LesionesDetalles": document.getElementById('LesionesDetalles').value,
@@ -430,21 +273,14 @@ Esperando ejecución...
             "DirecciónTaller": document.getElementById("DirecciónTaller").value,
             "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
             
-
-            // Captura de botones de radio y campos numéricos de la sección 5
-            "OpcionCompetencia": parseInt(document.querySelector('input[name="OpcionCompetencia"]:checked').value) || 1, 
-            // Lista documental generada desde los checkboxes
+            // LÍNEA MODIFICADA: Se quitó parseInt y se captura el string directamente
+            "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
+            
             "ListaDocumental": documentosSeleccionados,
-            "OpcionCompetencia": competencia,
-
             "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
             "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
         };
     }
-
-
-    // Ejecutar Preview
-
 
     async function ejecutarPreview() {
         const payload = obtenerPayloadFormulario();
@@ -489,10 +325,6 @@ Esperando ejecución...
             });
         }
     }
-
-
-    // Descargar Word
-
 
     async function descargarWord() {
         const payload = obtenerPayloadFormulario();
