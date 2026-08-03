@@ -809,7 +809,7 @@ def crear_preferencia_suscripcion(
     
 
 @app.post("/webhook/mercadopago")
-async def mercadopago_webhook(request: Request):
+async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
         print("-> Webhook recibido de Mercado Pago:", body)
@@ -853,28 +853,48 @@ async def mercadopago_webhook(request: Request):
 
         status = payment_data.get("status") # ej: "approved", "rejected", "pending"
         status_detail = payment_data.get("status_detail") # ej: "cc_rejected_insufficient_amount", "bad_security_code"
-        external_reference = payment_data.get("external_reference") # ID de tu usuario o suscripción
+        external_reference = payment_data.get("external_reference") # Aquí viene el ID de tu usuario (enviado en la preferencia)
 
         print(f"💰 Pago {payment_id} | Estado: {status} | Detalle: {status_detail} | Ref Usuario: {external_reference}")
 
-        # 1. Pago Aprobado
-        if status == "approved" and external_reference:
-            # TODO: Actualizar base de datos -> Suscripción ACTIVA
-            print(f"✅ Suscripción activada para el usuario ID: {external_reference}")
+        if not external_reference:
+            return {"status": "ignored", "message": "El pago no tiene un external_reference asociado"}
 
-        # 2. Pago Pendiente o En Proceso
-        elif status in ["pending", "in_process"] and external_reference:
-            # TODO: Actualizar base de datos -> Suscripción PENDIENTE
-            print(f"⏳ Pago en proceso/pendiente para el usuario ID: {external_reference}")
+        # Buscamos al usuario en la base de datos usando el external_reference
+        # (Asumimos que external_reference guarda el ID del usuario, convertas a int o string según tu DB)
+        user = db.query(User).filter(User.id == int(external_reference)).first()
 
-        # 3. Pago Rechazado (Acá podés usar el status_detail que testeamos)
-        elif status == "rejected" and external_reference:
-            # TODO: Actualizar base de datos -> Suscripción RECHAZADA
-            print(f"❌ Pago rechazado ({status_detail}) para el usuario ID: {external_reference}")
+        if not user:
+            print(f"⚠️ Usuario con ID {external_reference} no encontrado en la base de datos.")
+            return {"status": "error", "message": "Usuario no encontrado"}
+
+        # 1. Pago Aprobado -> Activamos la suscripción
+        if status == "approved":
+            user.suscripcion_activa = True
+            user.estado_pago = "approved"
+            db.commit()
+            print(f"✅ [DB] Suscripción activada con éxito para el usuario ID: {user.id}")
+
+        # 2. Pago Pendiente o En Proceso -> Marcamos como pendiente
+        elif status in ["pending", "in_process"]:
+            user.suscripcion_activa = False
+            user.estado_pago = status
+            db.commit()
+            print(f"⏳ [DB] Pago pendiente registrado para el usuario ID: {user.id}")
+
+        # 3. Pago Rechazado -> Mantenemos inactivo y guardamos el detalle del rechazo que testeamos
+        elif status == "rejected":
+            user.suscripcion_activa = False
+            user.estado_pago = status
+            # Si tenés un campo para guardar el motivo/detalle (opcional):
+            # user.motivo_rechazo = status_detail 
+            db.commit()
+            print(f"❌ [DB] Pago rechazado ({status_detail}) registrado para el usuario ID: {user.id}")
 
         return {"status": "success"}
 
     except Exception as e:
+        db.rollback() # Revertir cambios si algo falla
         print(f"❌ Error crítico en webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 @app.get("/admin/estadisticas", summary="Estadísticas globales para el panel de administración")
