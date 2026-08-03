@@ -151,22 +151,28 @@
                             </div>
                         </div>
 
-                        <!-- 5. Competencia y Liquidación -->
-                        <h6 class="text-primary border-bottom pb-2 mt-4">5. Competencia y Liquidación</h6>
+<!-- 5. Competencia y Liquidación -->
+                        <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
                         <div class="row mb-3">
                             <div class="col-md-12 mb-3">
-                                <label class="form-label small fw-bold">Competencia</label>
+                                <label class="form-label fw-bold small text-secondary">Competencia</label>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="comp1" value="1" checked>
-                                    <label class="form-check-label small" for="comp1">Lugar del hecho</label>
+                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia1" value="Lugar del hecho" checked>
+                                    <label class="form-check-label small" for="competencia1">
+                                        Lugar del hecho
+                                    </label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="comp2" value="2">
-                                    <label class="form-check-label small" for="comp2">Domicilio del demandado</label>
+                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia2" value="Domicilio del demandado">
+                                    <label class="form-check-label small" for="competencia2">
+                                        Domicilio del demandado
+                                    </label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="comp3" value="3">
-                                    <label class="form-check-label small" for="comp3">Domicilio de la citada (Aseguradora)</label>
+                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia3" value="Domicilio de la citada (Aseguradora)">
+                                    <label class="form-check-label small" for="competencia3">
+                                        Domicilio de la citada (Aseguradora)
+                                    </label>
                                 </div>
                             </div>
                             
@@ -180,6 +186,7 @@
                             </div>
                         </div>
 
+                        <!-- Botones de Acción -->
                         <div class="d-grid gap-2 mt-4">
                             <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
                             <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
@@ -203,6 +210,7 @@ Esperando ejecución...
                 </div>
             </div>
         </div> <!-- Fin de col-md-5 -->
+        
     </div> <!-- Fin de row -->
 </div> <!-- Fin de container -->
 
@@ -265,7 +273,9 @@ Esperando ejecución...
             "DirecciónTaller": document.getElementById("DirecciónTaller").value,
             "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
             
-            "OpcionCompetencia": parseInt(document.querySelector('input[name="OpcionCompetencia"]:checked').value) || 1, 
+            // LÍNEA MODIFICADA: Se quitó parseInt y se captura el string directamente
+            "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
+            
             "ListaDocumental": documentosSeleccionados,
             "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
             "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
