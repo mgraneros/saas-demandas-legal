@@ -13,6 +13,7 @@ from num2words import num2words
 from sqlalchemy.orm import Session
 import mercadopago
 import bcrypt
+from dotenv import load_dotenv
 
 # Módulos propios del proyecto
 from database import get_db, engine
@@ -753,9 +754,11 @@ def descargar_demanda_por_id(
     )
 @app.post("/crear-preferencia-suscripcion/", summary="Crear preferencia de pago en Mercado Pago")
 def crear_preferencia_suscripcion(
+    db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    # Configuración de los ítem de la suscripción
+    sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
+    
     preference_data = {
         "items": [
             {
@@ -774,7 +777,7 @@ def crear_preferencia_suscripcion(
             "pending": "http://127.0.0.1:8000/pago-pendiente"
         },
         "auto_return": "approved",
-        "external_reference": str(current_user.id) # Guardamos el ID del usuario para identificarlo después
+        "external_reference": str(current_user.id)  # Guardamos el ID del usuario para identificarlo después
     }
 
     try:
@@ -783,8 +786,9 @@ def crear_preferencia_suscripcion(
         
         return {
             "preference_id": preference["id"],
-            "init_point": preference["init_point"] # Este es el link al que redirigís al usuario para pagar
+            "init_point": preference["init_point"]  # Link al que redirigís al usuario para pagar
         }
+        
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -792,35 +796,65 @@ def crear_preferencia_suscripcion(
         )
     from datetime import datetime, timedelta
 
-@app.post("/webhook-mercadopago/", summary="Recibir notificaciones de pago de Mercado Pago")
-def webhook_mercadopago(request: Request, db: Session = Depends(get_db)):
-    # Mercado Pago envía datos en formato JSON o query params
-    data = request.query_params
-    
-    # Verificamos si es una notificación de pago
-    if data.get("type") == "payment" or data.get("topic") == "payment":
-        payment_id = data.get("id") or data.get("data.id")
+@app.post("/webhook/mercadopago", summary="Recibir notificaciones de pago de Mercado Pago")
+async def webhook_mercadopago(request: Request, db: Session = Depends(get_db)):
+    try:
+        # Intentar obtener datos por JSON (Webhooks modernos) o usar Query Params (IPN clásico)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+
+        data = body or request.query_params
+
+        topic = data.get("type") or data.get("topic")
+        action = data.get("action")
         
-        # Consultamos el pago a la API de Mercado Pago para verificar su estado real
+        payment_id = None
+        if action in ["payment.created", "payment.updated"]:
+            payment_id = data.get("data", {}).get("id")
+        elif topic == "payment":
+            payment_id = data.get("id") or data.get("data", {}).get("id")
+
+        if not payment_id:
+            payment_id = request.query_params.get("id") or request.query_params.get("data.id")
+
+        if not payment_id:
+            return {"status": "ignored", "message": "No se encontró el ID de pago"}
+
+        # Consultar el pago en la API oficial de Mercado Pago
         payment_info = sdk.payment().get(payment_id)
         payment = payment_info.get("response")
-        
+
         if payment and payment.get("status") == "approved":
-            user_id = int(payment.get("external_reference"))
-            
-            # Buscamos la suscripción de ese usuario
-            suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
-            
-            if suscripcion:
+            external_ref = payment.get("external_reference")
+            if external_ref:
+                user_id = int(external_ref)
+                
+                # Buscar la suscripción del usuario de forma segura
+                suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
+                
+                # Si no existe registro de suscripción previo, lo creamos automáticamente
+                if not suscripcion:
+                    suscripcion = models.Suscripcion(usuario_id=user_id, activa=False)
+                    db.add(suscripcion)
+                    db.commit()
+                    db.refresh(suscripcion)
+
                 suscripcion.activa = True
-                # Si ya tenía una fecha de expiración futura, le sumamos 30 días más; si no, desde ahora.
+                
+                # Si ya tenía una fecha de expiración futura, sumamos 30 días más; si no, desde ahora.
                 base_date = suscripcion.fecha_expiracion if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion > datetime.utcnow() else datetime.utcnow()
                 suscripcion.fecha_expiracion = base_date + timedelta(days=30)
                 
                 db.commit()
                 print(f"✅ Suscripción renovada con éxito para el usuario ID: {user_id}")
-                
-    return {"status": "ok"}
+
+        return {"status": "ok"}
+        
+    except Exception as e:
+        print(f"❌ Error en webhook: {str(e)}")
+        return {"status": "error", "detail": str(e)}
 @app.get("/admin/estadisticas", summary="Estadísticas globales para el panel de administración")
 def obtener_estadisticas_admin(
     db: Session = Depends(get_db),
@@ -881,3 +915,4 @@ def descargar_demanda_por_id(
         filename=os.path.basename(file_path),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
