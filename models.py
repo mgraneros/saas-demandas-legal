@@ -12,6 +12,7 @@ class Usuario(Base):
     nombre_estudio = Column(String, nullable=True)
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    es_admin = Column(Boolean, default=False)
 
     # Relaciones
     demandas = relationship("DemandaGenerada", back_populates="usuario")
