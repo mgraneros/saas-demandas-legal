@@ -221,6 +221,13 @@ def generar_demanda(
         PARRAFOS_COMPETENCIA[1]
     )
 
+ # 5. MAPEO DE VARIABLES E INYECCIÓN
+    
+    if datos.ListaDocumental:
+        lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
+    else:
+        lista_doc_limpia = []
+
     datos_procesados = {
         "NombreActor": datos.NombreActor,
         "DniActor": f"{datos.DniActor:,}".replace(",", "."),
@@ -257,13 +264,13 @@ def generar_demanda(
         "VehiculoActor": datos.VehiculoActor,
         "TallerNombre": datos.TallerNombre,
         "DirecciónTaller": datos.DirecciónTaller,
-        "ListaDocumental": datos.ListaDocumental,
+        
+        "ListaDocumental": lista_doc_limpia,
+        
         "CentroMedico": datos.CentroMedico,
         "CentroMedicoDireccion": datos.CentroMedicoDireccion,
         "LugarHecho": datos.LugarHecho,
-        "FechaPresupuesto": datos.FechaPresupuesto,
-        "PorcentajeDanoPsicologico": datos.PorcentajeDanoPsicologico,
-        "Intervencion": datos.Intervencion
+        "FechaPresupuesto": datos.FechaPresupuesto
     }
 
     try:
@@ -441,6 +448,11 @@ def generar_demanda(
     )
 
     # 5. MAPEO DE VARIABLES E INYECCIÓN
+    # Convertimos el texto separado por comas en una lista de Python
+    if datos.ListaDocumental:
+        lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
+    else:
+        lista_doc_limpia = []
     datos_procesados = {
         "NombreActor": datos.NombreActor,
         "DniActor": f"{datos.DniActor:,}".replace(",", "."),
@@ -477,13 +489,13 @@ def generar_demanda(
         "VehiculoActor": datos.VehiculoActor,
         "TallerNombre": datos.TallerNombre,
         "DirecciónTaller": datos.DirecciónTaller,
-        "ListaDocumental": datos.ListaDocumental,
+        "ListaDocumental": lista_doc_limpia,
+        
         "CentroMedico": datos.CentroMedico,
         "CentroMedicoDireccion": datos.CentroMedicoDireccion,
         "LugarHecho": datos.LugarHecho,
         "FechaPresupuesto": datos.FechaPresupuesto
     }
-
     try:
         # Usamos la ruta recuperada desde la Base de Datos
         doc = DocxTemplate(plantilla.ruta_archivo)

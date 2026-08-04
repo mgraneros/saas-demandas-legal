@@ -332,10 +332,13 @@ Esperando ejecución...
         
         resultadoBox.textContent += "\n\nGenerando documento Word...";
 
-        try {
+try {
             const response = await fetch(`${API_URL}/generar-demanda/`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBkZW1hbmRhcy5jb20iLCJpZCI6MSwiZXhwIjoxNzg1ODg3NjIzfQ.ddswiNu4glzyE-7-qE3z3WqphF2Ki6_PsFEF5rcHsHQ"
+                },
                 body: JSON.stringify(payload)
             });
 
