@@ -2,6 +2,8 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 from database import Base
+from pydantic import BaseModel
+from typing import Optional
 # --- TABLA DE USUARIOS ---
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -85,3 +87,18 @@ class AuditoriaLog(Base):
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="logs")
+
+    
+
+class PlantillaCreate(BaseModel):
+    nombre: str
+    categoria: str
+    descripcion: Optional[str] = None
+    ruta_archivo: str
+    activa: Optional[bool] = True
+
+class PlantillaResponse(PlantillaCreate):
+    id: int
+
+    class Config:
+        from_attributes = True

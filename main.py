@@ -17,6 +17,10 @@ from dotenv import load_dotenv
 import httpx
 from models import Usuario as User
 from fastapi import FastAPI, Request, HTTPException
+from fastapi import BackgroundTasks
+from email_utils import enviar_correo
+from security import get_current_admin_user, get_current_user
+import schemas
 
 # Módulos propios del proyecto
 from database import get_db, engine
@@ -40,7 +44,7 @@ app.add_middleware(
 )
 
 # 2. Configuración JWT
-SECRET_KEY = "tu_clave_secreta_super_segura_aqui_cambiar_en_produccion"
+SECRET_KEY = "admin123"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 
@@ -93,25 +97,6 @@ PARRAFOS_COMPETENCIA = {
 }
 
 
-# 6. Dependencia para obtener el usuario autenticado
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No se pudieron validar las credenciales de autenticación.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-        
-    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
-    if usuario is None:
-        raise credentials_exception
-    return usuario
 
 
 # ==========================================
@@ -336,28 +321,28 @@ def generar_demanda(
     )
 
 
-@app.get("/mis-demandas/", response_model=List[schemas.DemandaHistorial], summary="Ver historial de demandas generadas")
-def obtener_historial_demandas(
+@app.get("/mis-demandas", summary="Listar todas las demandas generadas por el usuario actual")
+def listar_mis_demandas(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    print(f"-> Usuario autenticado ID: {current_user.id} ({current_user.email})")
-    
+    # Consultamos las demandas filtradas por el ID del usuario logueado
     demandas = db.query(models.DemandaGenerada).filter(
         models.DemandaGenerada.usuario_id == current_user.id
     ).all()
     
-    print(f"-> Demandas encontradas en BD: {len(demandas)}")
-    
-    resultado = []
-    for d in demandas:
-        resultado.append({
-            "id": d.id,
-            "nombre_actor": d.nombre_actor,
-            "archivo_generado": getattr(d, "archivo_generado", "N/A"),
-            "fecha_creacion": d.fecha_creacion,
-            "download_url": f"/descargar-demanda/{d.id}"
-        })
+    return {
+        "cantidad": len(demandas),
+        "demandas": [
+            {
+                "id": d.id,
+                "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
+                "ruta_archivo": d.ruta_archivo,
+                # Agregá los campos extra que tenga tu modelo DemandaGenerada
+            } 
+            for d in demandas
+        ]
+    }
         
     return resultado
 
@@ -870,7 +855,7 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
 
         status = payment_data.get("status") # ej: "approved", "rejected", "pending"
         status_detail = payment_data.get("status_detail") # ej: "cc_rejected_insufficient_amount", "bad_security_code"
-        external_reference = payment_data.get("external_reference") # Aquí viene el ID de tu usuario (enviado en la preferencia)
+        external_reference = payment_data.get("external_reference") # ID del usuario enviado en la preferencia
 
         print(f"💰 Pago {payment_id} | Estado: {status} | Detalle: {status_detail} | Ref Usuario: {external_reference}")
 
@@ -878,7 +863,6 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             return {"status": "ignored", "message": "El pago no tiene un external_reference asociado"}
 
         # Buscamos al usuario en la base de datos usando el external_reference
-        # (Asumimos que external_reference guarda el ID del usuario, convertas a int o string según tu DB)
         user = db.query(User).filter(User.id == int(external_reference)).first()
 
         if not user:
@@ -899,12 +883,10 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             db.commit()
             print(f"⏳ [DB] Pago pendiente registrado para el usuario ID: {user.id}")
 
-        # 3. Pago Rechazado -> Mantenemos inactivo y guardamos el detalle del rechazo que testeamos
+        # 3. Pago Rechazado -> Mantenemos inactivo y guardamos el estado
         elif status == "rejected":
             user.suscripcion_activa = False
             user.estado_pago = status
-            # Si tenés un campo para guardar el motivo/detalle (opcional):
-            # user.motivo_rechazo = status_detail 
             db.commit()
             print(f"❌ [DB] Pago rechazado ({status_detail}) registrado para el usuario ID: {user.id}")
 
@@ -936,8 +918,8 @@ def obtener_estadisticas_admin(
         "suscripciones_activas": suscripciones_activas
     }
 
-@app.get("/descargar-demanda/{demanda_id}", summary="Descargar archivo Word de una demanda del historial por su ID")
-def descargar_demanda_por_id(
+@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word generado", operation_id="descargar_demanda_por_id")
+def descargar_demanda(
     demanda_id: int,
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
@@ -948,30 +930,110 @@ def descargar_demanda_por_id(
     if not demanda:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="La demanda solicitada no existe."
+            detail="La demanda especificada no existe en la base de datos."
         )
-        
-    # 2. Validar que la demanda pertenezca al usuario logueado (o que sea administrador)
-    if demanda.usuario_id != current_user.id and not getattr(current_user, "es_admin", False):
+    
+    # 2. Control de seguridad: Verificar que la demanda pertenezca al usuario autenticado
+    if demanda.usuario_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acceso denegado. No tenés permisos para descargar este archivo."
+            detail="No tenés autorización para descargar este documento."
         )
-        
-    # 3. Obtener la ruta del archivo físico 
-    # ⚠️ Ajustá 'archivo_path' por el nombre real de tu columna en models.py (ej: ruta_archivo, nombre_archivo)
-    file_path = getattr(demanda, "archivo_path", None) or getattr(demanda, "ruta_archivo", None)
     
-    if not file_path or not os.path.exists(file_path):
+    # 3. Verificar que el archivo físico exista en el servidor
+    if not os.path.exists(demanda.ruta_archivo):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="El archivo físico correspondiente no se encuentra en el servidor."
+            detail="El archivo físico ya no se encuentra disponible en el servidor."
         )
-        
-    # 4. Retornar el archivo como respuesta descargable
+    
+    # 4. Devolver el archivo como respuesta descargable
+    nombre_archivo = os.path.basename(demanda.ruta_archivo)
     return FileResponse(
-        path=file_path,
-        filename=os.path.basename(file_path),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        path=demanda.ruta_archivo,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=nombre_archivo
     )
+@app.get("/suscripcion/estado", summary="Verificar el estado de la suscripción actual")
+def verificar_estado_suscripcion(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Buscamos la suscripción asociada al usuario autenticado[cite: 1]
+    suscripcion = db.query(models.Suscripcion).filter(
+        models.Suscripcion.usuario_id == current_user.id
+    ).first()
 
+    if not suscripcion:
+        return {
+            "tiene_suscripcion": False,
+            "activa": False,
+            "mensaje": "No posees ningún plan o suscripción registrada."
+        }
+
+    # Verificamos si la suscripción expiró por fecha (actualizando el estado automáticamente)
+    if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
+        if suscripcion.activa:
+            suscripcion.activa = False
+            db.commit()
+
+    return {
+        "tiene_suscripcion": True,
+        "activa": suscripcion.activa,
+        "fecha_expiracion": suscripcion.fecha_expiracion,
+        "usuario_email": current_user.email
+    }
+
+@app.get("/admin/panel-control", summary="Panel exclusivo para administradores")
+def panel_control_admin(
+    db: Session = Depends(get_db),
+    admin_user: models.Usuario = Depends(get_current_admin_user)
+):
+    return {
+        "status": "success",
+        "mensaje": f"Bienvenido al panel de administración, {admin_user.email}. Acceso concedido."
+    }
+
+@app.post("/admin/plantillas", response_model=schemas.PlantillaResponse, status_code=status.HTTP_201_CREATED, summary="Registrar nueva plantilla")
+def registrar_plantilla(
+    plantilla: schemas.PlantillaCreate,
+    db: Session = Depends(get_db),
+    admin_user: models.Usuario = Depends(get_current_admin_user)
+):
+    """
+    Registra una nueva plantilla legal en el sistema. 
+    Exclusivo para administradores.
+    """
+    nueva_plantilla = models.Plantilla(
+        nombre=plantilla.nombre,
+        categoria=plantilla.categoria,
+        descripcion=plantilla.descripcion,
+        ruta_archivo=plantilla.ruta_archivo,
+        activa=plantilla.activa
+    )
+    
+    db.add(nueva_plantilla)
+    db.commit()
+    db.refresh(nueva_plantilla)
+    
+    return nueva_plantilla
+
+@app.patch("/admin/plantillas/{plantilla_id}/estado", summary="Habilitar o deshabilitar una plantilla existente")
+def cambiar_estado_plantilla(
+    plantilla_id: int,
+    estado_data: schemas.PlantillaEstadoUpdate,
+    db: Session = Depends(get_db),
+    admin_user: models.Usuario = Depends(get_current_admin_user)
+):
+    """
+    Permite activar o desactivar una plantilla mediante un JSON en el body.
+    """
+    plantilla = db.query(models.Plantilla).filter(models.Plantilla.id == plantilla_id).first()
+    if not plantilla:
+        raise HTTPException(status_code=404, detail="Plantilla no encontrada")
+    
+    plantilla.activa = estado_data.activa
+    db.commit()
+    
+    estado_texto = "habilitada" if estado_data.activa else "deshabilitada"
+    return {"status": "success", "mensaje": f"La plantilla ha sido {estado_texto} correctamente."}

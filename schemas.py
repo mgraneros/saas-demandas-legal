@@ -89,18 +89,37 @@ class DemandaHistorialOut(BaseModel):
     dni_actor: Optional[int] = None
     estado_operativo: str
     fecha_creacion: datetime
-    download_url: str  # 📌 Nueva línea para la URL directa de descarga
-
-    class Config:
-        from_attributes = True  # Pydantic v2 (o orm_mode = True en Pydantic v1)
+    download_url: str
 
     class Config:
         from_attributes = True
 
+
+# ==========================================
+# 3. ESQUEMAS DE PLANTILLAS LEGALES
+# ==========================================
+
+class PlantillaCreate(BaseModel):
+    nombre: str
+    categoria: str
+    descripcion: Optional[str] = None
+    ruta_archivo: str
+    activa: Optional[bool] = True
+
+
+class PlantillaResponse(PlantillaCreate):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 class PlantillaOut(BaseModel):
     id: int
     nombre: str
+    categoria: str
     descripcion: Optional[str] = None
+    ruta_archivo: str
     activa: bool
 
     class Config:
@@ -111,11 +130,11 @@ class DemandaHistorial(BaseModel):
     id: int
     nombre_actor: str
     archivo_generado: str
-    fecha_creacion: Optional[datetime] = None  # 📌 Activado para el historial
-    download_url: str                          # 📌 Nuevo campo para el link directo
+    fecha_creacion: Optional[datetime] = None
+    download_url: str
 
     class Config:
         from_attributes = True
 
-    class Config:
-        from_attributes = True
+class PlantillaEstadoUpdate(BaseModel):
+    activa: bool
