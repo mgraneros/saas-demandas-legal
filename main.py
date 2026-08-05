@@ -149,13 +149,15 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
 # ==========================================
 
 
-@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD", operation_id="crear_nueva_demanda")
+@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
 def generar_demanda(
-    datos: schemas.DatosDemanda,
-    request: Request,
-    db: Session = Depends(get_db),
+    datos: schemas.DatosDemanda, 
+    request: Request, 
+    background_tasks: BackgroundTasks, # 👈 1. INYECTAMOS LA DEPENDENCIA AQUÍ
+    db: Session = Depends(get_db), 
     current_user: models.Usuario = Depends(get_current_user)
 ):
+    # 1. VERIFICAR Y CONSULTAR LA SUSCRIPCIÓN DEL USUARIO
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
 
     if not suscripcion:
@@ -314,8 +316,22 @@ def generar_demanda(
         )
         db.add(nuevo_log)
 
+# Guardar todas las operaciones juntas (Transacción Atómica)
         db.commit()
         db.refresh(nueva_demanda)
+
+        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} generada. Créditos restantes de Usuario #{current_user.id}: {suscripcion.demandas_restantes}")
+
+        try:
+            enviar_correo(
+                destinatario=current_user.email,
+                asunto="Tu demanda legal ha sido generada",
+                contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento.</p>",
+                ruta_adjunto=ruta_salida
+            )
+            print("📧 Correo ejecutado síncronamente con éxito.")
+        except Exception as mail_err:
+            print(f"❌ Error al intentar disparar el correo: {mail_err}")
 
     except Exception as e:
         db.rollback()
@@ -386,6 +402,7 @@ def obtener_historial(
 def generar_demanda(
     datos: schemas.DatosDemanda, 
     request: Request, 
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db), 
     current_user: models.Usuario = Depends(get_current_user)
 ):
@@ -545,6 +562,15 @@ def generar_demanda(
         db.refresh(nueva_demanda)
 
         print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} generada. Créditos restantes de Usuario #{current_user.id}: {suscripcion.demandas_restantes}")
+
+        # 🚀 Envío en segundo plano para que la API responda al instante
+        background_tasks.add_task(
+            enviar_correo,
+            destinatario=current_user.email,
+            asunto="Tu demanda legal ha sido generada",
+            contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto encontrarás el documento de tu demanda.</p>",
+            ruta_adjunto=ruta_salida
+        )
 
     except Exception as e:
         db.rollback()
