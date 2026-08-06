@@ -353,21 +353,22 @@ def listar_mis_demandas(
     demandas = db.query(models.DemandaGenerada).filter(
         models.DemandaGenerada.usuario_id == current_user.id
     ).all()
-    
+
+    lista_demandas = []
+    for d in demandas:
+        lista_demandas.append({
+            "id": d.id,
+            "nombre_actor": getattr(d, "nombre_actor", "Sin nombre"),
+            "dni_actor": getattr(d, "dni_actor", "-"),
+            "estado_operativo": getattr(d, "estado_operativo", "Generada"),
+            "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
+            "download_url": f"http://127.0.0.1:8000/descargar-demanda/{d.id}"
+        })
+
     return {
         "cantidad": len(demandas),
-        "demandas": [
-            {
-                "id": d.id,
-                "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-                "ruta_archivo": d.ruta_archivo,
-                # Agregá los campos extra que tenga tu modelo DemandaGenerada
-            } 
-            for d in demandas
-        ]
+        "demandas": lista_demandas
     }
-        
-    return resultado
 
 @app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas del usuario con filtros y paginación")
 def obtener_historial(

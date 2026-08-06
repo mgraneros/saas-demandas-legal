@@ -10,6 +10,14 @@
 </head>
 <body class="bg-light">
 
+    <!-- Banner de Alerta de Suscripción (Oculto por defecto) -->
+<div id="alerta-suscripcion" class="container mt-3" style="display: none;">
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+        <strong>¡Atención!</strong> Te quedan muy pocos créditos disponibles en tu cuenta para generar demandas.
+        <button id="btn-mercadopago" class="btn btn-sm btn-dark ms-3">Recargar / Suscribirme con Mercado Pago</button>
+    </div>
+</div>
+
 <div class="container mt-5 mb-5">
     <div class="row">
         <!-- Columna Izquierda: Formulario de Carga -->
@@ -214,8 +222,40 @@ Esperando ejecución...
     </div> <!-- Fin de row -->
 </div> <!-- Fin de container -->
 
+<div class="container mb-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Historial de Demandas Generadas</h5>
+            <button class="btn btn-sm btn-outline-light" onclick="cargarHistorial()">Actualizar Lista</button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Actor / Cliente</th>
+                            <th>DNI</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaHistorialBody">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Cargando historial...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ========================================== -->
+
 <script>
     const API_URL = "http://127.0.0.1:8000";
+    const TOKEN_ADMIN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBkZW1hbmRhcy5jb20iLCJpZCI6MSwiZXhwIjoxNzg2MTM3ODg4fQ.jNxxtj5VvffJSqb_ZCI1ge5czgGvE05jh2hmd9rB7eA";
 
     // Automatización: Calcular el porcentaje de incapacidad máximo según las lesiones seleccionadas
     document.addEventListener('DOMContentLoaded', () => {
@@ -376,6 +416,109 @@ try {
             });
         }
     }
+
+    // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
+async function verificarEstadoSuscripcion() {
+    // Si estás usando un token estático o guardado en localStorage:
+    const TOKEN_ADMIN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBkZW1hbmRhcy5jb20iLCJpZCI6MSwiZXhwIjoxNzg2MTM3ODg4fQ.jNxxtj5VvffJSqb_ZCI1ge5czgGvE05jh2hmd9rB7eA";
+
+    try {
+        const response = await fetch(`${API_URL}/suscripcion/estado`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${TOKEN_ADMIN}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Si le quedan 1 o 0 demandas, mostramos el banner de alerta
+            if (data.demandas_restantes <= 1) {
+                document.getElementById("alerta-suscripcion").style.display = "block";
+
+                const btnPago = document.getElementById("btn-mercadopago");
+                btnPago.onclick = async (e) => {
+                    e.preventDefault();
+                    await iniciarPagoMercadoPago(TOKEN_ADMIN);
+                };
+            }
+        }
+    } catch (error) {
+        console.error("Error al verificar la suscripción:", error);
+    }
+}
+
+async function iniciarPagoMercadoPago(token) {
+    try {
+        const res = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const preferencia = await res.json();
+        
+        if (preferencia.init_point) {
+            window.location.href = preferencia.init_point;
+        } else {
+            alert("No se pudo iniciar la preferencia de pago.");
+        }
+    } catch (err) {
+        console.error("Error de Mercado Pago:", err);
+    }
+}
+
+
+// --- LÓGICA DE HISTORIAL DE DEMANDAS ---
+async function cargarHistorial() {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBkZW1hbmRhcy5jb20iLCJpZCI6MSwiZXhwIjoxNzg1ODg3NjIzfQ.ddswiNu4glzyE-7-qE3z3WqphF2Ki6_PsFEF5rcHsHQ";
+    const tbody = document.getElementById("tablaHistorialBody");
+
+    try {
+        // Notá que acá sacamos la barra final para que coincida exactamente con "/mis-demandas"
+        const response = await fetch(`${API_URL}/mis-demandas`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${TOKEN_ADMIN}` }
+        });
+
+        if (!response.ok) throw new Error("No se pudo obtener el historial.");
+
+        const data = await response.json();
+        const demandas = data.demandas; // <--- Extraemos el array desde la propiedad "demandas"
+        
+        tbody.innerHTML = "";
+
+        if (demandas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay demandas generadas todavía.</td></tr>`;
+            return;
+        }
+
+        demandas.forEach(d => {
+            const fechaFormateada = d.fecha_creacion !== "N/A" ? new Date(d.fecha_creacion).toLocaleString() : "N/A";
+            tbody.innerHTML += `
+                <tr>
+                    <td>#${d.id}</td>
+                    <td>${d.nombre_actor || 'Sin nombre'}</td>
+                    <td>${d.dni_actor || '-'}</td>
+                    <td>${fechaFormateada}</td>
+                    <td><span class="badge bg-success">${d.estado_operativo || 'Generada'}</span></td>
+                    <td>
+                        <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            Descargar .docx
+                        </a>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        console.error("Error cargando historial:", error);
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
+    }
+}
+
+// Ejecutar ambas comprobaciones automáticamente al cargar la página por completo
+document.addEventListener('DOMContentLoaded', () => {
+    verificarEstadoSuscripcion();
+    cargarHistorial();
+});
 </script>
 </body>
 </html>
