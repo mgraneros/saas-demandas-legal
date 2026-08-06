@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# --- Archivos locales del Proyecto SaaS Legal ---
+
+# Bases de datos locales
+historial.db
+*.db
+
+# Scripts de pruebas temporales
+test_smtp.py
+
+# Documentos generados y temporales
+demandas_generadas/*.docx
+temp_string.docx
