@@ -58,7 +58,8 @@
                 const data = await response.json();
                 // Guardamos el token en el almacenamiento local del navegador
                 localStorage.setItem("access_token", data.access_token);
-                window.location.href = "index.html"; // Redirige al panel principal
+                // Redirige correctamente al panel principal
+                window.location.href = "index.html"; 
             } else {
                 alert("Email o contraseña incorrectos.");
             }
