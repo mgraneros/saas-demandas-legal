@@ -257,6 +257,20 @@ Esperando ejecución...
     const API_URL = "http://127.0.0.1:8000";
     const TOKEN_ADMIN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBkZW1hbmRhcy5jb20iLCJpZCI6MSwiZXhwIjoxNzg2MTM3ODg4fQ.jNxxtj5VvffJSqb_ZCI1ge5czgGvE05jh2hmd9rB7eA";
 
+
+    // Validación de sesión al cargar el index.html
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+        window.location.href = "login.html";
+        return;
+        }
+
+            // Si existe el token, ejecutamos tus funciones de carga normales
+            verificarEstadoSuscripcion();
+            cargarHistorial();  
+    });
+
     // Automatización: Calcular el porcentaje de incapacidad máximo según las lesiones seleccionadas
     document.addEventListener('DOMContentLoaded', () => {
         const checkboxesLesion = document.querySelectorAll('.lesion-checkbox');
@@ -519,6 +533,15 @@ document.addEventListener('DOMContentLoaded', () => {
     verificarEstadoSuscripcion();
     cargarHistorial();
 });
+
+// Verifica si el usuario está logueado al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'landing.html';
+        }
+        // ... resto de tu lógica de carga ...
+    });
 </script>
 </body>
 </html>
