@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -6,8 +7,11 @@ from jose import JWTError, jwt
 import models
 from database import get_db
 
-# Leemos directamente del .env (asegurate de que la variable se llame igual que en tu main)
-SECRET_KEY = "admin123"
+# Forzamos la lectura del archivo .env y sobrescribimos cualquier variable previa del sistema
+load_dotenv(override=True)
+
+SECRET_KEY = os.getenv("SECRET_KEY", "admin123")
+print(f"DEBUG - SECRET_KEY ACTIVA EN SECURITY.PY: {SECRET_KEY}")
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

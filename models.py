@@ -2,8 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 from database import Base
-from pydantic import BaseModel
-from typing import Optional
+
 # --- TABLA DE USUARIOS ---
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -37,13 +36,13 @@ class Plantilla(Base):
     demandas = relationship("DemandaGenerada", back_populates="plantilla")
 
 
-# --- TABLA DE DEMANDAS GENERADAS (Actualizada con FK a Plantilla) ---
+# --- TABLA DE DEMANDAS GENERADAS ---
 class DemandaGenerada(Base):
     __tablename__ = "demandas_generadas"
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    plantilla_id = Column(Integer, ForeignKey("plantillas.id"), nullable=True) # Opcional por si tenés registros viejos
+    plantilla_id = Column(Integer, ForeignKey("plantillas.id"), nullable=True)
 
     dni_actor = Column(Integer, nullable=True)
     nombre_actor = Column(String, nullable=True)
@@ -51,11 +50,12 @@ class DemandaGenerada(Base):
     ip_origen = Column(String, nullable=True)
     user_agent = Column(String, nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    archivo_generado = Column(String, nullable=True)
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="demandas")
     plantilla = relationship("Plantilla", back_populates="demandas")
-    archivo_generado = Column(String, nullable=True)
+
 
 # --- TABLA DE SUSCRIPCIONES Y PLANES ---
 class Suscripcion(Base):
@@ -71,8 +71,9 @@ class Suscripcion(Base):
     fecha_expiracion = Column(DateTime, nullable=True)
     activa = Column(Boolean, default=True)
 
-    # Cambiamos esto para evitar el conflicto de nombres:
-    usuario = relationship("Usuario")
+    # Relación bidireccional conectada con Usuario
+    usuario = relationship("Usuario", back_populates="suscripcion")
+
 
 # --- TABLA DE LOGS DE AUDITORÍA ---
 class AuditoriaLog(Base):
@@ -80,25 +81,10 @@ class AuditoriaLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
-    accion = Column(String, nullable=False)            # Ej: "LOGIN", "GENERAR_DEMANDA", "DESCARGAR_DOC"
+    accion = Column(String, nullable=False)            # Ej: "LOGIN", "GENERAR_DEMANDA"
     ip_origen = Column(String, nullable=True)
     detalles = Column(Text, nullable=True)             # Info adicional en formato texto/JSON
     fecha = Column(DateTime, default=datetime.utcnow)
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="logs")
-
-    
-
-class PlantillaCreate(BaseModel):
-    nombre: str
-    categoria: str
-    descripcion: Optional[str] = None
-    ruta_archivo: str
-    activa: Optional[bool] = True
-
-class PlantillaResponse(PlantillaCreate):
-    id: int
-
-    class Config:
-        from_attributes = True

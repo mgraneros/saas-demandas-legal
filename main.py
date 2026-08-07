@@ -1,4 +1,9 @@
 import os
+from dotenv import load_dotenv
+
+# 1. CARGAR LAS VARIABLES DE ENTORNO ANTES DE CUALQUIER OTRA COSA
+load_dotenv(override=True)  # <-- El override=True obliga a leer siempre del .env
+
 from datetime import datetime, timedelta
 from typing import Optional, List
 from docx import Document
@@ -6,28 +11,24 @@ from docx.shared import Mm
 from docxtpl import DocxTemplate, InlineImage, RichText
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from num2words import num2words
 from sqlalchemy.orm import Session
 import mercadopago
 import bcrypt
-from dotenv import load_dotenv
 import httpx
-from models import Usuario as User
-from fastapi import FastAPI, Request, HTTPException
-from fastapi import BackgroundTasks
-from email_utils import enviar_correo
-from security import get_current_admin_user, get_current_user
-import schemas
 
-# Módulos propios del proyecto
+# Módulos propios del proyecto (ahora sí leerán el .env correctamente)
 from database import get_db, engine
 import models
-import schemas  # 👈 Esquemas centralizados en schemas.py
+import schemas
+from models import Usuario as User
+from email_utils import enviar_correo
+import security
+from security import get_current_user, get_current_admin_user
 
-load_dotenv()
 
 # 1. Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
@@ -120,6 +121,20 @@ def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_
     db.refresh(nuevo_usuario)
     return nuevo_usuario
 
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    
+    # Forzamos a usar la SECRET_KEY que vive dentro de security.py
+    print(f"DEBUG - CLAVE USADA PARA FIRMAR EL TOKEN: {security.SECRET_KEY}")
+    
+    encoded_jwt = jwt.encode(to_encode, security.SECRET_KEY, algorithm=security.ALGORITHM)
+    return encoded_jwt
 
 @app.post("/token", response_model=schemas.Token, summary="Iniciar sesión y obtener JWT")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -801,53 +816,60 @@ def crear_preferencia_suscripcion(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
-
-    preference_data = {
-        "items": [
-            {
-                "title": "Suscripción Mensual - SaaS Demandas Legales",
-                "quantity": 1,
-                "currency_id": "ARS",
-                "unit_price": 15000.0  # Precio mensual de ejemplo
-            }
-        ],
-        "payer": {
-            "email": current_user.email
-        },
-        "back_urls": {
-            "success": "https://snide-uranium-hungrily.ngrok-free.dev/pago-exitoso",
-            "failure": "https://snide-uranium-hungrily.ngrok-free.dev/pago-fallido",
-            "pending": "https://snide-uranium-hungrily.ngrok-free.dev/pago-pendiente"
-        },
-        "auto_return": "approved",
-        "external_reference": str(current_user.id)  # Guardamos el ID del usuario para identificarlo después
-    }
-
     try:
+        # Inicializamos el SDK dentro de la ruta usando las variables de entorno
+        sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
+
+        preference_data = {
+            "items": [
+                {
+                    "title": "Suscripción Mensual - SaaS Demandas Legales",
+                    "quantity": 1,
+                    "currency_id": "ARS",
+                    "unit_price": 15000.0
+                }
+            ],
+            "payer": {
+                "email": current_user.email
+            },
+            "back_urls": {
+                "success": "https://snide-uranium-hungrily.ngrok-free.dev/pago-exitoso",
+                "failure": "https://snide-uranium-hungrily.ngrok-free.dev/pago-fallido",
+                "pending": "https://snide-uranium-hungrily.ngrok-free.dev/pago-pendiente"
+            },
+            "auto_return": "approved",
+            "external_reference": str(current_user.id)
+        }
+
+        # Solicitud a la API de Mercado Pago
         preference_response = sdk.preference().create(preference_data)
         print("RESPUESTA DE MERCADO PAGO:", preference_response)
 
-        if preference_response.get("status") not in [200, 201]:
+        # Validamos que la respuesta contenga el diccionario de la preferencia creada
+        if not preference_response or "response" not in preference_response:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Error de Mercado Pago: {preference_response}"
+                detail=f"Error al comunicarse con Mercado Pago: {preference_response}"
             )
 
         preference = preference_response["response"]
 
+        # Devolvemos de forma estructurada los datos que el frontend necesita para redirigir
         return {
-            "preference_id": preference["id"],
-            "init_point": preference["init_point"]  # Link al que redirigís al usuario para pagar
+            "preference_id": preference.get("id"),
+            "init_point": preference.get("init_point"),          # Producción
+            "sandbox_init_point": preference.get("sandbox_init_point") # Pruebas (Sandbox)
         }
 
+    except HTTPException as he:
+        # Reenviamos las excepciones HTTP propias sin alterarlas
+        raise he
     except Exception as e:
         print("EXCEPCIÓN CAPTURADA:", str(e))
         raise HTTPException(
             status_code=500,
             detail=f"Error al conectar con la pasarela de pagos: {str(e)}"
         )
-    
 
 @app.post("/webhook/mercadopago")
 async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
@@ -935,6 +957,7 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
         db.rollback() # Revertir cambios si algo falla
         print(f"❌ Error crítico en webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    
 @app.get("/admin/estadisticas", summary="Estadísticas globales para el panel de administración")
 def obtener_estadisticas_admin(
     db: Session = Depends(get_db),
@@ -1022,17 +1045,40 @@ def verificar_estado_suscripcion(
         "fecha_expiracion": suscripcion.fecha_expiracion,
         "usuario_email": current_user.email
     }
-
-@app.get("/admin/panel-control", summary="Panel exclusivo para administradores")
-def panel_control_admin(
-    db: Session = Depends(get_db),
-    admin_user: models.Usuario = Depends(get_current_admin_user)
+@app.get("/pago-exitoso", summary="Maneja el retorno de un pago exitoso")
+def pago_exitoso(
+    external_reference: str = None, # Aquí viaja el ID del usuario que guardamos antes
+    db: Session = Depends(get_db)
 ):
-    return {
-        "status": "success",
-        "mensaje": f"Bienvenido al panel de administración, {admin_user.email}. Acceso concedido."
-    }
+    if external_reference:
+        try:
+            user_id = int(external_reference)
+            
+            # Buscamos el registro en la tabla Suscripciones asociado a este usuario
+            suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
+            
+            if suscripcion:
+                # Actualizamos los campos de su tabla Suscripciones
+                suscripcion.activa = True
+                suscripcion.plan = "Premium"
+                suscripcion.demandas_restantes = 50 # Cantidad de demandas otorgadas por el pago
+                db.commit()
+            else:
+                # Si por alguna razón no tenía el registro creado, lo creamos de cero
+                nueva_suscripcion = models.Suscripcion(
+                    usuario_id=user_id,
+                    plan="Premium",
+                    demandas_restantes=50,
+                    activa=True
+                )
+                db.add(nueva_suscripcion)
+                db.commit()
+                
+        except Exception as e:
+            print(f"Error al actualizar la suscripción en la base de datos: {e}")
 
+    # Redirige al usuario de vuelta al panel principal en tu Live Server
+    return RedirectResponse(url="http://127.0.0.1:5500/index.html")
 @app.post("/admin/plantillas", response_model=schemas.PlantillaResponse, status_code=status.HTTP_201_CREATED, summary="Registrar nueva plantilla")
 def registrar_plantilla(
     plantilla: schemas.PlantillaCreate,

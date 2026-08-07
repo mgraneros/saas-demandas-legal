@@ -56,9 +56,19 @@
                 body: JSON.stringify(data)
             });
 
-            if (response.ok) {
-                alert("¡Registro exitoso! Redirigiendo al login...");
-                window.location.href = "login.html";
+           if (response.ok) {
+            const data = await response.json();
+    
+                // Si el registro ya devuelve el token, lo guardamos de una
+                if (data.access_token) {
+                    localStorage.setItem("access_token", data.access_token);
+                     // Lo mandamos directo a la pasarela de pago o pantalla de suscripción
+                    window.location.href = "suscripcion.html"; 
+                } else {
+                    // Si solo crea el usuario, lo mandamos al login con aviso
+                    alert("¡Registro exitoso! Por favor inicie sesión para continuar con la suscripción.");
+                    window.location.href = "login.html";
+                    }
             } else {
                 const errData = await response.json();
                 alert("Error al registrarse: " + (errData.detail || "Verifica los datos"));

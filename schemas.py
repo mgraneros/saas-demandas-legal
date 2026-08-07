@@ -136,5 +136,6 @@ class DemandaHistorial(BaseModel):
     class Config:
         from_attributes = True
 
+
 class PlantillaEstadoUpdate(BaseModel):
     activa: bool
