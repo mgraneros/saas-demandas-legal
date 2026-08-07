@@ -1093,6 +1093,16 @@ async def extraer_datos_acta(
         # 1. Leer el archivo subido en memoria
         contenido_archivo = await archivo.read()
         
+        # --- NUEVA VALIDACIÓN DE TAMAÑO MÁXIMO (5 MB) ---
+        MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB en bytes
+        
+        if len(contenido_archivo) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="El archivo es demasiado grande. El límite máximo es de 5 MB."
+            )
+        # ------------------------------------------------
+
         # 2. Determinar el tipo MIME para Gemini
         mime_type = archivo.content_type
         
@@ -1101,11 +1111,11 @@ async def extraer_datos_acta(
         
         if mime_type not in formatos_soportados:
             raise HTTPException(
-                status_code=400, 
+                status_code=status.HTTP_400_BAD_REQUEST, 
                 detail="Formato no soportado. Sube un PDF o una imagen (JPG, PNG)."
             )
 
-        # 3. Preparar el modelo de IA (1.5 Flash es el más rápido para lectura de documentos)
+        # 3. Preparar el modelo de IA
         modelo = genai.GenerativeModel('gemini-flash-latest')
         
         # 4. Diseñar el Prompt con los datos exactos que necesitas
