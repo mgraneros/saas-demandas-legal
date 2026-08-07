@@ -19,6 +19,16 @@ from sqlalchemy.orm import Session
 import mercadopago
 import bcrypt
 import httpx
+from models import Usuario as User
+from fastapi import FastAPI, Request, HTTPException
+from fastapi import BackgroundTasks
+from email_utils import enviar_correo
+from security import get_current_admin_user, get_current_user
+import schemas
+import google.generativeai as genai
+from fastapi import File, UploadFile
+import json
+import os
 
 # Módulos propios del proyecto (ahora sí leerán el .env correctamente)
 from database import get_db, engine
@@ -29,6 +39,9 @@ from email_utils import enviar_correo
 import security
 from security import get_current_user, get_current_admin_user
 
+
+# Configurar Gemini IA
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # 1. Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
@@ -1122,3 +1135,106 @@ def cambiar_estado_plantilla(
     
     estado_texto = "habilitada" if estado_data.activa else "deshabilitada"
     return {"status": "success", "mensaje": f"La plantilla ha sido {estado_texto} correctamente."}
+
+@app.post("/extraer-datos-acta/", summary="Extraer datos del acta de mediación con IA")
+async def extraer_datos_acta(
+    archivo: UploadFile = File(...),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    try:
+        # 1. Leer el archivo subido en memoria
+        contenido_archivo = await archivo.read()
+        
+        # --- NUEVA VALIDACIÓN DE TAMAÑO MÁXIMO (5 MB) ---
+        MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB en bytes
+        
+        if len(contenido_archivo) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="El archivo es demasiado grande. El límite máximo es de 5 MB."
+            )
+        # ------------------------------------------------
+
+        # 2. Determinar el tipo MIME para Gemini
+        mime_type = archivo.content_type
+        
+        # Extensiones soportadas por Gemini para visión directa
+        formatos_soportados = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
+        
+        if mime_type not in formatos_soportados:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Formato no soportado. Sube un PDF o una imagen (JPG, PNG)."
+            )
+
+        # 3. Preparar el modelo de IA
+        modelo = genai.GenerativeModel('gemini-flash-latest')
+        
+        # 4. Diseñar el Prompt con los datos exactos que necesitas
+        prompt = """
+        Eres un asistente legal experto en analizar actas de mediación.
+        Lee el documento adjunto y extrae EXCLUSIVAMENTE los siguientes datos.
+        
+        Devuelve la respuesta ESTRICTAMENTE en formato JSON válido.
+        NO uses bloques de código markdown (como ```json). 
+        NO agregues ningún texto antes ni después del JSON.
+        
+        Utiliza exactamente estas claves:
+        {
+            "DniActor": "",
+            "NombreActor": "",
+            "DomicilioActor": "",
+            "DniDemandado": "",
+            "NombreDemandado": "",
+            "DomicilioDemandado": "",
+            "NombreAseguradora": "",
+            "CuitAseguradora": "",
+            "DomicilioAseguradora": ""
+        }
+        
+        Si no encuentras un dato específico en el documento, deja el valor como un string vacío "".
+        Asegúrate de limpiar los números de DNI y CUIT quitando puntos si los tuvieran.
+        """
+
+        # 5. Enviar el archivo y el prompt a Gemini
+        respuesta = modelo.generate_content([
+            {"mime_type": mime_type, "data": contenido_archivo}, 
+            prompt
+        ])
+
+        # 6. Limpiar la respuesta por si la IA devuelve caracteres residuales y convertir a JSON
+        texto_limpio = respuesta.text.replace("```json", "").replace("```", "").strip()
+        datos_extraidos = json.loads(texto_limpio)
+
+        return {
+            "status": "success",
+            "mensaje": "Datos extraídos correctamente.",
+            "datos": datos_extraidos
+        }
+
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=500, 
+            detail="La IA no devolvió un formato JSON válido. Intenta nuevamente."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error interno al procesar el acta con IA: {str(e)}"
+        )
+        
+@app.get("/modelos-ia", summary="Listar modelos permitidos por mi API Key")
+def listar_modelos():
+    try:
+        modelos_permitidos = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                modelos_permitidos.append(m.name)
+        
+        return {
+            "status": "success", 
+            "cantidad": len(modelos_permitidos),
+            "modelos": modelos_permitidos
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al conectar con Google: {str(e)}")
