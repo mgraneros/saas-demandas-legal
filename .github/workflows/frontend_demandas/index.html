@@ -482,7 +482,7 @@ Esperando ejecución...
         }
     }
 
-    // --- LÓGICA DE HISTORIAL DE DEMANDAS ---
+  // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
     async function cargarHistorial() {
         const token = localStorage.getItem("access_token");
         const tbody = document.getElementById("tablaHistorialBody");
@@ -492,6 +492,16 @@ Esperando ejecución...
                 method: "GET",
                 headers: { "Authorization": `Bearer ${token}` }
             });
+
+            // SI EL BACKEND DEVUELVE 402 (Falta de Pago), REDIRIGIMOS AL PAGO
+            if (response.status === 402) {
+                console.warn("Suscripción inactiva detectada. Redirigiendo a pago...");
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-warning">Suscripción requerida. Redirigiendo a Mercado Pago...</td></tr>`;
+                
+                // Disparamos automáticamente la creación de la preferencia y redirección
+                await iniciarPagoMercadoPago(token);
+                return;
+            }
 
             if (!response.ok) throw new Error("No se pudo obtener el historial.");
 
@@ -528,6 +538,8 @@ Esperando ejecución...
             tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
         }
     }
+
+        
 </script>
 </body>
 </html>

@@ -23,7 +23,7 @@ from models import Usuario as User
 from fastapi import FastAPI, Request, HTTPException
 from fastapi import BackgroundTasks
 from email_utils import enviar_correo
-from security import get_current_admin_user, get_current_user
+from security import get_current_admin_user, get_current_user, verificar_suscripcion_activa
 import schemas
 import google.generativeai as genai
 from fastapi import File, UploadFile
@@ -183,7 +183,7 @@ def generar_demanda(
     request: Request, 
     background_tasks: BackgroundTasks, # 👈 1. INYECTAMOS LA DEPENDENCIA AQUÍ
     db: Session = Depends(get_db), 
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     # 1. VERIFICAR Y CONSULTAR LA SUSCRIPCIÓN DEL USUARIO
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
@@ -375,7 +375,7 @@ def generar_demanda(
 @app.get("/mis-demandas", summary="Listar todas las demandas generadas por el usuario actual")
 def listar_mis_demandas(
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     # Consultamos las demandas filtradas por el ID del usuario logueado
     demandas = db.query(models.DemandaGenerada).filter(
@@ -405,7 +405,7 @@ def obtener_historial(
     nombre_actor: Optional[str] = None,
     dni_actor: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     """
     Devuelve las demandas del usuario autenticado de forma paginada y filtrable.
@@ -433,7 +433,7 @@ def generar_demanda(
     request: Request, 
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db), 
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     # 1. VERIFICAR Y CONSULTAR LA SUSCRIPCIÓN DEL USUARIO
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
@@ -638,7 +638,7 @@ from fastapi.responses import FileResponse
 def descargar_demanda(
     demanda_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     # 1. Buscar el registro de la demanda en la base de datos
     demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
@@ -673,7 +673,7 @@ def descargar_demanda(
 @app.get("/plantillas", response_model=List[schemas.PlantillaOut], summary="Listar plantillas de demandas disponibles")
 def obtener_plantillas(
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     """
     Devuelve la lista de todas las plantillas activas disponibles en el sistema 
@@ -797,7 +797,7 @@ def simular_pago(
 def descargar_demanda_por_id(
     demanda_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     # Buscar la demanda asegurando que pertenezca al usuario autenticado
     demanda = db.query(models.DemandaGenerada).filter(
@@ -936,8 +936,8 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
         if not external_reference:
             return {"status": "ignored", "message": "El pago no tiene un external_reference asociado"}
 
-        # Buscamos al usuario en la base de datos usando el external_reference
-        user = db.query(User).filter(User.id == int(external_reference)).first()
+        # Buscamos al usuario en la base de datos usando el external_reference y models.Usuario
+        user = db.query(models.Usuario).filter(models.Usuario.id == int(external_reference)).first()
 
         if not user:
             print(f"⚠️ Usuario con ID {external_reference} no encontrado en la base de datos.")
@@ -997,7 +997,7 @@ def obtener_estadisticas_admin(
 def descargar_demanda(
     demanda_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     # 1. Buscar la demanda en la base de datos
     demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
@@ -1139,7 +1139,7 @@ def cambiar_estado_plantilla(
 @app.post("/extraer-datos-acta/", summary="Extraer datos del acta de mediación con IA")
 async def extraer_datos_acta(
     archivo: UploadFile = File(...),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)  # <-- Cambio clave aplicado aquí
 ):
     try:
         # 1. Leer el archivo subido en memoria
