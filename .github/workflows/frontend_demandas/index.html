@@ -85,6 +85,22 @@
                             </div>
                             <div class="card-body">
                                 <form id="formularioDemanda">
+
+                                    <!-- Sección de Autocompletado con IA -->
+<div class="row mb-4 bg-light p-3 border rounded mx-0 mt-3">
+    <div class="col-12">
+        <h6 class="text-primary mb-3">🤖 Autocompletar con Acta de Mediación (IA)</h6>
+        <div class="d-flex align-items-center gap-3">
+            <input class="form-control form-control-sm w-auto" type="file" id="actaFile" accept=".pdf, image/jpeg, image/png">
+            <button type="button" class="btn btn-primary btn-sm" id="btnExtraerIA" onclick="procesarActaIA()">
+                Procesar Documento
+            </button>
+            <span id="loadingIA" class="text-primary small fw-bold" style="display: none;">
+                ⏳ Leyendo documento con IA...
+            </span>
+        </div>
+    </div>
+</div>
                                     
                                     <!-- 1. Datos del Actor -->
                                     <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
@@ -108,15 +124,37 @@
                                     </div>
 
                                     <!-- 2. Datos Demandado y Seguro -->
-                                    <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
-                                    <div class="row mb-3">
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Nombre Demandado</label><input type="text" class="form-control form-control-sm" id="NombreDemandado" required></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Domicilio Demandado</label><input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required></div>
-                                        <div class="col-md-12 mb-2"><label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label><input type="text" class="form-control form-control-sm" id="AutoDemandado" required></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Aseguradora</label><input type="text" class="form-control form-control-sm" id="NombreAseguradora" required></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">CUIT Aseguradora</label><input type="text" class="form-control form-control-sm" id="CuitAseguradora" required></div>
-                                        <div class="col-md-12 mb-2"><label class="form-label small">Domicilio Aseguradora</label><input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required></div>
-                                    </div>
+<h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
+<div class="row mb-3">
+    <div class="col-md-6 mb-2">
+        <label class="form-label small">Nombre Demandado</label>
+        <input type="text" class="form-control form-control-sm" id="NombreDemandado" required>
+    </div>
+    <div class="col-md-6 mb-2">
+        <label class="form-label small">DNI Demandado</label>
+        <input type="text" class="form-control form-control-sm" id="DniDemandado" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+    </div>
+    <div class="col-md-12 mb-2">
+        <label class="form-label small">Domicilio Demandado</label>
+        <input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required>
+    </div>
+    <div class="col-md-12 mb-2">
+        <label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label>
+        <input type="text" class="form-control form-control-sm" id="AutoDemandado" required>
+    </div>
+    <div class="col-md-6 mb-2">
+        <label class="form-label small">Aseguradora</label>
+        <input type="text" class="form-control form-control-sm" id="NombreAseguradora" required>
+    </div>
+    <div class="col-md-6 mb-2">
+        <label class="form-label small">CUIT Aseguradora</label>
+        <input type="text" class="form-control form-control-sm" id="CuitAseguradora" required>
+    </div>
+    <div class="col-md-12 mb-2">
+        <label class="form-label small">Domicilio Aseguradora</label>
+        <input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required>
+    </div>
+</div>
 
                                     <!-- 3. Hechos y Lesiones -->
                                     <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
@@ -371,6 +409,92 @@
             });
         });
     });
+
+    // --- NUEVA FUNCIÓN: PROCESAR ACTA CON IA ---
+    async function procesarActaIA() {
+        const fileInput = document.getElementById('actaFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            Swal.fire({
+                title: 'Atención',
+                text: 'Por favor, selecciona un Acta de Mediación (PDF o Imagen) primero.',
+                icon: 'warning',
+                confirmButtonColor: '#0d6efd'
+            });
+            return;
+        }
+
+        // Mostrar estado de carga y deshabilitar botón
+        document.getElementById('loadingIA').style.display = 'inline-block';
+        document.getElementById('btnExtraerIA').disabled = true;
+
+        // Preparar el archivo
+        const formData = new FormData();
+        formData.append("archivo", file);
+
+        // Recuperar el token del usuario usando la key correcta de tu proyecto
+        const token = localStorage.getItem("access_token");
+
+        try {
+            // Enviar al backend
+            const response = await fetch(`${API_URL}/extraer-datos-acta/`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}` 
+                },
+                body: formData
+            });
+
+            const jsonResponse = await response.json();
+
+            // Manejo de errores del servidor (ej. 413 archivo muy grande o 500 error de IA)
+            if (!response.ok) {
+                throw new Error(jsonResponse.detail || "Error al comunicarse con la IA.");
+            }
+            
+            // Autocompletar el formulario
+            if (jsonResponse.status === "success") {
+                const info = jsonResponse.datos;
+                
+                // Sección 1: Actor
+                if (info.NombreActor) document.getElementById('NombreActor').value = info.NombreActor;
+                if (info.DniActor) document.getElementById('DniActor').value = info.DniActor;
+                if (info.DomicilioActor) document.getElementById('DomicilioActor').value = info.DomicilioActor;
+                
+                // Sección 2: Demandado y Seguro
+                if (info.NombreDemandado) document.getElementById('NombreDemandado').value = info.NombreDemandado;
+                if (info.DniDemandado) document.getElementById('DniDemandado').value = info.DniDemandado;
+                if (info.DomicilioDemandado) document.getElementById('DomicilioDemandado').value = info.DomicilioDemandado;
+                if (info.NombreAseguradora) document.getElementById('NombreAseguradora').value = info.NombreAseguradora;
+                if (info.CuitAseguradora) document.getElementById('CuitAseguradora').value = info.CuitAseguradora;
+                if (info.DomicilioAseguradora) document.getElementById('DomicilioAseguradora').value = info.DomicilioAseguradora;
+
+                Swal.fire({
+                    title: '¡Datos Extraídos!',
+                    text: 'Los datos del acta se han cargado con éxito. Por favor, revíselos.',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#0d6efd'
+                });
+            }
+        } catch (error) {
+            console.error("Error en la IA:", error);
+            Swal.fire({
+                title: 'Error al procesar',
+                text: error.message,
+                icon: 'error',
+                confirmButtonText: 'Cerrar',
+                confirmButtonColor: '#dc3545'
+            });
+        } finally {
+            // Restaurar interfaz visual
+            document.getElementById('loadingIA').style.display = 'none';
+            document.getElementById('btnExtraerIA').disabled = false;
+            fileInput.value = ""; // Limpiar el input file
+        }
+    }
+    // --- FIN FUNCIÓN IA ---
 
     function obtenerPayloadFormulario() {
         const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
@@ -632,28 +756,27 @@
             tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
         }
     }
+    
     function mostrarSeccion(idSeccion, evento) {
-    if (evento) evento.preventDefault();
-    
-    // Ocultar todas las secciones
-    document.querySelectorAll('.seccion-app').forEach(s => s.style.display = 'none');
-    
-    // Mostrar la seleccionada
-    document.getElementById(idSeccion).style.display = 'block';
-    
-    // Cambiar clases activas en el menú lateral
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active', 'bg-secondary'));
-    if (evento && evento.currentTarget) {
-        evento.currentTarget.classList.add('active', 'bg-secondary');
-    }
-
-    // Si entra a historial, cargamos los datos automáticamente
-    if (idSeccion === 'seccion-historial') {
-        cargarHistorial();
-    }
-}
-
+        if (evento) evento.preventDefault();
         
+        // Ocultar todas las secciones
+        document.querySelectorAll('.seccion-app').forEach(s => s.style.display = 'none');
+        
+        // Mostrar la seleccionada
+        document.getElementById(idSeccion).style.display = 'block';
+        
+        // Cambiar clases activas en el menú lateral
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active', 'bg-secondary'));
+        if (evento && evento.currentTarget) {
+            evento.currentTarget.classList.add('active', 'bg-secondary');
+        }
+
+        // Si entra a historial, cargamos los datos automáticamente
+        if (idSeccion === 'seccion-historial') {
+            cargarHistorial();
+        }
+    }
 </script>
 </body>
 </html>
