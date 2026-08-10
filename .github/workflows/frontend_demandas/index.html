@@ -8,6 +8,27 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+<!-- Navbar Superior del SaaS -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" href="#">⚖️ SaaS Demandas Legales</a>
+        
+        <div class="d-flex align-items-center gap-3">
+            <!-- Badge de Estado de Suscripción -->
+            <span id="badgeSuscripcion" class="badge bg-secondary px-3 py-2">Verificando suscripción...</span>
+            
+            <!-- Botón de Pago (Se muestra si está inactivo) -->
+            <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
+                💳 Pagar Suscripción
+            </button>
+
+            <!-- Botón Cerrar Sesión -->
+            <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
+                Cerrar Sesión
+            </button>
+        </div>
+    </div>
+</nav>
 <body class="bg-light">
 
     <!-- Banner de Alerta de Suscripción (Oculto por defecto) -->
@@ -18,238 +39,296 @@
     </div>
 </div>
 
-<div class="container mt-5 mb-5">
-    <div class="row">
-        <!-- Columna Izquierda: Formulario de Carga -->
-        <div class="col-md-7">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Carga de Datos</h5>
-                </div>
-                <div class="card-body">
-                    <form id="formularioDemanda">
-                        
-                        <!-- 1. Datos del Actor -->
-                        <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small">Nombre</label>
-                                <input type="text" class="form-control form-control-sm" id="NombreActor" required>
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small">DNI</label>
-                                <input type="text" class="form-control form-control-sm" id="DniActor" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small">Domicilio</label>
-                                <input type="text" class="form-control form-control-sm" id="DomicilioActor" required>
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small">Vehículo (marca, modelo, dominio)</label>
-                                <input type="text" class="form-control form-control-sm" id="VehiculoActor" required>
-                            </div>
-                        </div>
-
-                        <!-- 2. Datos Demandado y Seguro -->
-                        <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-2"><label class="form-label small">Nombre Demandado</label><input type="text" class="form-control form-control-sm" id="NombreDemandado" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Domicilio Demandado</label><input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required></div>
-                            <div class="col-md-12 mb-2"><label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label><input type="text" class="form-control form-control-sm" id="AutoDemandado" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Aseguradora</label><input type="text" class="form-control form-control-sm" id="NombreAseguradora" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">CUIT Aseguradora</label><input type="text" class="form-control form-control-sm" id="CuitAseguradora" required></div>
-                            <div class="col-md-12 mb-2"><label class="form-label small">Domicilio Aseguradora</label><input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required></div>
-                        </div>
-
-                        <!-- 3. Hechos y Lesiones -->
-                        <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="text" class="form-control form-control-sm" id="FechaHecho" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
-                            <div class="col-md-12 mb-3"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
-                            
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold small text-secondary">Tipo de Lesión</label>
-                                <div class="form-check">
-                                    <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion25" value="CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (Hombro, Rodilla, Pecho, Craneal)" data-porcentaje="25">
-                                    <label class="form-check-label small" for="lesion25">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion30" value="TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE" data-porcentaje="30">
-                                    <label class="form-check-label small" for="lesion30">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion35" value="ESGUINCE FRACTURA, HEMORRAGIA" data-porcentaje="35">
-                                    <label class="form-check-label small" for="lesion35">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold small text-secondary">Porcentaje Daño Psicológico</label>
-                                <div class="d-flex gap-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="dano_psicologico" id="psico10" value="10%">
-                                        <label class="form-check-label small" for="psico10">10%</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="dano_psicologico" id="psico15" value="15%">
-                                        <label class="form-check-label small" for="psico15">15%</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="dano_psicologico" id="psico20" value="20%">
-                                        <label class="form-check-label small" for="psico20">20%</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-12 mb-2">
-                                <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
-                                <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
-                            </div>
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label small">Listado de Secuelas</label>
-                                <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
-                            </div>
-                        </div>
-
-                        <!-- 4. Prueba y Atención -->
-                        <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
-                                <div class="d-flex gap-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
-                                        <label class="form-check-label small" for="int_same">Solo SAME</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
-                                        <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
-                            <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
-                            <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="text" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
-                            
-                            <div class="col-md-12 mb-2 mt-2">
-                                <label class="form-label fw-bold small text-secondary">Prueba Documental</label>
-                                <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background-color: #fff;">
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small" for="doc1">Acta de Mediación</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small" for="doc2">DNI Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small" for="doc3">Licencia de Conducir Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small" for="doc5">Denuncia Administrativa Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small" for="doc6">Certificado de Cobertura Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small" for="doc7">DNI Demandado</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small" for="doc10">Póliza de Seguro Demandado</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small" for="doc11">Croquis del lugar del siniestro</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small" for="doc12">Imágenes Daños Vehículo Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small" for="doc14">Imágenes Lesiones Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small" for="doc15">Imágenes Momento del Siniestro</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small" for="doc16">Actuaciones Sumariales</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small" for="doc17">Constancias de Atención Médica Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small" for="doc18">Estudios Médicos Actor</label></div>
-                                    <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small" for="doc19">Video del momento del siniestro</label></div>
-                                </div>
-                            </div>
-                        </div>
-
-<!-- 5. Competencia y Liquidación -->
-                        <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
-                        <div class="row mb-3">
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label fw-bold small text-secondary">Competencia</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia1" value="Lugar del hecho" checked>
-                                    <label class="form-check-label small" for="competencia1">
-                                        Lugar del hecho
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia2" value="Domicilio del demandado">
-                                    <label class="form-check-label small" for="competencia2">
-                                        Domicilio del demandado
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia3" value="Domicilio de la citada (Aseguradora)">
-                                    <label class="form-check-label small" for="competencia3">
-                                        Domicilio de la citada (Aseguradora)
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
-                                <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
-                            </div>
-                            <div class="col-md-6 mb-2">
-                                <label class="form-label small fw-bold">Incapacidad Total (%)</label>
-                                <input type="number" class="form-control form-control-sm bg-light" id="PuntosdeIncapacidad" value="0" readonly>
-                            </div>
-                        </div>
-
-                        <!-- Botones de Acción -->
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
-                            <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
-                        </div>
-                    </form>
-                </div> <!-- Fin de card-body -->
-            </div> <!-- Fin de card -->
-        </div> <!-- Fin de col-md-7 -->
-
-        <!-- Columna Derecha: Panel de Auditoría -->
-        <div class="col-md-5">
-            <div class="card shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0">Auditoría y Cálculos</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted small">Los resultados estructurados de la API aparecerán aquí antes de generar el documento final.</p>
-                    <pre id="resultadoAuditoria" class="bg-dark text-success p-3 rounded" style="min-height: 400px; max-height: 700px; overflow-y: auto;">
-Esperando ejecución...
-                    </pre>
-                </div>
-            </div>
-        </div> <!-- Fin de col-md-5 -->
-        
-    </div> <!-- Fin de row -->
-</div> <!-- Fin de container -->
-
-<div class="container mb-5">
-    <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Historial de Demandas Generadas</h5>
-            <button class="btn btn-sm btn-outline-light" onclick="cargarHistorial()">Actualizar Lista</button>
+<div class="d-flex vh-100">
+    <!-- Sidebar Vertical -->
+    <nav class="bg-dark text-white p-3 d-flex flex-column" style="width: 260px;">
+        <h4 class="mb-4 text-center">⚖️ SaaS Legal</h4>
+        <ul class="nav flex-column gap-2 mb-auto">
+            <li class="nav-item">
+                <a href="#" class="nav-link text-white active bg-secondary" onclick="mostrarSeccion('seccion-crear', event)">📝 Nueva Demanda</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-white" onclick="mostrarSeccion('seccion-historial', event)">📂 Historial</a>
+            </li>
+        </ul>
+        <hr>
+        <div class="small p-2 bg-secondary rounded text-center">
+            <span id="badgeSuscripcion">Verificando...</span>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Actor / Cliente</th>
-                            <th>DNI</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaHistorialBody">
-                        <tr>
-                            <td colspan="6" class="text-center text-muted">Cargando historial...</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm mt-2" style="display: none;">
+            💳 Pagar / Suscribirse
+        </button>
+        <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm mt-2">
+            Cerrar Sesión
+        </button>
+    </nav>
+
+    <!-- Panel de Contenido Principal -->
+    <main class="flex-grow-1 p-4 bg-light overflow-auto">
+
+        <!-- Alerta de pocos créditos / suscripción (Opcional arriba de todo) -->
+        <div id="alerta-suscripcion" class="container mt-3 mb-3" style="display: none;">
+            <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+                <strong>¡Atención!</strong> Te quedan muy pocos créditos disponibles en tu cuenta para generar demandas.
             </div>
         </div>
-    </div>
+
+        <!-- ================= SECCIÓN 1: CREAR DEMANDA ================= -->
+        <section id="seccion-crear" class="seccion-app">
+            <div class="container-fluid mb-5">
+                <div class="row">
+                    <!-- Columna Izquierda: Formulario de Carga -->
+                    <div class="col-md-7">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0">Carga de Datos</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="formularioDemanda">
+                                    
+                                    <!-- 1. Datos del Actor -->
+                                    <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small">Nombre</label>
+                                            <input type="text" class="form-control form-control-sm" id="NombreActor" required>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small">DNI</label>
+                                            <input type="text" class="form-control form-control-sm" id="DniActor" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small">Domicilio</label>
+                                            <input type="text" class="form-control form-control-sm" id="DomicilioActor" required>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small">Vehículo (marca, modelo, dominio)</label>
+                                            <input type="text" class="form-control form-control-sm" id="VehiculoActor" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Datos Demandado y Seguro -->
+                                    <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Nombre Demandado</label><input type="text" class="form-control form-control-sm" id="NombreDemandado" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Domicilio Demandado</label><input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required></div>
+                                        <div class="col-md-12 mb-2"><label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label><input type="text" class="form-control form-control-sm" id="AutoDemandado" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Aseguradora</label><input type="text" class="form-control form-control-sm" id="NombreAseguradora" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">CUIT Aseguradora</label><input type="text" class="form-control form-control-sm" id="CuitAseguradora" required></div>
+                                        <div class="col-md-12 mb-2"><label class="form-label small">Domicilio Aseguradora</label><input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required></div>
+                                    </div>
+
+                                    <!-- 3. Hechos y Lesiones -->
+                                    <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="text" class="form-control form-control-sm" id="FechaHecho" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
+                                        <div class="col-md-12 mb-3"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
+                                        
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label fw-bold small text-secondary">Tipo de Lesión</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion25" value="CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (Hombro, Rodilla, Pecho, Craneal)" data-porcentaje="25">
+                                                <label class="form-check-label small" for="lesion25">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion30" value="TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE" data-porcentaje="30">
+                                                <label class="form-check-label small" for="lesion30">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion35" value="ESGUINCE FRACTURA, HEMORRAGIA" data-porcentaje="35">
+                                                <label class="form-check-label small" for="lesion35">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label fw-bold small text-secondary">Porcentaje Daño Psicológico</label>
+                                            <div class="d-flex gap-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico10" value="10%">
+                                                    <label class="form-check-label small" for="psico10">10%</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico15" value="15%">
+                                                    <label class="form-check-label small" for="psico15">15%</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico20" value="20%">
+                                                    <label class="form-check-label small" for="psico20">20%</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12 mb-2">
+                                            <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
+                                            <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label small">Listado de Secuelas</label>
+                                            <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- 4. Prueba y Atención -->
+                                    <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
+                                            <div class="d-flex gap-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
+                                                    <label class="form-check-label small" for="int_same">Solo SAME</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
+                                                    <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
+                                        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
+                                        <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="text" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
+                                        
+                                        <div class="col-md-12 mb-2 mt-2">
+                                            <label class="form-label fw-bold small text-secondary">Prueba Documental</label>
+                                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background-color: #fff;">
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small" for="doc1">Acta de Mediación</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small" for="doc2">DNI Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small" for="doc3">Licencia de Conducir Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small" for="doc5">Denuncia Administrativa Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small" for="doc6">Certificado de Cobertura Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small" for="doc7">DNI Demandado</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small" for="doc10">Póliza de Seguro Demandado</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small" for="doc11">Croquis del lugar del siniestro</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small" for="doc12">Imágenes Daños Vehículo Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small" for="doc14">Imágenes Lesiones Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small" for="doc15">Imágenes Momento del Siniestro</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small" for="doc16">Actuaciones Sumariales</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small" for="doc17">Constancias de Atención Médica Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small" for="doc18">Estudios Médicos Actor</label></div>
+                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small" for="doc19">Video del momento del siniestro</label></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 5. Competencia y Liquidación -->
+                                    <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label fw-bold small text-secondary">Competencia</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia1" value="Lugar del hecho" checked>
+                                                <label class="form-check-label small" for="competencia1">Lugar del hecho</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia2" value="Domicilio del demandado">
+                                                <label class="form-check-label small" for="competencia2">Domicilio del demandado</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia3" value="Domicilio de la citada (Aseguradora)">
+                                                <label class="form-check-label small" for="competencia3">Domicilio de la citada (Aseguradora)</label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
+                                            <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label small fw-bold">Incapacidad Total (%)</label>
+                                            <input type="number" class="form-control form-control-sm bg-light" id="PuntosdeIncapacidad" value="0" readonly>
+                                        </div>
+                                    </div>
+
+                                    <!-- Botones de Acción -->
+                                    <div class="d-grid gap-2 mt-4">
+                                        <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
+                                        <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Panel de Auditoría -->
+                    <div class="col-md-5">
+                        <div class="card shadow-sm sticky-top" style="top: 20px;">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">Auditoría y Cálculos</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small">Los resultados estructurados de la API aparecerán aquí antes de generar el documento final.</p>
+                                <pre id="resultadoAuditoria" class="bg-dark text-success p-3 rounded" style="min-height: 400px; max-height: 700px; overflow-y: auto;">Esperando ejecución...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECCIÓN 2: HISTORIAL ================= -->
+        <section id="seccion-historial" class="seccion-app" style="display: none;">
+            <div class="container-fluid mb-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Historial de Demandas Generadas</h5>
+                        <button class="btn btn-sm btn-outline-light" onclick="cargarHistorial()">Actualizar Lista</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Actor / Cliente</th>
+                                        <th>DNI</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaHistorialBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Cargando historial...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ================= SECCIÓN 3: ESTADO DE DEMANDA (ENDPOINT) ================= -->
+        <section id="seccion-estado" class="seccion-app" style="display: none;">
+            <div class="container-fluid mb-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0">🔍 Consultar Estado de Demanda</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" id="inputConsultaId" placeholder="Ingrese ID de demanda o número de expediente...">
+                                    <button class="btn btn-primary" type="button" onclick="consultarEstadoDemanda()">Consultar Endpoint</button>
+                                </div>
+                                <div class="mt-4">
+                                    <label class="form-label fw-bold text-secondary">Resultado de la consulta:</label>
+                                    <pre id="resultadoEstadoDemanda" class="bg-dark text-success p-3 rounded" style="min-height: 250px; max-height: 500px; overflow-y: auto;">Realice una consulta para ver la respuesta del servidor...</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
 </div>
 <!-- ========================================== -->
 
@@ -439,6 +518,8 @@ Esperando ejecución...
     // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
     async function verificarEstadoSuscripcion() {
         const token = localStorage.getItem("access_token");
+        const badge = document.getElementById("badgeSuscripcion");
+        const btnPago = document.getElementById("btn-mercadopago");
 
         try {
             const response = await fetch(`${API_URL}/suscripcion/estado`, {
@@ -449,10 +530,16 @@ Esperando ejecución...
             if (response.ok) {
                 const data = await response.json();
                 
-                if (data.demandas_restantes <= 1) {
-                    document.getElementById("alerta-suscripcion").style.display = "block";
-
-                    const btnPago = document.getElementById("btn-mercadopago");
+                // Si es admin o tiene suscripción activa
+                if (data.es_admin || data.suscripcion_activa) {
+                    badge.className = "badge bg-success px-3 py-2";
+                    badge.textContent = data.es_admin ? "👑 Administrador" : "✅ Suscripción Activa";
+                    btnPago.style.display = "none";
+                } else {
+                    badge.className = "badge bg-danger px-3 py-2";
+                    badge.textContent = "❌ Suscripción Inactiva";
+                    btnPago.style.display = "inline-block";
+                    
                     btnPago.onclick = async (e) => {
                         e.preventDefault();
                         await iniciarPagoMercadoPago(token);
@@ -461,7 +548,14 @@ Esperando ejecución...
             }
         } catch (error) {
             console.error("Error al verificar la suscripción:", error);
+            badge.className = "badge bg-warning px-3 py-2";
+            badge.textContent = "⚠️ Estado desconocido";
         }
+    }
+
+    function cerrarSesion() {
+        localStorage.removeItem("access_token");
+        window.location.href = "landing.html";
     }
 
     async function iniciarPagoMercadoPago(token) {
@@ -538,6 +632,26 @@ Esperando ejecución...
             tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
         }
     }
+    function mostrarSeccion(idSeccion, evento) {
+    if (evento) evento.preventDefault();
+    
+    // Ocultar todas las secciones
+    document.querySelectorAll('.seccion-app').forEach(s => s.style.display = 'none');
+    
+    // Mostrar la seleccionada
+    document.getElementById(idSeccion).style.display = 'block';
+    
+    // Cambiar clases activas en el menú lateral
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active', 'bg-secondary'));
+    if (evento && evento.currentTarget) {
+        evento.currentTarget.classList.add('active', 'bg-secondary');
+    }
+
+    // Si entra a historial, cargamos los datos automáticamente
+    if (idSeccion === 'seccion-historial') {
+        cargarHistorial();
+    }
+}
 
         
 </script>
