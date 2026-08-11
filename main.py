@@ -1,45 +1,58 @@
 import os
-from dotenv import load_dotenv
-
-# 1. CARGAR LAS VARIABLES DE ENTORNO ANTES DE CUALQUIER OTRA COSA
-load_dotenv(override=True)  # <-- El override=True obliga a leer siempre del .env
-
+import json
 from datetime import datetime, timedelta
 from typing import Optional, List
+
+# 1. CARGAR LAS VARIABLES DE ENTORNO ANTES DE CUALQUIER OTRA COSA
+from dotenv import load_dotenv
+load_dotenv(override=True)  # El override=True obliga a leer siempre del .env
+
+# Librerías de terceros
+import bcrypt
+import httpx
+import mercadopago
 from docx import Document
 from docx.shared import Mm
 from docxtpl import DocxTemplate, InlineImage, RichText
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
+from num2words import num2words
+from jose import JWTError, jwt
+from itsdangerous import SignatureExpired, BadSignature
+from fastapi_mail import FastMail, MessageSchema, MessageType
+import google.generativeai as genai
+
+# FastAPI y utilidades de Web/API
+from fastapi import (
+    FastAPI,
+    Request,
+    HTTPException,
+    Depends,
+    status,
+    Form,
+    File,
+    UploadFile,
+    Query,
+    BackgroundTasks,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from num2words import num2words
 from sqlalchemy.orm import Session
-import mercadopago
-import bcrypt
-import httpx
-from models import Usuario as User
-from fastapi import FastAPI, Request, HTTPException
-from fastapi import BackgroundTasks
-from email_utils import enviar_correo
-from security import get_current_admin_user, get_current_user, verificar_suscripcion_activa
-import schemas
-import google.generativeai as genai
-from fastapi import File, UploadFile
-import json
-import os
-from fastapi import Query
 
-
-# Módulos propios del proyecto (ahora sí leerán el .env correctamente)
+# Módulos propios del proyecto
 from database import get_db, engine
 import models
 import schemas
 from models import Usuario as User
 from email_utils import enviar_correo
 import security
-from security import get_current_user, get_current_admin_user
+from security import (
+    get_current_user,
+    get_current_admin_user,
+    verificar_suscripcion_activa,
+    serializer,
+    mail_config,
+    pwd_context,
+)
 
 
 # Configurar Gemini IA
@@ -1309,3 +1322,143 @@ def listar_modelos():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al conectar con Google: {str(e)}")
+
+    # --- DEPENDENCIA PARA VERIFICAR SI ES ADMIN ---
+def require_admin(current_user: models.Usuario = Depends(get_current_user)):
+    if not current_user.es_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: Se requieren permisos de administrador."
+        )
+    return current_user
+
+# --- ENDPOINT 1: Métricas Globales del SaaS ---
+@app.get("/admin/metricas", summary="Obtener estadísticas generales para el Admin")
+def obtener_metricas_admin(
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    total_usuarios = db.query(models.Usuario).count()
+    suscripciones_activas = db.query(models.Suscripcion).filter(models.Suscripcion.activa == True).count()
+    
+    # Si tenés tabla de Demandas/Historial:
+    total_demandas = db.query(models.Demanda).count() if hasattr(models, 'Demanda') else 0
+
+    return {
+        "total_usuarios": total_usuarios,
+        "suscripciones_activas": suscripciones_activas,
+        "total_demandas": total_demandas
+    }
+
+# --- ENDPOINT 2: Listar todos los usuarios con su suscripción ---
+@app.get("/admin/usuarios", summary="Obtener lista de usuarios y sus estados")
+def listar_usuarios_admin(
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    usuarios = db.query(models.Usuario).all()
+    resultado = []
+
+    for u in usuarios:
+        suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == u.id).first()
+        resultado.append({
+            "id": u.id,
+            "email": u.email,
+            "es_admin": u.es_admin,
+            "suscripcion_activa": suscripcion.activa if suscripcion else False,
+            "plan": suscripcion.plan if suscripcion else "Sin Plan",
+            "demandas_restantes": suscripcion.demandas_restantes if suscripcion else 0
+        })
+
+    return resultado
+
+# --- ENDPOINT 3: Alternar estado de suscripción de un usuario ---
+@app.put("/admin/usuarios/{usuario_id}/toggle-suscripcion")
+def toggle_suscripcion_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == usuario_id).first()
+    if not suscripcion:
+        # Si no tiene registro, se lo creamos
+        suscripcion = models.Suscripcion(
+            usuario_id=usuario_id,
+            plan="Premium (Manual)",
+            demandas_restantes=50,
+            activa=True,
+            fecha_inicio=datetime.utcnow(),
+            fecha_expiracion=datetime.utcnow() + timedelta(days=30)
+        )
+        db.add(suscripcion)
+    else:
+        suscripcion.activa = not suscripcion.activa
+        if suscripcion.activa:
+            suscripcion.demandas_restantes = 50
+            suscripcion.fecha_expiracion = datetime.utcnow() + timedelta(days=30)
+
+    db.commit()
+    return {"mensaje": f"Estado de la suscripción actualizado a {suscripcion.activa}"}
+
+# --- ENDPOINT 1: Solicitud de restablecimiento de contraseña ---
+@app.post("/auth/olvide-password", summary="Solicitar restablecimiento de contraseña")
+async def solicitar_recuperacion(
+    email: str = Form(...),
+    background_tasks: BackgroundTasks = None,
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    
+    if usuario:
+        token = serializer.dumps(usuario.email, salt="reset-password-salt")
+        link_recuperacion = f"http://127.0.0.1:5500/.github/workflows/frontend_demandas/reset-password.html?token={token}"
+
+        # 🟢 PRINT DE PRUEBA PARA VER EL LINK EN LA CONSOLA DE FASTAPI
+        print(f"\n==========================================")
+        print(f"🔗 LINK DE RECUPERACIÓN GENERADO:")
+        print(f"{link_recuperacion}")
+        print(f"==========================================\n")
+
+        try:
+            mensaje = MessageSchema(
+                subject="Restablecimiento de Contraseña - SaaS Legal",
+                recipients=[email],
+                body=f"""
+                <h3>Restablecimiento de Contraseña</h3>
+                <p>Haz clic en el siguiente enlace para continuar:</p>
+                <p><a href="{link_recuperacion}">Restablecer mi contraseña</a></p>
+                """,
+                subtype=MessageType.html
+            )
+            fm = FastMail(mail_config)
+            background_tasks.add_task(fm.send_message, mensaje)
+        except Exception as e:
+            print(f"⚠️ No se pudo enviar el correo por SMTP: {e}")
+
+    return {"mensaje": "Si el correo está registrado, recibirás un enlace de recuperación a la brevedad."}
+
+
+# --- ENDPOINT 2: Confirmación y cambio de contraseña con el Token ---
+@app.post("/auth/reset-password", summary="Cambiar la contraseña usando el token")
+def resetear_password(
+    token: str = Form(...),
+    nueva_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Validar token (max_age = 900 segundos = 15 minutos)
+        email = serializer.loads(token, salt="reset-password-salt", max_age=900)
+    except SignatureExpired:
+        raise HTTPException(status_code=400, detail="El enlace ha expirado. Solicita uno nuevo.")
+    except BadSignature:
+        raise HTTPException(status_code=400, detail="El enlace de recuperación es inválido.")
+
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    # Actualizar contraseña con el hash de security.py
+    usuario.hashed_password = pwd_context.hash(nueva_password)
+    db.commit()
+
+    return {"mensaje": "Contraseña actualizada exitosamente. Ya puedes iniciar sesión."}

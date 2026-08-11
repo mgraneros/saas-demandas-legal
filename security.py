@@ -4,18 +4,54 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from passlib.context import CryptContext
+from itsdangerous import URLSafeTimedSerializer
+from fastapi_mail import ConnectionConfig
+
 import models
 from database import get_db
 
-# Forzamos la lectura del archivo .env y sobrescribimos cualquier variable previa del sistema
+# Forzamos la lectura del archivo .env
 load_dotenv(override=True)
 
+# --- VARIABLES DE ENTORNO Y SEGURIDAD ---
 SECRET_KEY = os.getenv("SECRET_KEY", "admin123")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 print(f"DEBUG - SECRET_KEY ACTIVA EN SECURITY.PY: {SECRET_KEY}")
-ALGORITHM = "HS256"
 
+# --- CONFIGURACIÓN DE HASHEO Y TOKENS ---
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Firmante para generar y validar tokens con expiración en recuperación de contraseña
+serializer = URLSafeTimedSerializer(SECRET_KEY)
+
+# --- CONFIGURACIÓN DE CORREO SMTP (FASTAPI-MAIL) ---
+mail_config = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME", "tu_correo@gmail.com"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", "tu_contraseña_de_aplicacion"),
+    MAIL_FROM=os.getenv("MAIL_FROM", "tu_correo@gmail.com"),
+    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
+    MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True
+)
+
+# --- OAUTH2 SCHEME ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
+# --- FUNCIONES DE HASHEO DE CONTRASEÑA ---
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+# --- DEPENDENCIAS DE AUTENTICACIÓN Y ROLES ---
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,13 +87,13 @@ def get_current_admin_user(current_user: models.Usuario = Depends(get_current_us
         )
     return current_user
 
+
 def verificar_suscripcion_activa(current_user: models.Usuario = Depends(get_current_user)):
     """
     Verifica que el usuario tenga suscripción activa. 
     Los administradores tienen acceso libre por defecto.
     """
-    # Si tu campo de administrador se llama 'is_admin' o similar, ajustalo acá:
-    if getattr(current_user, "es_admin", False):
+    if getattr(current_user, "es_admin", False) or getattr(current_user, "is_admin", False):
         return current_user
 
     suscripcion_activa = getattr(current_user, "suscripcion_activa", False)
