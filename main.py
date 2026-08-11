@@ -11,7 +11,7 @@ from docx.shared import Mm
 from docxtpl import DocxTemplate, InlineImage, RichText
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from num2words import num2words
@@ -29,6 +29,8 @@ import google.generativeai as genai
 from fastapi import File, UploadFile
 import json
 import os
+from fastapi import Query
+
 
 # Módulos propios del proyecto (ahora sí leerán el .env correctamente)
 from database import get_db, engine
@@ -830,8 +832,17 @@ def crear_preferencia_suscripcion(
     current_user: models.Usuario = Depends(get_current_user)
 ):
     try:
-        # Inicializamos el SDK dentro de la ruta usando las variables de entorno
-        sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
+        access_token = os.getenv("MP_ACCESS_TOKEN")
+        if not access_token:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="El Token de Mercado Pago no está configurado en las variables de entorno."
+            )
+
+        sdk = mercadopago.SDK(access_token)
+
+        # Usamos una variable configurable o ngrok por defecto
+        base_url = os.getenv("BASE_URL", "https://snide-uranium-hungrily.ngrok-free.dev")
 
         preference_data = {
             "items": [
@@ -839,20 +850,43 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 15000.0
+                    "unit_price": 500000.0  # Actualizado a $500.000 ARS
                 }
             ],
             "payer": {
                 "email": current_user.email
             },
             "back_urls": {
-                "success": "https://snide-uranium-hungrily.ngrok-free.dev/pago-exitoso",
-                "failure": "https://snide-uranium-hungrily.ngrok-free.dev/pago-fallido",
-                "pending": "https://snide-uranium-hungrily.ngrok-free.dev/pago-pendiente"
+                "success": f"{base_url}/pago-exitoso",
+                "failure": f"{base_url}/pago-fallido",
+                "pending": f"{base_url}/pago-pendiente"
             },
             "auto_return": "approved",
             "external_reference": str(current_user.id)
         }
+
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response.get("response")
+
+        if not preference or "init_point" not in preference:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error al crear la preferencia en Mercado Pago: {preference_response}"
+            )
+
+        return {
+            "init_point": preference["init_point"],
+            "sandbox_init_point": preference.get("sandbox_init_point"),
+            "preference_id": preference.get("id")
+        }
+
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
 
         # Solicitud a la API de Mercado Pago
         preference_response = sdk.preference().create(preference_data)
@@ -1034,7 +1068,7 @@ def verificar_estado_suscripcion(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    # Buscamos la suscripción asociada al usuario autenticado[cite: 1]
+    # Buscamos la suscripción asociada al usuario autenticado
     suscripcion = db.query(models.Suscripcion).filter(
         models.Suscripcion.usuario_id == current_user.id
     ).first()
@@ -1046,11 +1080,12 @@ def verificar_estado_suscripcion(
             "mensaje": "No posees ningún plan o suscripción registrada."
         }
 
-    # Verificamos si la suscripción expiró por fecha (actualizando el estado automáticamente)
+    # Verificamos si expiró por fecha (solo desactiva si efectivamente hay una fecha de expiración y ya venció)
     if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
         if suscripcion.activa:
             suscripcion.activa = False
             db.commit()
+            db.refresh(suscripcion)
 
     return {
         "tiene_suscripcion": True,
@@ -1060,38 +1095,74 @@ def verificar_estado_suscripcion(
     }
 @app.get("/pago-exitoso", summary="Maneja el retorno de un pago exitoso")
 def pago_exitoso(
-    external_reference: str = None, # Aquí viaja el ID del usuario que guardamos antes
+    external_reference: str = Query(None), # Recibe el ID del usuario desde Mercado Pago
+    collection_status: str = Query(None),
+    payment_id: str = Query(None),
     db: Session = Depends(get_db)
 ):
-    if external_reference:
+    if external_reference and external_reference != "None":
         try:
             user_id = int(external_reference)
             
-            # Buscamos el registro en la tabla Suscripciones asociado a este usuario
+            # Definimos las fechas de inicio y vencimiento (30 días de suscripción)
+            ahora = datetime.utcnow()
+            expiracion = ahora + timedelta(days=30)
+
+            # Buscamos o creamos el registro en la tabla Suscripciones
             suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
             
             if suscripcion:
-                # Actualizamos los campos de su tabla Suscripciones
                 suscripcion.activa = True
                 suscripcion.plan = "Premium"
-                suscripcion.demandas_restantes = 50 # Cantidad de demandas otorgadas por el pago
+                suscripcion.demandas_restantes = 50
+                suscripcion.fecha_inicio = ahora
+                suscripcion.fecha_expiracion = expiracion
                 db.commit()
             else:
-                # Si por alguna razón no tenía el registro creado, lo creamos de cero
                 nueva_suscripcion = models.Suscripcion(
                     usuario_id=user_id,
                     plan="Premium",
                     demandas_restantes=50,
-                    activa=True
+                    activa=True,
+                    fecha_inicio=ahora,
+                    fecha_expiracion=expiracion
                 )
                 db.add(nueva_suscripcion)
                 db.commit()
                 
+            print(f"Suscripción actualizada con éxito para el usuario {user_id} hasta {expiracion}")
+
         except Exception as e:
             print(f"Error al actualizar la suscripción en la base de datos: {e}")
+            db.rollback()
 
-    # Redirige al usuario de vuelta al panel principal en tu Live Server
-    return RedirectResponse(url="http://127.0.0.1:5500/index.html")
+    # Redirige de vuelta al dashboard local (o tu frontend) tras mostrar un mensaje
+    url_retorno = "http://127.0.0.1:5500/.github/workflows/frontend_demandas/index.html"
+    
+    response = HTMLResponse(content=f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pago Exitoso - SaaS Legal</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <meta http-equiv="refresh" content="3;url={url_retorno}" />
+    </head>
+    <body class="bg-light d-flex align-items-center justify-content-center vh-100">
+        <div class="card p-4 text-center shadow-sm" style="max-width: 450px;">
+            <div class="text-success mb-3" style="font-size: 3rem;">✓</div>
+            <h3 class="fw-bold text-dark">¡Pago Confirmado!</h3>
+            <p class="text-muted small">Tu suscripción ha sido activada correctamente.</p>
+            <p class="text-secondary small">Redirigiendo al panel de control...</p>
+            <a href="{url_retorno}" class="btn btn-primary btn-sm mt-2">Volver Manualmente</a>
+        </div>
+    </body>
+    </html>
+    """)
+    
+    response.headers["ngrok-skip-browser-warning"] = "true"
+    return response
 @app.post("/admin/plantillas", response_model=schemas.PlantillaResponse, status_code=status.HTTP_201_CREATED, summary="Registrar nueva plantilla")
 def registrar_plantilla(
     plantilla: schemas.PlantillaCreate,

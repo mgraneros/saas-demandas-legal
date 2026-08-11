@@ -327,6 +327,61 @@
                 </div>
             </div>
         </section>
+        <section id="seccion-suscripcion" class="seccion-app" style="display: none;">
+            <div class="container py-4">
+                <div class="row text-center mb-4">
+                    <div class="col-lg-8 mx-auto">
+                        <h2 class="fw-bold">Gestión de Suscripción</h2>
+                        <p class="text-muted">Activa o renueva tu cuenta profesional para continuar automatizando escritos y demandas legales.</p>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="card h-100 shadow-lg border-primary position-relative">
+                            <div class="position-absolute top-0 start-50 translate-middle">
+                                <span class="badge bg-primary text-uppercase px-3 py-2 fs-6 shadow-sm">Plan Profesional</span>
+                            </div>
+                            <div class="card-body d-flex flex-column p-4 pt-5 text-center">
+                                <h3 class="card-title fw-bold text-primary mb-2">SaaS Legal Pro</h3>
+                                <p class="card-text text-muted small">Acceso ilimitado para abogados y estudios jurídicos.</p>
+                                
+                                <div class="my-3 p-3 bg-light rounded border">
+                                    <span class="display-5 fw-bold text-dark">$500.000</span>
+                                    <span class="text-muted fw-bold">ARS / mes</span>
+                                </div>
+
+                                <ul class="list-unstyled mb-4 text-start small mx-auto" style="max-width: 300px;">
+                                    <li class="mb-2 d-flex align-items-center">
+                                        <span class="me-2 text-success fw-bold">✓</span> Generación ilimitada de demandas
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center">
+                                        <span class="me-2 text-success fw-bold">✓</span> Acceso a todas las plantillas
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center">
+                                        <span class="me-2 text-success fw-bold">✓</span> Auditoría de datos por IA
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center">
+                                        <span class="me-2 text-success fw-bold">✓</span> Consulta vía Endpoint de estado
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center">
+                                        <span class="me-2 text-success fw-bold">✓</span> Historial completo e ilimitado
+                                    </li>
+                                    <li class="mb-2 d-flex align-items-center">
+                                        <span class="me-2 text-success fw-bold">✓</span> Soporte prioritario
+                                    </li>
+                                </ul>
+
+                                <button id="btnPagarMP" class="btn btn-primary btn-lg w-100 mt-auto shadow-sm" onclick="pagarSuscripcionMensual(event)">
+                                    💳 Suscribirse con Mercado Pago
+                                </button>
+                                <p class="text-muted small mt-2 mb-0" style="font-size: 0.8rem;">Suscripción mensual recurrente de $500.000 ARS.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     </main>
 </div>
@@ -516,42 +571,47 @@
     }
 
     // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
-    async function verificarEstadoSuscripcion() {
-        const token = localStorage.getItem("access_token");
-        const badge = document.getElementById("badgeSuscripcion");
-        const btnPago = document.getElementById("btn-mercadopago");
+    // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
+async function verificarEstadoSuscripcion() {
+    // 💡 Corregido: usamos 'token' o 'access_token' según lo que esté guardado
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+    const badge = document.getElementById("badgeSuscripcion");
+    const btnPago = document.getElementById("btn-mercadopago");
 
-        try {
-            const response = await fetch(`${API_URL}/suscripcion/estado`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+    try {
+        const response = await fetch(`${API_URL}/suscripcion/estado`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
-            if (response.ok) {
-                const data = await response.json();
-                
-                // Si es admin o tiene suscripción activa
-                if (data.es_admin || data.suscripcion_activa) {
-                    badge.className = "badge bg-success px-3 py-2";
-                    badge.textContent = data.es_admin ? "👑 Administrador" : "✅ Suscripción Activa";
-                    btnPago.style.display = "none";
-                } else {
-                    badge.className = "badge bg-danger px-3 py-2";
-                    badge.textContent = "❌ Suscripción Inactiva";
+        if (response.ok) {
+            const data = await response.json();
+
+            // 💡 Corregido: evaluamos 'data.activa' que es la clave devuelta por FastAPI
+            if (data.es_admin || data.activa) {
+                badge.className = "badge bg-success px-3 py-2";
+                badge.textContent = data.es_admin ? "👑 Administrador" : "✓ Suscripción Activa";
+                if (btnPago) btnPago.style.display = "none";
+            } else {
+                badge.className = "badge bg-danger px-3 py-2";
+                badge.textContent = "✕ Suscripción Inactiva";
+                if (btnPago) {
                     btnPago.style.display = "inline-block";
-                    
                     btnPago.onclick = async (e) => {
                         e.preventDefault();
-                        await iniciarPagoMercadoPago(token);
+                        await pagarSuscripcionMensual(e);
                     };
                 }
             }
-        } catch (error) {
-            console.error("Error al verificar la suscripción:", error);
+        }
+    } catch (error) {
+        console.error("Error al verificar la suscripción:", error);
+        if (badge) {
             badge.className = "badge bg-warning px-3 py-2";
             badge.textContent = "⚠️ Estado desconocido";
         }
     }
+}
 
     function cerrarSesion() {
         localStorage.removeItem("access_token");
@@ -650,6 +710,65 @@
     // Si entra a historial, cargamos los datos automáticamente
     if (idSeccion === 'seccion-historial') {
         cargarHistorial();
+    }
+}
+
+function mostrarSeccion(idSeccion, event) {
+    if (event) event.preventDefault();
+    
+    // Ocultar todas las secciones
+    const secciones = document.querySelectorAll('.seccion-app');
+    secciones.forEach(sec => sec.style.display = 'none');
+    
+    // Mostrar la sección seleccionada
+    const seccionActiva = document.getElementById(idSeccion);
+    if (seccionActiva) seccionActiva.style.display = 'block';
+
+    // Actualizar clase 'active' en el menú de navegación
+    const links = document.querySelectorAll('.nav-link');
+    links.forEach(link => link.classList.remove('active', 'bg-secondary'));
+    
+    if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
+        event.currentTarget.classList.add('active', 'bg-secondary');
+    }
+}
+
+// Función para procesar el pago con Mercado Pago
+async function pagarSuscripcionMensual(e) {
+    const btn = e.target;
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando...';
+
+    try {
+        const response = await fetch('/api/crear-preapproval-mp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ 
+                monto: 500000,
+                frecuencia: 1,
+                tipo_frecuencia: "months",
+                descripcion: "Suscripción Mensual SaaS Legal ($500.000 ARS)"
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.init_point) {
+            window.location.href = data.init_point;
+        } else {
+            alert('No se pudo iniciar la suscripción: ' + (data.error || 'Error del servidor'));
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+        }
+    } catch (error) {
+        console.error('Error al procesar el pago:', error);
+        alert('Error de conexión con el servidor de pagos.');
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
     }
 }
 
