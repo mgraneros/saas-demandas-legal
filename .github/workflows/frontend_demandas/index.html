@@ -101,6 +101,19 @@
         </div>
     </div>
 </div>
+
+<!-- Selector de Tipo de Demanda -->
+<div class="row mb-4 mt-3">
+    <div class="col-12">
+        <label class="form-label fw-bold text-primary">Seleccione el Tipo de Demanda a Generar</label>
+        <select class="form-select border-primary shadow-sm" id="TipoDemandaSelector" onchange="cambiarTipoDemanda()">
+            <option value="auto_moto" selected>Daños y Perjuicios: Auto vs. Moto</option>
+            <option value="auto_auto">Daños y Perjuicios: Auto vs. Auto</option>
+            <option value="modelo_3" disabled>Modelo 3 (Próximamente...)</option>
+            <option value="modelo_4" disabled>Modelo 4 (Próximamente...)</option>
+        </select>
+    </div>
+</div>
                                     
                                     <!-- 1. Datos del Actor -->
                                     <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
@@ -223,6 +236,8 @@
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
+                                        <!-- Campo exclusivo Auto-Auto -->
+                                        <div class="col-md-6 mb-2 campo-auto-auto" style="display: none;"><label class="form-label fw-bold small text-info">Fecha de Atención Médica (Auto vs Auto)</label><input type="date" class="form-control form-control-sm" id="FechaMedica"></div>
                                         <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
                                         <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
                                         <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
@@ -465,7 +480,25 @@
         });
     });
 
-    // --- NUEVA FUNCIÓN: PROCESAR ACTA CON IA ---
+    // --- LÓGICA DEL SELECTOR DE TIPO DE DEMANDA ---
+    function cambiarTipoDemanda() {
+        const selector = document.getElementById("TipoDemandaSelector").value;
+        const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
+        
+        if (selector === "auto_auto") {
+            // Mostrar los campos exclusivos de Auto-Auto
+            camposAutoAuto.forEach(campo => campo.style.display = 'block');
+        } else {
+            // Ocultarlos y limpiar su valor si el usuario vuelve a Auto-Moto
+            camposAutoAuto.forEach(campo => {
+                campo.style.display = 'none';
+                const input = campo.querySelector('input');
+                if(input) input.value = ''; 
+            });
+        }
+    }
+
+    // --- FUNCIÓN: PROCESAR ACTA CON IA ---
     async function procesarActaIA() {
         const fileInput = document.getElementById('actaFile');
         const file = fileInput.files[0];
@@ -549,7 +582,6 @@
             fileInput.value = ""; // Limpiar el input file
         }
     }
-    // --- FIN FUNCIÓN IA ---
 
     function obtenerPayloadFormulario() {
         const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
@@ -558,12 +590,16 @@
         const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value).join(', ');
 
         return {
+            // CAPTURAR EL TIPO DE DEMANDA SELECCIONADA
+            "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
+
             "NombreActor": document.getElementById("NombreActor").value,
             "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
             "DomicilioActor": document.getElementById("DomicilioActor").value,
             "VehiculoActor": document.getElementById("VehiculoActor").value,
             
             "NombreDemandado": document.getElementById("NombreDemandado").value,
+            "DniDemandado": document.getElementById("DniDemandado") ? document.getElementById("DniDemandado").value : "",
             "DomicilioDemandado": document.getElementById("DomicilioDemandado").value,
             "AutoDemandado": document.getElementById("AutoDemandado").value,
             "NombreAseguradora": document.getElementById("NombreAseguradora").value,
@@ -582,6 +618,10 @@
             
             "CentroMedico": document.getElementById("CentroMedico").value,
             "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
+            
+            // CAPTURAR LA FECHA MÉDICA SI EXISTE
+            "FechaMedica": document.getElementById("FechaMedica") ? document.getElementById("FechaMedica").value : "",
+            
             "TallerNombre": document.getElementById("TallerNombre").value,
             "DirecciónTaller": document.getElementById("DirecciónTaller").value,
             "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
@@ -695,72 +735,89 @@
     }
 
     // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
-    // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
-async function verificarEstadoSuscripcion() {
-    // 💡 Corregido: usamos 'token' o 'access_token' según lo que esté guardado
-    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
-    const badge = document.getElementById("badgeSuscripcion");
-    const btnPago = document.getElementById("btn-mercadopago");
+    async function verificarEstadoSuscripcion() {
+        const token = localStorage.getItem("access_token");
+        const badge = document.getElementById("badgeSuscripcion");
+        const btnPago = document.getElementById("btn-mercadopago");
 
-    try {
-        const response = await fetch(`${API_URL}/suscripcion/estado`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        try {
+            const response = await fetch(`${API_URL}/suscripcion/estado`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-
-            // 💡 Corregido: evaluamos 'data.activa' que es la clave devuelta por FastAPI
-            if (data.es_admin || data.activa) {
-                badge.className = "badge bg-success px-3 py-2";
-                badge.textContent = data.es_admin ? "👑 Administrador" : "✓ Suscripción Activa";
-                if (btnPago) btnPago.style.display = "none";
-            } else {
-                badge.className = "badge bg-danger px-3 py-2";
-                badge.textContent = "✕ Suscripción Inactiva";
-                if (btnPago) {
-                    btnPago.style.display = "inline-block";
-                    btnPago.onclick = async (e) => {
-                        e.preventDefault();
-                        await pagarSuscripcionMensual(e);
-                    };
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.es_admin || data.activa) {
+                    badge.className = "badge bg-success px-3 py-2";
+                    badge.textContent = data.es_admin ? "👑 Administrador" : "✓ Suscripción Activa";
+                    if (btnPago) btnPago.style.display = "none";
+                } else {
+                    badge.className = "badge bg-danger px-3 py-2";
+                    badge.textContent = "✕ Suscripción Inactiva";
+                    if (btnPago) {
+                        btnPago.style.display = "inline-block";
+                        btnPago.onclick = async (e) => {
+                            e.preventDefault();
+                            await pagarSuscripcionMensual(e);
+                        };
+                    }
                 }
             }
-        }
-    } catch (error) {
-        console.error("Error al verificar la suscripción:", error);
-        if (badge) {
-            badge.className = "badge bg-warning px-3 py-2";
-            badge.textContent = "⚠️ Estado desconocido";
+        } catch (error) {
+            console.error("Error al verificar la suscripción:", error);
+            if (badge) {
+                badge.className = "badge bg-warning px-3 py-2";
+                badge.textContent = "⚠️ Estado desconocido";
+            }
         }
     }
-}
 
     function cerrarSesion() {
         localStorage.removeItem("access_token");
         window.location.href = "landing.html";
     }
 
-    async function iniciarPagoMercadoPago(token) {
+    async function pagarSuscripcionMensual(e) {
+        const btn = e.target;
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando...';
+
         try {
-            const res = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` }
+            const response = await fetch('/api/crear-preapproval-mp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem("access_token")
+                },
+                body: JSON.stringify({ 
+                    monto: 500000,
+                    frecuencia: 1,
+                    tipo_frecuencia: "months",
+                    descripcion: "Suscripción Mensual SaaS Legal ($500.000 ARS)"
+                })
             });
-            const preferencia = await res.json();
-            
-            if (preferencia.init_point) {
-                window.location.href = preferencia.init_point;
+
+            const data = await response.json();
+
+            if (data.init_point) {
+                window.location.href = data.init_point;
             } else {
-                alert("No se pudo iniciar la preferencia de pago.");
+                alert('No se pudo iniciar la suscripción: ' + (data.error || 'Error del servidor'));
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
             }
-        } catch (err) {
-            console.error("Error de Mercado Pago:", err);
+        } catch (error) {
+            console.error('Error al procesar el pago:', error);
+            alert('Error de conexión con el servidor de pagos.');
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
         }
     }
 
-  // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
+    // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
     async function cargarHistorial() {
         const token = localStorage.getItem("access_token");
         const tbody = document.getElementById("tablaHistorialBody");
@@ -771,13 +828,12 @@ async function verificarEstadoSuscripcion() {
                 headers: { "Authorization": `Bearer ${token}` }
             });
 
-            // SI EL BACKEND DEVUELVE 402 (Falta de Pago), REDIRIGIMOS AL PAGO
             if (response.status === 402) {
                 console.warn("Suscripción inactiva detectada. Redirigiendo a pago...");
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center text-warning">Suscripción requerida. Redirigiendo a Mercado Pago...</td></tr>`;
-                
-                // Disparamos automáticamente la creación de la preferencia y redirección
-                await iniciarPagoMercadoPago(token);
+                // NOTA: Cambié iniciarPagoMercadoPago por pagarSuscripcionMensual que es la función correcta que tenías definida
+                const btnFakeEvent = { target: { innerHTML: '', disabled: false } };
+                await pagarSuscripcionMensual(btnFakeEvent);
                 return;
             }
 
@@ -816,109 +872,32 @@ async function verificarEstadoSuscripcion() {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
         }
     }
-    
-    function mostrarSeccion(idSeccion, evento) {
 
-    if (evento) evento.preventDefault();
-    
-    // Ocultar todas las secciones
-    document.querySelectorAll('.seccion-app').forEach(s => s.style.display = 'none');
-    
-    // Mostrar la seleccionada
-    document.getElementById(idSeccion).style.display = 'block';
-    
-    // Cambiar clases activas en el menú lateral
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active', 'bg-secondary'));
-    if (evento && evento.currentTarget) {
-        evento.currentTarget.classList.add('active', 'bg-secondary');
-    }
-
-    // Si entra a historial, cargamos los datos automáticamente
-    if (idSeccion === 'seccion-historial') {
-        cargarHistorial();
-    }
-}
-
-function mostrarSeccion(idSeccion, event) {
-    if (event) event.preventDefault();
-    
-    // Ocultar todas las secciones
-    const secciones = document.querySelectorAll('.seccion-app');
-    secciones.forEach(sec => sec.style.display = 'none');
-    
-    // Mostrar la sección seleccionada
-    const seccionActiva = document.getElementById(idSeccion);
-    if (seccionActiva) seccionActiva.style.display = 'block';
-
-    // Actualizar clase 'active' en el menú de navegación
-    const links = document.querySelectorAll('.nav-link');
-    links.forEach(link => link.classList.remove('active', 'bg-secondary'));
-    
-    if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
-        event.currentTarget.classList.add('active', 'bg-secondary');
-    }
-}
-
-// Función para procesar el pago con Mercado Pago
-async function pagarSuscripcionMensual(e) {
-    const btn = e.target;
-    const textoOriginal = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando...';
-
-    try {
-        const response = await fetch('/api/crear-preapproval-mp', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
-            body: JSON.stringify({ 
-                monto: 500000,
-                frecuencia: 1,
-                tipo_frecuencia: "months",
-                descripcion: "Suscripción Mensual SaaS Legal ($500.000 ARS)"
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.init_point) {
-            window.location.href = data.init_point;
-        } else {
-            alert('No se pudo iniciar la suscripción: ' + (data.error || 'Error del servidor'));
-            btn.disabled = false;
-            btn.innerHTML = textoOriginal;
-        }
-    } catch (error) {
-        console.error('Error al procesar el pago:', error);
-        alert('Error de conexión con el servidor de pagos.');
-        btn.disabled = false;
-        btn.innerHTML = textoOriginal;
-    }
-}
-
-
-        if (evento) evento.preventDefault();
-         ba6f3a91c0ebbfb0165a367ed96fad71ad6fc7f1
+    // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
+    function mostrarSeccion(idSeccion, event) {
+        if (event) event.preventDefault();
         
         // Ocultar todas las secciones
-        document.querySelectorAll('.seccion-app').forEach(s => s.style.display = 'none');
+        const secciones = document.querySelectorAll('.seccion-app');
+        secciones.forEach(sec => sec.style.display = 'none');
         
-        // Mostrar la seleccionada
-        document.getElementById(idSeccion).style.display = 'block';
+        // Mostrar la sección seleccionada
+        const seccionActiva = document.getElementById(idSeccion);
+        if (seccionActiva) seccionActiva.style.display = 'block';
+
+        // Actualizar clase 'active' en el menú de navegación
+        const links = document.querySelectorAll('.nav-link');
+        links.forEach(link => link.classList.remove('active', 'bg-secondary'));
         
-        // Cambiar clases activas en el menú lateral
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active', 'bg-secondary'));
-        if (evento && evento.currentTarget) {
-            evento.currentTarget.classList.add('active', 'bg-secondary');
+        if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
+            event.currentTarget.classList.add('active', 'bg-secondary');
         }
 
         // Si entra a historial, cargamos los datos automáticamente
         if (idSeccion === 'seccion-historial') {
             cargarHistorial();
         }
-    
+    }
 </script>
 </body>
 </html>
