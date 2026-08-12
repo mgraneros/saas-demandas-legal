@@ -196,7 +196,7 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
 def generar_demanda(
     datos: schemas.DatosDemanda, 
     request: Request, 
-    background_tasks: BackgroundTasks, # 👈 1. INYECTAMOS LA DEPENDENCIA AQUÍ
+    background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db), 
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
@@ -223,15 +223,22 @@ def generar_demanda(
             detail="Tu suscripción mensual ha expirado. Por favor, actualizá tu pago para recuperar el acceso ilimitado."
         )
 
+    # 2. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO (NUESTRO CÓDIGO)
+    diccionario_plantillas = {
+        "auto_moto": 1,
+        "auto_auto": 2
+    }
+    plantilla_seleccionada = diccionario_plantillas.get(datos.TipoDemanda, 1)
+
     plantilla = db.query(models.Plantilla).filter(
-        models.Plantilla.id == datos.plantilla_id,
+        models.Plantilla.id == plantilla_seleccionada,
         models.Plantilla.activa == True
     ).first()
 
     if not plantilla or not os.path.exists(plantilla.ruta_archivo):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"La plantilla especificada (ID: {datos.plantilla_id}) no existe o el archivo base no está disponible."
+            detail=f"La plantilla especificada (ID: {plantilla_seleccionada}) no existe o el archivo base no está disponible."
         )
 
     carpeta_salida = "demandas_generadas"
@@ -240,6 +247,7 @@ def generar_demanda(
     nombre_limpio = datos.NombreActor.replace(' ', '_')
     ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
 
+    # 3. CÁLCULOS MATEMÁTICOS
     valor_punto = 2000000.0
     incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
     dano_moral = incapacidad_fisica * 0.33
@@ -266,8 +274,7 @@ def generar_demanda(
         PARRAFOS_COMPETENCIA[1]
     )
 
- # 5. MAPEO DE VARIABLES E INYECCIÓN
-    
+    # 4. MAPEO DE VARIABLES E INYECCIÓN (CON LOS NUEVOS CAMPOS)
     if datos.ListaDocumental:
         lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
     else:
@@ -297,6 +304,7 @@ def generar_demanda(
         
         "DomicilioActor": datos.DomicilioActor,
         "NombreDemandado": datos.NombreDemandado,
+        "DniDemandado": datos.DniDemandado,
         "DomicilioDemandado": datos.DomicilioDemandado,
         "AutoDemandado": datos.AutoDemandado,
         "FechaHecho": datos.FechaHecho,
@@ -315,7 +323,9 @@ def generar_demanda(
         "CentroMedico": datos.CentroMedico,
         "CentroMedicoDireccion": datos.CentroMedicoDireccion,
         "LugarHecho": datos.LugarHecho,
-        "FechaPresupuesto": datos.FechaPresupuesto
+        "FechaPresupuesto": datos.FechaPresupuesto,
+        "FechaMedica": datos.FechaMedica,
+        "PorcentajeDanoPsicologico": datos.PorcentajeDanoPsicologico
     }
 
     try:
@@ -359,7 +369,7 @@ def generar_demanda(
         )
         db.add(nuevo_log)
 
-# Guardar todas las operaciones juntas (Transacción Atómica)
+        # Guardar todas las operaciones juntas (CÓDIGO DE TU COMPAÑERO)
         db.commit()
         db.refresh(nueva_demanda)
 
@@ -375,246 +385,6 @@ def generar_demanda(
             print("📧 Correo ejecutado síncronamente con éxito.")
         except Exception as mail_err:
             print(f"❌ Error al intentar disparar el correo: {mail_err}")
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error interno al procesar la demanda: {str(e)}")
-
-    return FileResponse(
-        path=ruta_salida,
-        filename=f"demanda_{nombre_limpio}.docx",
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
-
-
-@app.get("/mis-demandas", summary="Listar todas las demandas generadas por el usuario actual")
-def listar_mis_demandas(
-    db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
-):
-    # Consultamos las demandas filtradas por el ID del usuario logueado
-    demandas = db.query(models.DemandaGenerada).filter(
-        models.DemandaGenerada.usuario_id == current_user.id
-    ).all()
-
-    lista_demandas = []
-    for d in demandas:
-        lista_demandas.append({
-            "id": d.id,
-            "nombre_actor": getattr(d, "nombre_actor", "Sin nombre"),
-            "dni_actor": getattr(d, "dni_actor", "-"),
-            "estado_operativo": getattr(d, "estado_operativo", "Generada"),
-            "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"http://127.0.0.1:8000/descargar-demanda/{d.id}"
-        })
-
-    return {
-        "cantidad": len(demandas),
-        "demandas": lista_demandas
-    }
-
-@app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas del usuario con filtros y paginación")
-def obtener_historial(
-    limit: int = 10,
-    skip: int = 0,
-    nombre_actor: Optional[str] = None,
-    dni_actor: Optional[int] = None,
-    db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
-):
-    """
-    Devuelve las demandas del usuario autenticado de forma paginada y filtrable.
-    
-    - **limit**: Cantidad de registros por página (por defecto 10).
-    - **skip**: Cantidad de registros a saltar/omitir (para avanzar de página).
-    - **nombre_actor**: Búsqueda parcial por nombre del actor.
-    - **dni_actor**: Búsqueda por DNI exacto.
-    """
-    query = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.usuario_id == current_user.id)
-
-    if nombre_actor:
-        query = query.filter(models.DemandaGenerada.nombre_actor.ilike(f"%{nombre_actor}%"))
-
-    if dni_actor:
-        query = query.filter(models.DemandaGenerada.dni_actor == dni_actor)
-
-    demandas = query.order_by(models.DemandaGenerada.fecha_creacion.desc()).offset(skip).limit(limit).all()
-
-    return demandas
-
-@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
-def generar_demanda(
-    datos: schemas.DatosDemanda, 
-    request: Request, 
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db), 
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
-):
-    # 1. VERIFICAR Y CONSULTAR LA SUSCRIPCIÓN DEL USUARIO
-    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
-
-    # Si por alguna razón el usuario no tiene registro de suscripción, le creamos la "Free" por defecto
-    if not suscripcion:
-        suscripcion = models.Suscripcion(usuario_id=current_user.id, plan="Free", demandas_restantes=3)
-        db.add(suscripcion)
-        db.commit()
-        db.refresh(suscripcion)
-
-    # Validar que le queden demandas
-    if suscripcion.demandas_restantes <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Has alcanzado el límite de demandas de tu plan. Actualizá tu suscripción para continuar."
-        )
-
-    # 2. BUSCAR LA PLANTILLA EN LA BASE DE DATOS
-    plantilla = db.query(models.Plantilla).filter(
-        models.Plantilla.id == datos.plantilla_id,
-        models.Plantilla.activa == True
-    ).first()
-
-    if not plantilla or not os.path.exists(plantilla.ruta_archivo):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"La plantilla especificada (ID: {datos.plantilla_id}) no existe o el archivo base no está disponible."
-        )
-
-    # 3. PREPARACIÓN DE CARPETAS Y RUTAS
-    carpeta_salida = "demandas_generadas"
-    os.makedirs(carpeta_salida, exist_ok=True)
-
-    nombre_limpio = datos.NombreActor.replace(' ', '_')
-    ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
-
-    # 4. LÓGICA MATEMÁTICA Y DERECHO DUREZA
-    valor_punto = 2000000.0
-    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
-    dano_moral = incapacidad_fisica * 0.33
-    dano_psicologico = incapacidad_fisica * 0.15
-    gastos_farmacia = 1500000.0
-    gastos_medicos = 2000000.0
-    
-    liquidacion_total = (
-        datos.LiquiDanoMaterialNum + 
-        incapacidad_fisica + 
-        dano_moral + 
-        dano_psicologico + 
-        gastos_farmacia + 
-        gastos_medicos
-    )
-
-    texto_competencia = PARRAFOS_COMPETENCIA.get(
-        datos.OpcionCompetencia, 
-        PARRAFOS_COMPETENCIA[1]
-    )
-
-    # 5. MAPEO DE VARIABLES E INYECCIÓN
-    # Convertimos el texto separado por comas en una lista de Python
-    if datos.ListaDocumental:
-        lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
-    else:
-        lista_doc_limpia = []
-    datos_procesados = {
-        "NombreActor": datos.NombreActor,
-        "DniActor": f"{datos.DniActor:,}".replace(",", "."),
-        "ParrafoCompetencia": texto_competencia,
-        "PuntosdeIncapacidad": str(datos.PuntosdeIncapacidad),
-        "IncapacidadFisicaPorcentaje": f"{datos.PuntosdeIncapacidad}%",
-        
-        "LiquiDanoMaterialNum": formatear_moneda(datos.LiquiDanoMaterialNum),
-        "LiquiDanoMaterialLetras": monto_a_letras_legal(datos.LiquiDanoMaterialNum),
-        "LiquiIncapacidadFisicaNum": formatear_moneda(incapacidad_fisica),
-        "LiquiIncapacidadFisicaLetras": monto_a_letras_legal(incapacidad_fisica),
-        "LiquiDanoMoralNum": formatear_moneda(dano_moral),
-        "LiquiDanoMoralLetras": monto_a_letras_legal(dano_moral),
-        "LiquiDanoPsicologicoNum": formatear_moneda(dano_psicologico),
-        "LiquiDanoPsicologicoLetras": monto_a_letras_legal(dano_psicologico),
-        "LiquiGastosFarmaciaNum": formatear_moneda(gastos_farmacia),
-        "LiquiGastosFarmaciaLetras": monto_a_letras_legal(gastos_farmacia),
-        "LiquiGastosMedicosNum": formatear_moneda(gastos_medicos),
-        "LiquiGastosMedicosLetras": monto_a_letras_legal(gastos_medicos),
-        "LiquiTotalNum": formatear_moneda(liquidacion_total),
-        "LiquiTotalLetras": monto_a_letras_legal(liquidacion_total),
-        
-        "DomicilioActor": datos.DomicilioActor,
-        "NombreDemandado": datos.NombreDemandado,
-        "DomicilioDemandado": datos.DomicilioDemandado,
-        "AutoDemandado": datos.AutoDemandado,
-        "FechaHecho": datos.FechaHecho,
-        "NombreAseguradora": datos.NombreAseguradora,
-        "CuitAseguradora": datos.CuitAseguradora,
-        "DomicilioAseguradora": datos.DomicilioAseguradora,
-        "DescripcionHechos": datos.DescripcionHechos,
-        "LesionesDetalles": datos.LesionesDetalles,
-        "ListadoSecuelas": datos.ListadoSecuelas,
-        "VehiculoActor": datos.VehiculoActor,
-        "TallerNombre": datos.TallerNombre,
-        "DirecciónTaller": datos.DirecciónTaller,
-        "ListaDocumental": lista_doc_limpia,
-        
-        "CentroMedico": datos.CentroMedico,
-        "CentroMedicoDireccion": datos.CentroMedicoDireccion,
-        "LugarHecho": datos.LugarHecho,
-        "FechaPresupuesto": datos.FechaPresupuesto
-    }
-    try:
-        # Usamos la ruta recuperada desde la Base de Datos
-        doc = DocxTemplate(plantilla.ruta_archivo)
-
-        ruta_logo = "assets/logo_defecto.png"
-        logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40)) if os.path.exists(ruta_logo) else ""
-        datos_procesados["logo_estudio"] = logo_imagen
-
-        doc.render(datos_procesados)
-        doc.save(ruta_salida)
-
-        # 6. PERSISTENCIA EN BD, DESCUENTO DE CRÉDITOS Y AUDITORÍA
-        ip_cliente = request.client.host if request.client else "Desconocida"
-        user_agent_cliente = request.headers.get("user-agent", "Desconocido")
-
-        try:
-            dni_val = int(datos.DniActor) if hasattr(datos, "DniActor") and datos.DniActor else None
-        except (ValueError, TypeError):
-            dni_val = None
-
-        # a) Guardar la demanda vinculada
-        nueva_demanda = models.DemandaGenerada(
-            usuario_id=current_user.id,
-            plantilla_id=plantilla.id, # 👈 Guardamos el ID de la plantilla usada
-            dni_actor=dni_val,
-            nombre_actor=datos.NombreActor,
-            estado_operativo="Generada",
-            ip_origen=ip_cliente,
-            user_agent=user_agent_cliente
-        )
-        db.add(nueva_demanda)
-
-        # b) Descontar 1 demanda de la suscripción
-        suscripcion.demandas_restantes -= 1
-
-        # c) Registrar log de auditoría
-        nuevo_log = models.AuditoriaLog(
-            usuario_id=current_user.id,
-            accion="GENERAR_DEMANDA",
-            ip_origen=ip_cliente,
-            detalles=f"Demanda para {datos.NombreActor} generada con plantilla ID {plantilla.id}. Restantes: {suscripcion.demandas_restantes}"
-        )
-        db.add(nuevo_log)
-
-        # Guardar todas las operaciones juntas (Transacción Atómica)
-        db.commit()
-        db.refresh(nueva_demanda)
-
-        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} generada. Créditos restantes de Usuario #{current_user.id}: {suscripcion.demandas_restantes}")
-
-        # 🚀 Envío en segundo plano para que la API responda al instante
-        background_tasks.add_task(
-            enviar_correo,
-            destinatario=current_user.email,
-            asunto="Tu demanda legal ha sido generada",
-            contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto encontrarás el documento de tu demanda.</p>",
-            ruta_adjunto=ruta_salida
-        )
 
     except Exception as e:
         db.rollback()
@@ -752,6 +522,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
             "4_PRUEBA_Y_ATENCION": {
                 "CentroMedico": datos.CentroMedico,
                 "CentroMedicoDireccion": datos.CentroMedicoDireccion,
+                "FechaMedica": datos.FechaMedica,
                 "TallerNombre": datos.TallerNombre,
                 "DirecciónTaller": datos.DirecciónTaller,
                 "FechaPresupuesto": datos.FechaPresupuesto,
@@ -765,6 +536,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
                 "Incapacidad_Fisica_Calculada": formatear_moneda(incapacidad_fisica),
                 "Daño_Moral_Calculado": formatear_moneda(dano_moral),
                 "Daño_Psicologico_Calculado": formatear_moneda(dano_psicologico),
+                "Porcentaje_Psicologico_Ingresado": datos.PorcentajeDanoPsicologico,
                 "Gastos_Farmacia_Fijos": formatear_moneda(gastos_farmacia),
                 "Gastos_Medicos_Fijos": formatear_moneda(gastos_medicos),
                 "LIQUIDACION_TOTAL_NUM": formatear_moneda(liquidacion_total),
@@ -1223,38 +995,29 @@ def cambiar_estado_plantilla(
 @app.post("/extraer-datos-acta/", summary="Extraer datos del acta de mediación con IA")
 async def extraer_datos_acta(
     archivo: UploadFile = File(...),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)  # <-- Cambio clave aplicado aquí
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
+    print(f"\n▶️ [DEBUG IA] 1. Recibiendo archivo: {archivo.filename}")
     try:
-        # 1. Leer el archivo subido en memoria
         contenido_archivo = await archivo.read()
-        
-        # --- NUEVA VALIDACIÓN DE TAMAÑO MÁXIMO (5 MB) ---
-        MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB en bytes
+        MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB
         
         if len(contenido_archivo) > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="El archivo es demasiado grande. El límite máximo es de 5 MB."
-            )
-        # ------------------------------------------------
+            print("❌ [DEBUG IA] Archivo supera los 5MB.")
+            raise HTTPException(status_code=413, detail="El archivo es demasiado grande (Máximo 5 MB).")
 
-        # 2. Determinar el tipo MIME para Gemini
         mime_type = archivo.content_type
+        print(f"▶️ [DEBUG IA] 2. Tipo de archivo detectado: {mime_type}")
         
-        # Extensiones soportadas por Gemini para visión directa
         formatos_soportados = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
-        
         if mime_type not in formatos_soportados:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Formato no soportado. Sube un PDF o una imagen (JPG, PNG)."
-            )
+            print("❌ [DEBUG IA] Formato no soportado.")
+            raise HTTPException(status_code=400, detail="Formato no soportado. Sube un PDF o imagen.")
 
-        # 3. Preparar el modelo de IA
+        print("▶️ [DEBUG IA] 3. Conectando con Gemini (modelo gemini-1.5-flash)...")
+        # Usamos el nombre del modelo más estable de Google
         modelo = genai.GenerativeModel('gemini-flash-latest')
         
-        # 4. Diseñar el Prompt con los datos exactos que necesitas
         prompt = """
         Eres un asistente legal experto en analizar actas de mediación.
         Lee el documento adjunto y extrae EXCLUSIVAMENTE los siguientes datos.
@@ -1280,15 +1043,17 @@ async def extraer_datos_acta(
         Asegúrate de limpiar los números de DNI y CUIT quitando puntos si los tuvieran.
         """
 
-        # 5. Enviar el archivo y el prompt a Gemini
-        respuesta = modelo.generate_content([
+        # 5. Enviar a Gemini
+        respuesta = await modelo.generate_content_async([
             {"mime_type": mime_type, "data": contenido_archivo}, 
             prompt
         ])
+        
+        print("✅ [DEBUG IA] 4. ¡Respuesta de Gemini recibida con éxito!")
 
-        # 6. Limpiar la respuesta por si la IA devuelve caracteres residuales y convertir a JSON
         texto_limpio = respuesta.text.replace("```json", "").replace("```", "").strip()
         datos_extraidos = json.loads(texto_limpio)
+        print("✅ [DEBUG IA] 5. JSON procesado correctamente.")
 
         return {
             "status": "success",
@@ -1297,15 +1062,11 @@ async def extraer_datos_acta(
         }
 
     except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=500, 
-            detail="La IA no devolvió un formato JSON válido. Intenta nuevamente."
-        )
+        print("❌ [DEBUG IA] Error: La respuesta de la IA no era un JSON válido.")
+        raise HTTPException(status_code=500, detail="La IA no devolvió un formato JSON válido. Intenta nuevamente.")
     except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Error interno al procesar el acta con IA: {str(e)}"
-        )
+        print(f"❌ [DEBUG IA] Error crítico: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno al procesar el acta con IA: {str(e)}")
         
 @app.get("/modelos-ia", summary="Listar modelos permitidos por mi API Key")
 def listar_modelos():
@@ -1462,3 +1223,240 @@ def resetear_password(
     db.commit()
 
     return {"mensaje": "Contraseña actualizada exitosamente. Ya puedes iniciar sesión."}
+@app.get("/mis-demandas", summary="Listar todas las demandas generadas por el usuario actual")
+def listar_mis_demandas(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
+):
+    demandas = db.query(models.DemandaGenerada).filter(
+        models.DemandaGenerada.usuario_id == current_user.id
+    ).all()
+
+    lista_demandas = []
+    for d in demandas:
+        lista_demandas.append({
+            "id": d.id,
+            "nombre_actor": getattr(d, "nombre_actor", "Sin nombre"),
+            "dni_actor": getattr(d, "dni_actor", "-"),
+            "estado_operativo": getattr(d, "estado_operativo", "Generada"),
+            "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
+            "download_url": f"http://127.0.0.1:8000/descargar-demanda/{d.id}"
+        })
+
+    return {
+        "cantidad": len(demandas),
+        "demandas": lista_demandas
+    }
+
+
+@app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas del usuario")
+def obtener_historial(
+    limit: int = 10,
+    skip: int = 0,
+    nombre_actor: Optional[str] = None,
+    dni_actor: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
+):
+    query = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.usuario_id == current_user.id)
+
+    if nombre_actor:
+        query = query.filter(models.DemandaGenerada.nombre_actor.ilike(f"%{nombre_actor}%"))
+    if dni_actor:
+        query = query.filter(models.DemandaGenerada.dni_actor == dni_actor)
+
+    demandas = query.order_by(models.DemandaGenerada.fecha_creacion.desc()).offset(skip).limit(limit).all()
+    return demandas
+
+
+@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
+def generar_demanda(
+    datos: schemas.DatosDemanda, 
+    request: Request, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db), 
+    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
+):
+    # 1. VERIFICAR SUSCRIPCIÓN
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
+
+    if not suscripcion or not suscripcion.activa:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No posees una suscripción activa o se encuentra inactiva."
+        )
+
+    if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
+        suscripcion.activa = False
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu suscripción mensual ha expirado."
+        )
+
+    # 2. SELECCIÓN DE PLANTILLA
+    diccionario_plantillas = {
+        "auto_moto": 1,
+        "auto_auto": 2
+    }
+    plantilla_seleccionada = diccionario_plantillas.get(datos.TipoDemanda, 1)
+
+    plantilla = db.query(models.Plantilla).filter(
+        models.Plantilla.id == plantilla_seleccionada,
+        models.Plantilla.activa == True
+    ).first()
+
+    if not plantilla or not os.path.exists(plantilla.ruta_archivo):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"La plantilla (ID: {plantilla_seleccionada}) no existe o no está disponible."
+        )
+
+    carpeta_salida = "demandas_generadas"
+    os.makedirs(carpeta_salida, exist_ok=True)
+    nombre_limpio = datos.NombreActor.replace(' ', '_')
+    ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
+
+    # 3. CÁLCULOS MATEMÁTICOS
+    valor_punto = 2000000.0
+    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
+    dano_moral = incapacidad_fisica * 0.33
+    dano_psicologico = incapacidad_fisica * 0.15
+    gastos_farmacia = 1500000.0
+    gastos_medicos = 2000000.0
+    
+    liquidacion_total = (
+        datos.LiquiDanoMaterialNum + 
+        incapacidad_fisica + 
+        dano_moral + 
+        dano_psicologico + 
+        gastos_farmacia + 
+        gastos_medicos
+    )
+
+    try:
+        opcion_comp_int = int(datos.OpcionCompetencia)
+    except ValueError:
+        opcion_comp_int = 1
+
+    texto_competencia = PARRAFOS_COMPETENCIA.get(opcion_comp_int, PARRAFOS_COMPETENCIA[1])
+
+    if datos.ListaDocumental:
+        lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
+    else:
+        lista_doc_limpia = []
+
+    # 4. MAPEO DE VARIABLES E INYECCIÓN
+    datos_procesados = {
+        "NombreActor": datos.NombreActor,
+        "DniActor": f"{datos.DniActor:,}".replace(",", "."),
+        "ParrafoCompetencia": texto_competencia,
+        "PuntosdeIncapacidad": str(datos.PuntosdeIncapacidad),
+        "IncapacidadFisicaPorcentaje": f"{datos.PuntosdeIncapacidad}%",
+        
+        "LiquiDanoMaterialNum": formatear_moneda(datos.LiquiDanoMaterialNum),
+        "LiquiDanoMaterialLetras": monto_a_letras_legal(datos.LiquiDanoMaterialNum),
+        "LiquiIncapacidadFisicaNum": formatear_moneda(incapacidad_fisica),
+        "LiquiIncapacidadFisicaLetras": monto_a_letras_legal(incapacidad_fisica),
+        "LiquiDanoMoralNum": formatear_moneda(dano_moral),
+        "LiquiDanoMoralLetras": monto_a_letras_legal(dano_moral),
+        "LiquiDanoPsicologicoNum": formatear_moneda(dano_psicologico),
+        "LiquiDanoPsicologicoLetras": monto_a_letras_legal(dano_psicologico),
+        "LiquiGastosFarmaciaNum": formatear_moneda(gastos_farmacia),
+        "LiquiGastosFarmaciaLetras": monto_a_letras_legal(gastos_farmacia),
+        "LiquiGastosMedicosNum": formatear_moneda(gastos_medicos),
+        "LiquiGastosMedicosLetras": monto_a_letras_legal(gastos_medicos),
+        "LiquiTotalNum": formatear_moneda(liquidacion_total),
+        "LiquiTotalLetras": monto_a_letras_legal(liquidacion_total),
+        
+        "DomicilioActor": datos.DomicilioActor,
+        "NombreDemandado": datos.NombreDemandado,
+        "DniDemandado": datos.DniDemandado,
+        "DomicilioDemandado": datos.DomicilioDemandado,
+        "AutoDemandado": datos.AutoDemandado,
+        "FechaHecho": datos.FechaHecho,
+        "NombreAseguradora": datos.NombreAseguradora,
+        "CuitAseguradora": datos.CuitAseguradora,
+        "DomicilioAseguradora": datos.DomicilioAseguradora,
+        "DescripcionHechos": datos.DescripcionHechos,
+        "LesionesDetalles": datos.LesionesDetalles,
+        "ListadoSecuelas": datos.ListadoSecuelas,
+        "VehiculoActor": datos.VehiculoActor,
+        "TallerNombre": datos.TallerNombre,
+        "DirecciónTaller": datos.DirecciónTaller,
+        
+        "ListaDocumental": lista_doc_limpia,
+        
+        "CentroMedico": datos.CentroMedico,
+        "CentroMedicoDireccion": datos.CentroMedicoDireccion,
+        "LugarHecho": datos.LugarHecho,
+        "FechaPresupuesto": datos.FechaPresupuesto,
+        "FechaMedica": datos.FechaMedica,
+        "PorcentajeDanoPsicologico": datos.PorcentajeDanoPsicologico
+    }
+
+    try:
+        doc = DocxTemplate(plantilla.ruta_archivo)
+        ruta_logo = "assets/logo_defecto.png"
+        logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40)) if os.path.exists(ruta_logo) else ""
+        datos_procesados["logo_estudio"] = logo_imagen
+
+        doc.render(datos_procesados)
+        doc.save(ruta_salida)
+
+        ip_cliente = request.client.host if request.client else "Desconocida"
+        user_agent_cliente = request.headers.get("user-agent", "Desconocido")
+
+        try:
+            dni_val = int(datos.DniActor) if datos.DniActor else None
+        except (ValueError, TypeError):
+            dni_val = None
+
+        nueva_demanda = models.DemandaGenerada(
+            usuario_id=current_user.id,
+            plantilla_id=plantilla.id,
+            dni_actor=dni_val,
+            nombre_actor=datos.NombreActor,
+            estado_operativo="Generada",
+            ip_origen=ip_cliente,
+            user_agent=user_agent_cliente,
+            archivo_generado=ruta_salida
+        )
+        db.add(nueva_demanda)
+
+        if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
+            suscripcion.demandas_restantes -= 1
+
+        nuevo_log = models.AuditoriaLog(
+            usuario_id=current_user.id,
+            accion="GENERAR_DEMANDA",
+            ip_origen=ip_cliente,
+            detalles=f"Demanda para {datos.NombreActor} generada."
+        )
+        db.add(nuevo_log)
+        db.commit()
+        db.refresh(nueva_demanda)
+
+        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} generada.")
+
+        # ENVÍO DE CORREO (Trabajo de tu compañero)
+        try:
+            enviar_correo(
+                destinatario=current_user.email,
+                asunto="Tu demanda legal ha sido generada",
+                contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento.</p>",
+                ruta_adjunto=ruta_salida
+            )
+            print("📧 Correo ejecutado síncronamente con éxito.")
+        except Exception as mail_err:
+            print(f"❌ Error al intentar disparar el correo: {mail_err}")
+
+        return FileResponse(
+            path=ruta_salida,
+            filename=f"demanda_{nombre_limpio}.docx",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno al procesar la demanda: {str(e)}")

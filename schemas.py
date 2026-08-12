@@ -44,6 +44,7 @@ class TokenData(BaseModel):
 
 class DatosDemanda(BaseModel):
     plantilla_id: int = 1
+    TipoDemanda: Optional[str] = "auto_moto"  # <-- NUEVO CAMPO
     
     # 1. Datos del Actor
     NombreActor: str
@@ -53,6 +54,7 @@ class DatosDemanda(BaseModel):
     
     # 2. Datos Demandado y Seguro
     NombreDemandado: str
+    DniDemandado: Optional[str] = ""  # <-- NUEVO CAMPO
     DomicilioDemandado: str
     AutoDemandado: str
     NombreAseguradora: str
@@ -71,6 +73,7 @@ class DatosDemanda(BaseModel):
     Intervencion: str
     CentroMedico: str
     CentroMedicoDireccion: str
+    FechaMedica: Optional[str] = ""  # <-- NUEVO CAMPO
     TallerNombre: str
     DirecciónTaller: str
     FechaPresupuesto: str

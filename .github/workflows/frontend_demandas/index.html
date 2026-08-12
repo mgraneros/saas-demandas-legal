@@ -638,56 +638,57 @@
         }
     }
 
-    function obtenerPayloadFormulario() {
-        const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
-        const danoPsico = document.querySelector('input[name="dano_psicologico"]:checked')?.value || "";
-        const intervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "";
-        const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value).join(', ');
+function obtenerPayloadFormulario() {
+    const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
+    // CAPTURAR EL PORCENTAJE PSICOLÓGICO DESDE LOS RADIO BUTTONS
+    const danoPsico = document.querySelector('input[name="dano_psicologico"]:checked')?.value || "";
+    const intervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "";
+    const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value).join(', ');
 
-        return {
-            // CAPTURAR EL TIPO DE DEMANDA SELECCIONADA
-            "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
+    return {
+        // CAPTURAR EL TIPO DE DEMANDA SELECCIONADA
+        "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
 
-            "NombreActor": document.getElementById("NombreActor").value,
-            "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
-            "DomicilioActor": document.getElementById("DomicilioActor").value,
-            "VehiculoActor": document.getElementById("VehiculoActor").value,
-            
-            "NombreDemandado": document.getElementById("NombreDemandado").value,
-            "DniDemandado": document.getElementById("DniDemandado") ? document.getElementById("DniDemandado").value : "",
-            "DomicilioDemandado": document.getElementById("DomicilioDemandado").value,
-            "AutoDemandado": document.getElementById("AutoDemandado").value,
-            "NombreAseguradora": document.getElementById("NombreAseguradora").value,
-            "CuitAseguradora": document.getElementById("CuitAseguradora").value,
-            "DomicilioAseguradora": document.getElementById("DomicilioAseguradora").value,
-            
-            "FechaHecho": document.getElementById("FechaHecho").value,
-            "LugarHecho": document.getElementById("LugarHecho").value,
-            "DescripcionHechos": document.getElementById("DescripcionHechos").value,
-            
-            "TipoLesion": tipoLesion,
-            "PorcentajeDanoPsicologico": danoPsico,
-            "LesionesDetalles": document.getElementById('LesionesDetalles').value,
-            "ListadoSecuelas": document.getElementById("ListadoSecuelas").value,
-            "Intervencion": intervencion,
-            
-            "CentroMedico": document.getElementById("CentroMedico").value,
-            "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
-            
-            // CAPTURAR LA FECHA MÉDICA SI EXISTE
-            "FechaMedica": document.getElementById("FechaMedica") ? document.getElementById("FechaMedica").value : "",
-            
-            "TallerNombre": document.getElementById("TallerNombre").value,
-            "DirecciónTaller": document.getElementById("DirecciónTaller").value,
-            "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
-            
-            "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
-            
-            "ListaDocumental": documentosSeleccionados,
-            "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
-            "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
-        };
-    }
+        "NombreActor": document.getElementById("NombreActor").value,
+        "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
+        "DomicilioActor": document.getElementById("DomicilioActor").value,
+        "VehiculoActor": document.getElementById("VehiculoActor").value,
+        
+        "NombreDemandado": document.getElementById("NombreDemandado").value,
+        "DniDemandado": document.getElementById("DniDemandado") ? document.getElementById("DniDemandado").value : "",
+        "DomicilioDemandado": document.getElementById("DomicilioDemandado").value,
+        "AutoDemandado": document.getElementById("AutoDemandado").value,
+        "NombreAseguradora": document.getElementById("NombreAseguradora").value,
+        "CuitAseguradora": document.getElementById("CuitAseguradora").value,
+        "DomicilioAseguradora": document.getElementById("DomicilioAseguradora").value,
+        
+        "FechaHecho": document.getElementById("FechaHecho").value,
+        "LugarHecho": document.getElementById("LugarHecho").value,
+        "DescripcionHechos": document.getElementById("DescripcionHechos").value,
+        
+        "TipoLesion": tipoLesion,
+        "PorcentajeDanoPsicologico": danoPsico,
+        "LesionesDetalles": document.getElementById('LesionesDetalles').value,
+        "ListadoSecuelas": document.getElementById("ListadoSecuelas").value,
+        "Intervencion": intervencion,
+        
+        "CentroMedico": document.getElementById("CentroMedico").value,
+        "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
+        
+        // CAPTURAR LA FECHA MÉDICA SI EXISTE
+        "FechaMedica": document.getElementById("FechaMedica") ? document.getElementById("FechaMedica").value : "",
+        
+        "TallerNombre": document.getElementById("TallerNombre").value,
+        "DirecciónTaller": document.getElementById("DirecciónTaller").value,
+        "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
+        
+        "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
+        
+        "ListaDocumental": documentosSeleccionados,
+        "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
+        "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
+    };
+}
 
     async function ejecutarPreview() {
         const payload = obtenerPayloadFormulario();
