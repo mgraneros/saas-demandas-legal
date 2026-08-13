@@ -278,6 +278,18 @@ def generar_demanda(
     if datos.FechaMedica and "-" in datos.FechaMedica:
         anio, mes, dia = datos.FechaMedica.split("-")
         fecha_medica_formateada = f"{dia}/{mes}/{anio}"
+        
+    # Formatear la Fecha Presupuesto de AAAA-MM-DD a DD/MM/AAAA
+    fecha_presupuesto_formateada = datos.FechaPresupuesto
+    if datos.FechaPresupuesto and "-" in datos.FechaPresupuesto:
+        anio_p, mes_p, dia_p = datos.FechaPresupuesto.split("-")
+        fecha_presupuesto_formateada = f"{dia_p}/{mes_p}/{anio_p}"
+        
+    # Formatear la Fecha del Hecho de AAAA-MM-DD a DD/MM/AAAA
+    fecha_hecho_formateada = datos.FechaHecho
+    if datos.FechaHecho and "-" in datos.FechaHecho:
+        anio_h, mes_h, dia_h = datos.FechaHecho.split("-")
+        fecha_hecho_formateada = f"{dia_h}/{mes_h}/{anio_h}"
 
     # 4. MAPEO DE VARIABLES E INYECCIÓN (CON LOS NUEVOS CAMPOS)
     if datos.ListaDocumental:
@@ -312,7 +324,7 @@ def generar_demanda(
         "DniDemandado": datos.DniDemandado,
         "DomicilioDemandado": datos.DomicilioDemandado,
         "AutoDemandado": datos.AutoDemandado,
-        "FechaHecho": datos.FechaHecho,
+        "FechaHecho": fecha_hecho_formateada,
         "NombreAseguradora": datos.NombreAseguradora,
         "CuitAseguradora": datos.CuitAseguradora,
         "DomicilioAseguradora": datos.DomicilioAseguradora,
@@ -328,7 +340,7 @@ def generar_demanda(
         "CentroMedico": datos.CentroMedico,
         "CentroMedicoDireccion": datos.CentroMedicoDireccion,
         "LugarHecho": datos.LugarHecho,
-        "FechaPresupuesto": datos.FechaPresupuesto,
+        "FechaPresupuesto": fecha_presupuesto_formateada,
         "FechaMedica": fecha_medica_formateada,
         "PorcentajeDanoPsicologico": datos.PorcentajeDanoPsicologico
     }
