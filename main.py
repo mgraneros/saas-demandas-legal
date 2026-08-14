@@ -273,6 +273,23 @@ def generar_demanda(
         opcion_comp_int, 
         PARRAFOS_COMPETENCIA[1]
     )
+    # Formatear la Fecha Médica de AAAA-MM-DD a DD/MM/AAAA
+    fecha_medica_formateada = datos.FechaMedica
+    if datos.FechaMedica and "-" in datos.FechaMedica:
+        anio, mes, dia = datos.FechaMedica.split("-")
+        fecha_medica_formateada = f"{dia}/{mes}/{anio}"
+        
+    # Formatear la Fecha Presupuesto de AAAA-MM-DD a DD/MM/AAAA
+    fecha_presupuesto_formateada = datos.FechaPresupuesto
+    if datos.FechaPresupuesto and "-" in datos.FechaPresupuesto:
+        anio_p, mes_p, dia_p = datos.FechaPresupuesto.split("-")
+        fecha_presupuesto_formateada = f"{dia_p}/{mes_p}/{anio_p}"
+        
+    # Formatear la Fecha del Hecho de AAAA-MM-DD a DD/MM/AAAA
+    fecha_hecho_formateada = datos.FechaHecho
+    if datos.FechaHecho and "-" in datos.FechaHecho:
+        anio_h, mes_h, dia_h = datos.FechaHecho.split("-")
+        fecha_hecho_formateada = f"{dia_h}/{mes_h}/{anio_h}"
 
     # 4. MAPEO DE VARIABLES E INYECCIÓN (CON LOS NUEVOS CAMPOS)
     if datos.ListaDocumental:
@@ -307,7 +324,7 @@ def generar_demanda(
         "DniDemandado": datos.DniDemandado,
         "DomicilioDemandado": datos.DomicilioDemandado,
         "AutoDemandado": datos.AutoDemandado,
-        "FechaHecho": datos.FechaHecho,
+        "FechaHecho": fecha_hecho_formateada,
         "NombreAseguradora": datos.NombreAseguradora,
         "CuitAseguradora": datos.CuitAseguradora,
         "DomicilioAseguradora": datos.DomicilioAseguradora,
@@ -323,8 +340,8 @@ def generar_demanda(
         "CentroMedico": datos.CentroMedico,
         "CentroMedicoDireccion": datos.CentroMedicoDireccion,
         "LugarHecho": datos.LugarHecho,
-        "FechaPresupuesto": datos.FechaPresupuesto,
-        "FechaMedica": datos.FechaMedica,
+        "FechaPresupuesto": fecha_presupuesto_formateada,
+        "FechaMedica": fecha_medica_formateada,
         "PorcentajeDanoPsicologico": datos.PorcentajeDanoPsicologico
     }
 
@@ -1172,8 +1189,8 @@ async def solicitar_recuperacion(
     
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
-        link_recuperacion = f"http://127.0.0.1:5500/.github/workflows/frontend_demandas/reset-password.html?token={token}"
-
+        link_recuperacion = f"http://localhost:3000/.github/workflows/frontend_demandas/reset-password.html?token={token}"
+        
         # 🟢 PRINT DE PRUEBA PARA VER EL LINK EN LA CONSOLA DE FASTAPI
         print(f"\n==========================================")
         print(f"🔗 LINK DE RECUPERACIÓN GENERADO:")
@@ -1383,7 +1400,7 @@ def generar_demanda(
         "ListadoSecuelas": datos.ListadoSecuelas,
         "VehiculoActor": datos.VehiculoActor,
         "TallerNombre": datos.TallerNombre,
-        "DirecciónTaller": datos.DirecciónTaller,
+        "DireccionTaller": datos.DirecciónTaller,
         
         "ListaDocumental": lista_doc_limpia,
         
@@ -1460,3 +1477,42 @@ def generar_demanda(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error interno al procesar la demanda: {str(e)}")
+    
+# ---- ASEGURATE DE QUE ESTO EMPIECE PEGADO AL MARGEN IZQUIERDO ----
+
+@app.get("/registrar-plantillas")
+def registrar_plantillas(db: Session = Depends(get_db)):
+    # Plantilla 1: Auto vs Moto
+    p1 = db.query(models.Plantilla).filter(models.Plantilla.id == 1).first()
+    if not p1:
+        nueva_p1 = models.Plantilla(
+            id=1, 
+            nombre="Auto vs Moto", 
+            categoria="Accidentes de Tránsito", 
+            descripcion="Demanda por accidente entre auto y moto",
+            ruta_archivo="templates/Borrador_Demanda_Auto_Moto.docx", 
+            activa=True
+        )
+        db.add(nueva_p1)
+    else:
+        # Actualizamos la ruta por si estaba mal cargada previamente
+        p1.ruta_archivo = "templates/Borrador_Demanda_Auto_Moto.docx"
+    
+    # Plantilla 2: Auto vs Auto
+    p2 = db.query(models.Plantilla).filter(models.Plantilla.id == 2).first()
+    if not p2:
+        nueva_p2 = models.Plantilla(
+            id=2, 
+            nombre="Auto vs Auto", 
+            categoria="Accidentes de Tránsito", 
+            descripcion="Demanda por accidente entre dos autos",
+            ruta_archivo="templates/Borrador_Demanda_Auto_Auto.docx", 
+            activa=True
+        )
+        db.add(nueva_p2)
+    else:
+        # Actualizamos la ruta por si estaba mal cargada previamente
+        p2.ruta_archivo = "templates/Borrador_Demanda_Auto_Auto.docx"
+    
+    db.commit()
+    return {"mensaje": "¡Las plantillas se registraron y actualizaron correctamente en la base de datos con la ruta 'templates/'!"}
