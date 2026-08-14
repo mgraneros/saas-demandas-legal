@@ -27,11 +27,11 @@ serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 # --- CONFIGURACIÓN DE CORREO SMTP (FASTAPI-MAIL) ---
 mail_config = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME", "tu_correo@gmail.com"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", "tu_contraseña_de_aplicacion"),
-    MAIL_FROM=os.getenv("MAIL_FROM", "tu_correo@gmail.com"),
-    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
-    MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
+    MAIL_USERNAME=os.getenv("SMTP_USER", "tu_correo@gmail.com"),
+    MAIL_PASSWORD=os.getenv("SMTP_PASSWORD", "tu_contraseña_de_aplicacion"),
+    MAIL_FROM=os.getenv("SMTP_FROM", "tu_correo@gmail.com"),
+    MAIL_PORT=int(os.getenv("SMTP_PORT", 587)),
+    MAIL_SERVER=os.getenv("SMTP_HOST", "smtp.gmail.com"),
     MAIL_STARTTLS=True,
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,

@@ -1189,8 +1189,8 @@ async def solicitar_recuperacion(
     
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
-        link_recuperacion = f"http://127.0.0.1:5500/.github/workflows/frontend_demandas/reset-password.html?token={token}"
-
+        link_recuperacion = f"http://localhost:3000/.github/workflows/frontend_demandas/reset-password.html?token={token}"
+        
         # 🟢 PRINT DE PRUEBA PARA VER EL LINK EN LA CONSOLA DE FASTAPI
         print(f"\n==========================================")
         print(f"🔗 LINK DE RECUPERACIÓN GENERADO:")
