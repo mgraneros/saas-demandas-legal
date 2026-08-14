@@ -955,12 +955,22 @@ function obtenerPayloadFormulario() {
         }
     }
     async function cargarPanelAdmin() {
-    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+    const esAdmin = localStorage.getItem("es_admin") === "true";
     const seccionAdmin = document.getElementById("seccion-admin");
 
     if (!seccionAdmin) return;
-    // Ocultamos la sección por defecto antes de verificar
+    
+    // Ocultamos la sección por defecto
     seccionAdmin.style.display = "none";
+
+    // Si hay token y la variable es_admin es verdadera, mostramos el panel
+    if (token && esAdmin) {
+        seccionAdmin.style.display = "block";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", cargarPanelAdmin);
 
     try {
         // 1. Cargar Métricas
@@ -1013,7 +1023,7 @@ function obtenerPayloadFormulario() {
     } catch (err) {
         console.error("Error al cargar el panel de admin:", err);
     }
-}
+
 
 // Función para cambiar estado desde el botón de la tabla
 async function toggleSuscripcion(usuarioId) {
