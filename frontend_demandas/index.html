@@ -806,87 +806,122 @@ function obtenerPayloadFormulario() {
     }
 
     // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
-    async function verificarEstadoSuscripcion() {
-        const token = localStorage.getItem("access_token");
-        const badge = document.getElementById("badgeSuscripcion");
-        const btnPago = document.getElementById("btn-mercadopago");
 
-        try {
-            const response = await fetch(`${API_URL}/suscripcion/estado`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+// Al cargar la página, verificamos el estado y evaluamos si viene de un retorno de pago
+document.addEventListener("DOMContentLoaded", () => {
+    verificarEstadoSuscripcion();
+    evaluarRetornoPago();
+});
 
-            if (response.ok) {
-                const data = await response.json();
-                
-                if (data.es_admin || data.activa) {
+async function verificarEstadoSuscripcion() {
+    const token = localStorage.getItem("access_token");
+    const badge = document.getElementById("badgeSuscripcion");
+    const btnPago = document.getElementById("btn-mercadopago");
+
+    if (!token) return;
+
+    try {
+        const response = await fetch(`${API_URL}/suscripcion/estado`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.es_admin || data.activa) {
+                if (badge) {
                     badge.className = "badge bg-success px-3 py-2";
                     badge.textContent = data.es_admin ? "👑 Administrador" : "✓ Suscripción Activa";
-                    if (btnPago) btnPago.style.display = "none";
-                } else {
+                }
+                if (btnPago) btnPago.style.display = "none";
+            } else {
+                if (badge) {
                     badge.className = "badge bg-danger px-3 py-2";
                     badge.textContent = "✕ Suscripción Inactiva";
-                    if (btnPago) {
-                        btnPago.style.display = "inline-block";
-                        btnPago.onclick = async (e) => {
-                            e.preventDefault();
-                            await pagarSuscripcionMensual(e);
-                        };
-                    }
+                }
+                if (btnPago) {
+                    btnPago.style.display = "inline-block";
+                    btnPago.onclick = async (e) => {
+                        e.preventDefault();
+                        await pagarSuscripcionMensual(e);
+                    };
                 }
             }
-        } catch (error) {
-            console.error("Error al verificar la suscripción:", error);
-            if (badge) {
-                badge.className = "badge bg-warning px-3 py-2";
-                badge.textContent = "⚠️ Estado desconocido";
-            }
+        }
+    } catch (error) {
+        console.error("Error al verificar la suscripción:", error);
+        if (badge) {
+            badge.className = "badge bg-warning px-3 py-2";
+            badge.textContent = "⚠️ Estado desconocido";
         }
     }
+}
 
-    function cerrarSesion() {
-        localStorage.removeItem("access_token");
-        window.location.href = "landing.html";
+async function pagarSuscripcionMensual(e) {
+    const btn = e.target.closest('button') || e.target;
+    const textoOriginal = btn.innerHTML;
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+        alert("Tu sesión ha expirado. Por favor iniciá sesión nuevamente.");
+        window.location.href = "login.html";
+        return;
     }
 
-    async function pagarSuscripcionMensual(e) {
-        const btn = e.target;
-        const textoOriginal = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando...';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando con Mercado Pago...';
 
-        try {
-            const response = await fetch('/api/crear-preapproval-mp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem("access_token")
-                },
-                body: JSON.stringify({ 
-                    monto: 500000,
-                    frecuencia: 1,
-                    tipo_frecuencia: "months",
-                    descripcion: "Suscripción Mensual SaaS Legal ($500.000 ARS)"
-                })
-            });
+    try {
+        // CORREGIDO: Usamos ${API_URL} para evitar problemas de CORS y puertos
+        const response = await fetch(`${API_URL}/api/crear-preapproval-mp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                monto: 25000, // Ajustá el monto mensual en ARS según corresponda
+                frecuencia: 1,
+                tipo_frecuencia: "months",
+                descripcion: "Suscripción Mensual SaaS Legal"
+            })
+        });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            if (data.init_point) {
-                window.location.href = data.init_point;
-            } else {
-                alert('No se pudo iniciar la suscripción: ' + (data.error || 'Error del servidor'));
-                btn.disabled = false;
-                btn.innerHTML = textoOriginal;
-            }
-        } catch (error) {
-            console.error('Error al procesar el pago:', error);
-            alert('Error de conexión con el servidor de pagos.');
+        if (response.ok && data.init_point) {
+            // Redirige al checkout de suscripciones de Mercado Pago
+            window.location.href = data.init_point;
+        } else {
+            alert('No se pudo iniciar la suscripción: ' + (data.detail || data.error || 'Error del servidor'));
             btn.disabled = false;
             btn.innerHTML = textoOriginal;
         }
+    } catch (error) {
+        console.error('Error al procesar el pago:', error);
+        alert('Error de conexión con el servidor de pagos.');
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
     }
+}
+
+function evaluarRetornoPago() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const preapprovalId = urlParams.get('preapproval_id') || urlParams.get('payment_id');
+    const status = urlParams.get('status');
+
+    if (preapprovalId || status === 'approved') {
+        alert("¡Suscripción procesada con éxito! Se ha activado tu cuenta.");
+        // Limpiamos los parámetros de la URL para que no vuelva a saltar el alert si refresca
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+function cerrarSesion() {
+    localStorage.removeItem("access_token");
+    window.location.href = "landing.html";
+}
 
     // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
     async function cargarHistorial() {

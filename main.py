@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
 # 1. CARGAR LAS VARIABLES DE ENTORNO ANTES DE CUALQUIER OTRA COSA
@@ -54,6 +54,7 @@ from security import (
     pwd_context,
 )
 
+ahora = datetime.now(timezone.utc)
 
 # Configurar Gemini IA
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -581,10 +582,10 @@ def simular_pago(
         db.add(suscripcion)
 
     suscripcion.plan = plan
-    suscripcion.demandas_restantes = demandas
+    suscripcion.demandas_restantes = (suscripcion.demandas_restantes or 0) + demandas
     suscripcion.activa = True
-    suscripcion.fecha_inicio = datetime.utcnow()
-    suscripcion.fecha_expiracion = datetime.utcnow() + timedelta(days=30)
+    suscripcion.fecha_inicio = ahora
+    suscripcion.fecha_expiracion = ahora + timedelta(days=30)
     
     db.commit()
     db.refresh(suscripcion)
@@ -628,6 +629,7 @@ def descargar_demanda_por_id(
         filename=nombre_archivo,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 @app.post("/crear-preferencia-suscripcion/", summary="Crear preferencia de pago en Mercado Pago")
 def crear_preferencia_suscripcion(
     db: Session = Depends(get_db),
@@ -642,8 +644,6 @@ def crear_preferencia_suscripcion(
             )
 
         sdk = mercadopago.SDK(access_token)
-
-        # Usamos una variable configurable o ngrok por defecto
         base_url = os.getenv("BASE_URL", "https://snide-uranium-hungrily.ngrok-free.dev")
 
         preference_data = {
@@ -652,7 +652,7 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 500000.0  # Actualizado a $500.000 ARS
+                    "unit_price": 500000.0  # Recordá ajustar este monto al precio real final
                 }
             ],
             "payer": {
@@ -664,6 +664,7 @@ def crear_preferencia_suscripcion(
                 "pending": f"{base_url}/pago-pendiente"
             },
             "auto_return": "approved",
+            "notification_url": f"{base_url}/webhook-mercadopago/",  # <- Indispensable para procesar el pago
             "external_reference": str(current_user.id)
         }
 
@@ -689,59 +690,25 @@ def crear_preferencia_suscripcion(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error interno del servidor: {str(e)}"
         )
-
-        # Solicitud a la API de Mercado Pago
-        preference_response = sdk.preference().create(preference_data)
-        print("RESPUESTA DE MERCADO PAGO:", preference_response)
-
-        # Validamos que la respuesta contenga el diccionario de la preferencia creada
-        if not preference_response or "response" not in preference_response:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Error al comunicarse con Mercado Pago: {preference_response}"
-            )
-
-        preference = preference_response["response"]
-
-        # Devolvemos de forma estructurada los datos que el frontend necesita para redirigir
-        return {
-            "preference_id": preference.get("id"),
-            "init_point": preference.get("init_point"),          # Producción
-            "sandbox_init_point": preference.get("sandbox_init_point") # Pruebas (Sandbox)
-        }
-
-    except HTTPException as he:
-        # Reenviamos las excepciones HTTP propias sin alterarlas
-        raise he
-    except Exception as e:
-        print("EXCEPCIÓN CAPTURADA:", str(e))
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al conectar con la pasarela de pagos: {str(e)}"
-        )
-
-@app.post("/webhook/mercadopago")
+@app.post("/webhook-mercadopago/", summary="Webhook de notificaciones para Mercado Pago")
 async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
         print("-> Webhook recibido de Mercado Pago:", body)
 
-        # Identificar el tipo de notificación (soporta formato moderno y clásico)
+        # Identificar el tipo de notificación
         topic = body.get("type") or body.get("topic")
         action = body.get("action")
-        
         payment_id = None
 
         # Formato moderno (action: payment.created / payment.updated)
         if action and "payment" in action:
             data = body.get("data", {})
             payment_id = data.get("id")
-        
-        # Formato clásico (type: payment o topic: payment)
+        # Formato clásico
         elif topic == "payment":
             payment_id = body.get("id") or body.get("data", {}).get("id")
-        
-        # Formato IPN clásico con resource URL
+        # Formato IPN clásico
         elif "resource" in body:
             resource_url = body.get("resource")
             if "payments" in resource_url:
@@ -750,10 +717,12 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
         if not payment_id:
             return {"status": "ignored", "message": "No se encontró el ID de pago"}
 
-        # Token de acceso de Mercado Pago
-        mp_access_token = os.getenv("MP_ACCESS_TOKEN", "TU_ACCESS_TOKEN_DE_MERCADO_PAGO")
+        mp_access_token = os.getenv("MP_ACCESS_TOKEN")
+        if not mp_access_token:
+            print("⚠️ Token de Mercado Pago no configurado.")
+            return {"status": "error", "message": "Configuración de credenciales incompleta"}
 
-        # Consultar los detalles reales del pago a la API de Mercado Pago
+        # Consultar los detalles reales del pago
         async with httpx.AsyncClient() as client:
             headers = {"Authorization": f"Bearer {mp_access_token}"}
             response = await client.get(f"https://api.mercadopago.com/v1/payments/{payment_id}", headers=headers)
@@ -763,47 +732,50 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             
             payment_data = response.json()
 
-        status = payment_data.get("status") # ej: "approved", "rejected", "pending"
-        status_detail = payment_data.get("status_detail") # ej: "cc_rejected_insufficient_amount", "bad_security_code"
-        external_reference = payment_data.get("external_reference") # ID del usuario enviado en la preferencia
+        status_pago = payment_data.get("status")  # "approved", "rejected", "pending"
+        status_detail = payment_data.get("status_detail")
+        external_reference = payment_data.get("external_reference")
 
-        print(f"💰 Pago {payment_id} | Estado: {status} | Detalle: {status_detail} | Ref Usuario: {external_reference}")
+        print(f"💰 Pago {payment_id} | Estado: {status_pago} | Detalle: {status_detail} | Ref Usuario: {external_reference}")
 
         if not external_reference:
             return {"status": "ignored", "message": "El pago no tiene un external_reference asociado"}
 
-        # Buscamos al usuario en la base de datos usando el external_reference y models.Usuario
+        # Buscamos al usuario en la BD
         user = db.query(models.Usuario).filter(models.Usuario.id == int(external_reference)).first()
-
         if not user:
-            print(f"⚠️ Usuario con ID {external_reference} no encontrado en la base de datos.")
+            print(f"⚠️ Usuario ID {external_reference} no encontrado.")
             return {"status": "error", "message": "Usuario no encontrado"}
 
-        # 1. Pago Aprobado -> Activamos la suscripción
-        if status == "approved":
-            user.suscripcion_activa = True
-            user.estado_pago = "approved"
-            db.commit()
-            print(f"✅ [DB] Suscripción activada con éxito para el usuario ID: {user.id}")
+        # Obtenemos o creamos el registro en la tabla Suscripcion
+        suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user.id).first()
+        if not suscripcion:
+            suscripcion = models.Suscripcion(usuario_id=user.id)
+            db.add(suscripcion)
 
-        # 2. Pago Pendiente o En Proceso -> Marcamos como pendiente
-        elif status in ["pending", "in_process"]:
-            user.suscripcion_activa = False
-            user.estado_pago = status
+        # 1. Pago Aprobado -> Otorgamos vigencia por 30 días y acreditamos demandas
+        if status_pago == "approved":
+            ahora = datetime.now(timezone.utc)
+            
+            suscripcion.plan = "Pro"
+            suscripcion.activa = True
+            suscripcion.demandas_restantes = (suscripcion.demandas_restantes or 0) + 50
+            suscripcion.fecha_inicio = ahora
+            suscripcion.fecha_expiracion = ahora + timedelta(days=30)
+            
             db.commit()
-            print(f"⏳ [DB] Pago pendiente registrado para el usuario ID: {user.id}")
+            print(f"✅ [DB] Suscripción activada y renovada para el usuario ID: {user.id}")
 
-        # 3. Pago Rechazado -> Mantenemos inactivo y guardamos el estado
-        elif status == "rejected":
-            user.suscripcion_activa = False
-            user.estado_pago = status
+        # 2. Pago Pendiente o Rechazado
+        elif status_pago in ["pending", "in_process", "rejected"]:
+            suscripcion.activa = False
             db.commit()
-            print(f"❌ [DB] Pago rechazado ({status_detail}) registrado para el usuario ID: {user.id}")
+            print(f"❌ [DB] Suscripción inactiva/fallida (Estado: {status_pago}) para usuario ID: {user.id}")
 
         return {"status": "success"}
 
     except Exception as e:
-        db.rollback() # Revertir cambios si algo falla
+        db.rollback()
         print(f"❌ Error crítico en webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
