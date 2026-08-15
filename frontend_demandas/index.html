@@ -954,75 +954,121 @@ function obtenerPayloadFormulario() {
             cargarHistorial();
         }
     }
+   
+    // URL base de la API
+    
+
     async function cargarPanelAdmin() {
     const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-    const esAdmin = localStorage.getItem("es_admin") === "true";
     const seccionAdmin = document.getElementById("seccion-admin");
 
     if (!seccionAdmin) return;
-    
-    // Ocultamos la sección por defecto
+
+    // Ocultar por defecto antes de verificar permisos
     seccionAdmin.style.display = "none";
 
-    // Si hay token y la variable es_admin es verdadera, mostramos el panel
-    if (token && esAdmin) {
-        seccionAdmin.style.display = "block";
-    }
-}
-
-document.addEventListener("DOMContentLoaded", cargarPanelAdmin);
+    if (!token) return;
 
     try {
-        // 1. Cargar Métricas
+        // 1. Cargar Métricas Generales
         const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
         if (resMetricas.ok) {
-            seccionAdmin.classList.remove("display-none"); // Mostramos la sección si es admin
             const metricas = await resMetricas.json();
-            document.getElementById("metric-total-usuarios").textContent = metricas.total_usuarios;
-            document.getElementById("metric-suscripciones-activas").textContent = metricas.suscripciones_activas;
-            document.getElementById("metric-total-demandas").textContent = metricas.total_demandas;
+            
+            // Mostrar la sección si tiene permisos de Admin
+            seccionAdmin.style.display = "block";
+
+            // Inyectar métricas en las tarjetas comprobando existencia de los IDs
+            const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
+            const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
+            const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
+
+            if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
+            if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
+            if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
+
         } else {
-            seccionAdmin.classList.add("display-none");
-            return; // Si no es admin, cortamos la ejecución
+            // Si devuelve 403 (No es admin) o 401, se mantiene oculto y corta
+            return;
         }
 
-        // 2. Cargar Tabla de Usuarios
+        // 2. Cargar Lista de Usuarios para la Tabla
         const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
         if (resUsuarios.ok) {
             const usuarios = await resUsuarios.json();
-            const tbody = document.getElementById("tabla-usuarios-body");
-            tbody.innerHTML = "";
-
-            usuarios.forEach(u => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>#${u.id}</td>
-                    <td>${u.email}</td>
-                    <td>${u.es_admin ? '<span class="badge bg-dark">Admin</span>' : '<span class="badge bg-secondary">Usuario</span>'}</td>
-                    <td>
-                        <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
-                            ${u.suscripcion_activa ? 'Activa (' + u.plan + ')' : 'Inactiva'}
-                        </span>
-                    </td>
-                    <td>${u.demandas_restantes}</td>
-                    <td>
-                        <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="toggleSuscripcion(${u.id})">
-                            ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+            renderizarTablaUsuarios(usuarios);
         }
-    } catch (err) {
-        console.error("Error al cargar el panel de admin:", err);
+
+    } catch (error) {
+        console.error("Error al cargar datos del panel de admin:", error);
     }
+}
+
+function renderizarTablaUsuarios(usuarios) {
+    const tbody = document.getElementById("tabla-usuarios-body");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (usuarios.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
+        return;
+    }
+
+    usuarios.forEach(u => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>#${u.id}</strong></td>
+            <td>${u.email}</td>
+            <td>
+                ${u.es_admin ? '<span class="badge bg-dark">Admin</span>' : '<span class="badge bg-secondary">Usuario</span>'}
+            </td>
+            <td>
+                <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
+                    ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
+                </span>
+            </td>
+            <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
+            <td>
+                <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="toggleSuscripcion(${u.id})">
+                    ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Función auxiliar para activar/desactivar suscripciones
+async function toggleSuscripcion(userId) {
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+        const response = await fetch(`${API_URL}/admin/usuarios/${userId}/toggle-suscripcion`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            // Recargar la tabla si la acción fue exitosa
+            cargarPanelAdmin();
+        } else {
+            alert("No se pudo cambiar el estado de la suscripción.");
+        }
+    } catch (error) {
+        console.error("Error al cambiar suscripción:", error);
+    }
+}
+
+// Ejecución automática al cargar el DOM
+document.addEventListener("DOMContentLoaded", cargarPanelAdmin);
 
 
 // Función para cambiar estado desde el botón de la tabla
