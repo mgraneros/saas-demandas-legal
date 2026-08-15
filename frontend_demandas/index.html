@@ -7,64 +7,73 @@
     <!-- Importamos Bootstrap para un diseño limpio y rápido -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Tu CSS Personalizado -->
+    <link rel="stylesheet" href="styles.css">
 </head>
-<!-- Navbar Superior del SaaS -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
-    <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold" href="#">⚖️ SaaS Demandas Legales</a>
-        
-        <div class="d-flex align-items-center gap-3">
-            <!-- Badge de Estado de Suscripción -->
-            <span id="badgeSuscripcion" class="badge bg-secondary px-3 py-2">Verificando suscripción...</span>
-            
-            <!-- Botón de Pago (Se muestra si está inactivo) -->
-            <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
-                💳 Pagar Suscripción
-            </button>
+<!-- Envoltorio Principal Flex -->
+<div class="d-flex min-vh-100">
 
-            <!-- Botón Cerrar Sesión -->
-            <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
-                Cerrar Sesión
-            </button>
+  <!-- Sidebar Vertical Unificado -->
+  <aside class="sidebar p-3 d-flex flex-column justify-content-between flex-shrink-0" style="width: 260px;">
+    <div>
+      <!-- Logo / Marca -->
+      <div class="brand-container">
+        <div class="brand-icon">
+          ⚖️
         </div>
-    </div>
-</nav>
-<body class="bg-light">
-
-    <!-- Banner de Alerta de Suscripción (Oculto por defecto) -->
-<div id="alerta-suscripcion" class="container mt-3" style="display: none;">
-    <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
-        <strong>¡Atención!</strong> Te quedan muy pocos créditos disponibles en tu cuenta para generar demandas.
-        <button id="btn-mercadopago" class="btn btn-sm btn-dark ms-3">Recargar / Suscribirme con Mercado Pago</button>
-    </div>
-</div>
-
-<div class="d-flex vh-100">
-    <!-- Sidebar Vertical -->
-    <nav class="bg-dark text-white p-3 d-flex flex-column" style="width: 260px;">
-        <h4 class="mb-4 text-center">⚖️ SaaS Legal</h4>
-        <ul class="nav flex-column gap-2 mb-auto">
-            <li class="nav-item">
-                <a href="#" class="nav-link text-white active bg-secondary" onclick="mostrarSeccion('seccion-crear', event)">📝 Nueva Demanda</a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link text-white" onclick="mostrarSeccion('seccion-historial', event)">📂 Historial</a>
-            </li>
-        </ul>
-        <hr>
-        <div class="small p-2 bg-secondary rounded text-center">
-            <span id="badgeSuscripcion">Verificando...</span>
+        <div class="brand-text">
+          SaaS <span>Legal</span>
         </div>
-        <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm mt-2" style="display: none;">
-            💳 Pagar / Suscribirse
-        </button>
-        <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm mt-2">
-            Cerrar Sesión
-        </button>
-    </nav>
+      </div>
+
+      <!-- Navegación -->
+      <ul class="nav nav-pills flex-column gap-2 mb-auto">
+        <li class="nav-item">
+          <a href="#" class="nav-link active" onclick="mostrarSeccion('seccion-crear', event)">
+            📄 Nueva Demanda
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" onclick="mostrarSeccion('seccion-historial', event)">
+            📁 Historial
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Zona Inferior (Suscripción y Sesión) -->
+    <div class="pt-3 border-top border-secondary-subtle d-flex flex-column gap-2">
+      <div class="small p-2 rounded text-center" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color);">
+        <span id="badgeSuscripcion" class="fw-semibold text-muted">Verificando...</span>
+      </div>
+
+      <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
+        💳 Pagar / Suscribirse
+      </button>
+
+      <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
+        Cerrar Sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- Área de Contenido Principal -->
+  <main class="flex-grow-1 p-4 overflow-auto" style="height: 100vh;">
+    
+    <!-- Banner de Alerta de Suscripción (Ahora vive dentro del área principal) -->
+    <div id="alerta-suscripcion" class="mb-4" style="display: none;">
+      <div class="alert alert-warning alert-dismissible fade show shadow-sm d-flex align-items-center justify-content-between" role="alert">
+        <div>
+          <strong>¡Atención!</strong> Te quedan muy pocos créditos disponibles en tu cuenta para generar demandas.
+        </div>
+        <button id="btn-mercadopago-alert" class="btn btn-sm btn-dark">Recargar / Suscribirme con Mercado Pago</button>
+      </div>
+    </div>
+
+    <!-- AQUÍ CONTINÚA TU FORMULARIO, TABLAS, PANEL ADMIN, ETC. -->
 
     <!-- Panel de Contenido Principal -->
-    <main class="flex-grow-1 p-4 bg-light overflow-auto">
+    <main class="flex-grow-1 p-4 overflow-auto">
 
         <!-- Alerta de pocos créditos / suscripción (Opcional arriba de todo) -->
         <div id="alerta-suscripcion" class="container mt-3 mb-3" style="display: none;">
@@ -87,7 +96,7 @@
                                 <form id="formularioDemanda">
 
                                     <!-- Sección de Autocompletado con IA -->
-<div class="row mb-4 bg-light p-3 border rounded mx-0 mt-3">
+<div class="row mb-4 card p-3 border rounded mx-0 mt-3">
     <div class="col-12">
         <h6 class="text-primary mb-3">🤖 Autocompletar con Acta de Mediación (IA)</h6>
         <div class="d-flex align-items-center gap-3">
@@ -244,30 +253,28 @@
                                         <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="date" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
                                         
                                         <div class="col-md-12 mb-2 mt-2">
-                                            <label class="form-label fw-bold small text-secondary">Prueba Documental</label>
-                                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background-color: #fff;">
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small" for="doc1">Acta de Mediación</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small" for="doc2">DNI Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small" for="doc3">Licencia de Conducir Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small" for="doc5">Denuncia Administrativa Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small" for="doc6">Certificado de Cobertura Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small" for="doc7">DNI Demandado</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small" for="doc10">Póliza de Seguro Demandado</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small" for="doc11">Croquis del lugar del siniestro</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small" for="doc12">Imágenes Daños Vehículo Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small" for="doc14">Imágenes Lesiones Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small" for="doc15">Imágenes Momento del Siniestro</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small" for="doc16">Actuaciones Sumariales</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small" for="doc17">Constancias de Atención Médica Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small" for="doc18">Estudios Médicos Actor</label></div>
-                                                <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small" for="doc19">Video del momento del siniestro</label></div>
+                                            <label class="form-label fw-bold small text-muted">Prueba Documental</label>
+                                            <div class="border rounded p-2 overflow-y-auto" style="max-height: 200px; background-color: #0f172a; border-color: var(--border-color) !important;">
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small text-white" for="doc1">Acta de Mediación</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small text-white" for="doc2">DNI Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small text-white" for="doc3">Licencia de Conducir Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small text-white" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small text-white" for="doc5">Denuncia Administrativa Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small text-white" for="doc6">Certificado de Cobertura Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small text-white" for="doc7">DNI Demandado</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small text-white" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small text-white" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small text-white" for="doc10">Póliza de Seguro Demandado</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small text-white" for="doc11">Croquis del lugar del siniestro</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small text-white" for="doc12">Imágenes Daños Vehículo Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small text-white" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small text-white" for="doc14">Imágenes Lesiones Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small text-white" for="doc15">Imágenes Momento del Siniestro</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small text-white" for="doc16">Actuaciones Sumariales</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small text-white" for="doc17">Constancias de Atención Médica Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small text-white" for="doc18">Estudios Médicos Actor</label></div>
+                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small text-white" for="doc19">Video del momento del siniestro</label></div>
                                             </div>
-                                        </div>
-                                    </div>
 
                                     <!-- 5. Competencia y Liquidación -->
                                     <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
@@ -294,7 +301,7 @@
                                         </div>
                                         <div class="col-md-6 mb-2">
                                             <label class="form-label small fw-bold">Incapacidad Total (%)</label>
-                                            <input type="number" class="form-control form-control-sm bg-light" id="PuntosdeIncapacidad" value="0" readonly>
+                                            <input type="number" class="form-control form-control-sm " id="PuntosdeIncapacidad" value="0" readonly>
                                         </div>
                                     </div>
 
@@ -399,9 +406,9 @@
                                 <h3 class="card-title fw-bold text-primary mb-2">SaaS Legal Pro</h3>
                                 <p class="card-text text-muted small">Acceso ilimitado para abogados y estudios jurídicos.</p>
                                 
-                                <div class="my-3 p-3 bg-light rounded border">
-                                    <span class="display-5 fw-bold text-dark">$500.000</span>
-                                    <span class="text-muted fw-bold">ARS / mes</span>
+                                <div class="my-3 p-3 rounded border" style="background: rgba(255, 255, 255, 0.03); border-color: var(--border-color) !important;">
+                                <span class="display-5 fw-bold text-white">$500.000</span>
+                                <span class="text-muted fw-bold">ARS / mes</span>
                                 </div>
 
                                 <ul class="list-unstyled mb-4 text-start small mx-auto" style="max-width: 300px;">
