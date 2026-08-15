@@ -571,10 +571,12 @@ def simular_pago(
     current_user: models.Usuario = Depends(get_current_user)
 ):
     """
-    Simula una pasarela de pago exitosa (como Mercado Pago o Stripe). 
-    Actualiza la suscripción del usuario actual, activándola, otorgando 
+    Simula una pasarela de pago exitosa (como Mercado Pago o Stripe).
+    Actualiza la suscripción del usuario actual, activándola, otorgando
     nuevos créditos y extendiendo la fecha de expiración 30 días a partir de hoy.
     """
+    ahora = datetime.now(timezone.utc)
+
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
 
     if not suscripcion:
@@ -586,7 +588,7 @@ def simular_pago(
     suscripcion.activa = True
     suscripcion.fecha_inicio = ahora
     suscripcion.fecha_expiracion = ahora + timedelta(days=30)
-    
+
     db.commit()
     db.refresh(suscripcion)
 
@@ -911,7 +913,7 @@ def pago_exitoso(
             db.rollback()
 
     # Redirige de vuelta al dashboard local (o tu frontend) tras mostrar un mensaje
-    url_retorno = "http://127.0.0.1:5500/.github/workflows/frontend_demandas/index.html"
+    url_retorno = "http://127.0.0.1:5500/frontend_demandas/index.html"
     
     response = HTMLResponse(content=f"""
     <!DOCTYPE html>

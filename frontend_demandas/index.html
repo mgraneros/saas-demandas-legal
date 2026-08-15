@@ -511,23 +511,26 @@
 <script>
     const API_URL = "http://127.0.0.1:8000";
 
-    // 1. ÚNICA VALIDACIÓN DE SESIÓN AL CARGAR LA PÁGINA
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Buscamos el token con cualquiera de los dos nombres por compatibilidad
-        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+// 1. VALIDACIÓN DE SESIÓN AL CARGAR LA PÁGINA
+document.addEventListener('DOMContentLoaded', async () => {
+    // Normalizamos la obtención del token
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
-        if (!token) {
-            window.location.href = "landing.html";
-            return;
-        }
+    if (!token) {
+        window.location.href = "landing.html";
+        return;
+    }
 
-        console.log("Sesión activa, cargando panel...");
+    // Aseguramos que 'access_token' quede siempre guardado de forma uniforme
+    localStorage.setItem("access_token", token);
 
-        // Ejecutamos las funciones principales al iniciar
-        await verificarEstadoSuscripcion();
-        await cargarHistorial();
-        await cargarPanelAdmin(); // 👈 Agregamos la carga del panel Admin aquí
-    });
+    console.log("Sesión activa, cargando panel...");
+
+    // Ejecutamos las funciones principales al iniciar
+    await verificarEstadoSuscripcion();
+    await cargarHistorial();
+    await cargarPanelAdmin();
+});
 
     // Automatización: Calcular el porcentaje de incapacidad máximo según las lesiones seleccionadas
     document.addEventListener('DOMContentLoaded', () => {
@@ -826,6 +829,15 @@ async function verificarEstadoSuscripcion() {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
+        // 🟢 VALIDACIÓN DE TOKEN EXPIRADO / INVÁLIDO
+        if (response.status === 401 || response.status === 403) {
+            alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("token");
+            window.location.href = "landing.html";
+            return;
+        }
+
         if (response.ok) {
             const data = await response.json();
             
@@ -873,25 +885,19 @@ async function pagarSuscripcionMensual(e) {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando con Mercado Pago...';
 
     try {
-        // CORREGIDO: Usamos ${API_URL} para evitar problemas de CORS y puertos
-        const response = await fetch(`${API_URL}/api/crear-preapproval-mp`, {
+        // Apuntamos exacto a la ruta de FastAPI y quitamos el body (los datos los arma FastAPI con el token)
+        const response = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                monto: 25000, // Ajustá el monto mensual en ARS según corresponda
-                frecuencia: 1,
-                tipo_frecuencia: "months",
-                descripcion: "Suscripción Mensual SaaS Legal"
-            })
+            }
         });
 
         const data = await response.json();
 
         if (response.ok && data.init_point) {
-            // Redirige al checkout de suscripciones de Mercado Pago
+            // Redirige al checkout de Mercado Pago
             window.location.href = data.init_point;
         } else {
             alert('No se pudo iniciar la suscripción: ' + (data.detail || data.error || 'Error del servidor'));
