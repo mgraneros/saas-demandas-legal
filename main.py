@@ -1516,3 +1516,39 @@ def registrar_plantillas(db: Session = Depends(get_db)):
     
     db.commit()
     return {"mensaje": "¡Las plantillas se registraron y actualizaron correctamente en la base de datos con la ruta 'templates/'!"}
+
+# ---- ATAJO PARA DAR CRÉDITOS DE PRUEBA ----
+@app.get("/activar-prueba/{email}")
+def activar_prueba(email: str, db: Session = Depends(get_db)):
+    from datetime import datetime, timedelta # Lo importamos acá por si no está arriba
+    
+    # 1. Buscamos al usuario
+    usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    
+    if not usuario:
+        return {"error": f"Usuario con correo {email} no encontrado."}
+        
+    # 2. Buscamos si ya tiene un registro de suscripción
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == usuario.id).first()
+    
+    if not suscripcion:
+        # Si no tiene, se la creamos con 10 créditos y 30 días
+        nueva_suscripcion = models.Suscripcion(
+            usuario_id=usuario.id,
+            activa=True,
+            demandas_restantes=10, 
+            fecha_expiracion=datetime.utcnow() + timedelta(days=30)
+        )
+        db.add(nueva_suscripcion)
+    else:
+        # Si ya la tenía inactiva, se la reactivamos
+        suscripcion.activa = True
+        suscripcion.demandas_restantes = 10
+        suscripcion.fecha_expiracion = datetime.utcnow() + timedelta(days=30)
+        
+    # Por si tu modelo de Usuario también guarda el estado
+    if hasattr(usuario, 'suscripcion_activa'):
+        usuario.suscripcion_activa = True
+        
+    db.commit()
+    return {"mensaje": f"¡Éxito! Se le otorgó una suscripción Premium con 10 demandas de prueba a {email}."}

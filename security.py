@@ -88,17 +88,24 @@ def get_current_admin_user(current_user: models.Usuario = Depends(get_current_us
     return current_user
 
 
-def verificar_suscripcion_activa(current_user: models.Usuario = Depends(get_current_user)):
+def verificar_suscripcion_activa(
+    current_user: models.Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Verifica que el usuario tenga suscripción activa. 
+    Verifica que el usuario tenga suscripción activa en la base de datos. 
     Los administradores tienen acceso libre por defecto.
     """
     if getattr(current_user, "es_admin", False) or getattr(current_user, "is_admin", False):
         return current_user
 
-    suscripcion_activa = getattr(current_user, "suscripcion_activa", False)
+    # Buscamos la suscripción real en la tabla Suscripcion
+    suscripcion = db.query(models.Suscripcion).filter(
+        models.Suscripcion.usuario_id == current_user.id,
+        models.Suscripcion.activa == True
+    ).first()
 
-    if not suscripcion_activa:
+    if not suscripcion:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail="Acceso restringido. Debes abonar la suscripción para utilizar esta funcionalidad."
