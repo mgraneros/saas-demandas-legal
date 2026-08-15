@@ -1,27 +1,65 @@
 /* Importar fuente Premium */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-:root {
-  --bg-main: #0f172a;
-  --bg-card: #1e293b;
-  --bg-sidebar: #090d16;
-  --border-color: #334155;
+/* ===================================
+   SISTEMA DE TEMAS (LIGHT / DARK)
+   =================================== */
+
+/* Variables por defecto: MODO OSCURO (Plata & Grafito) */
+:root, [data-theme="dark"] {
+  --bg-main: #0A0A0D;
+  --bg-card: #18181F;
+  --bg-sidebar: #121217;
+  --border-color: #292932;
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-main: #E4E1E8;
+  --text-muted: #96929E;
   
-  --accent-blue: #2563eb;
-  --accent-blue-hover: #1d4ed8;
+  --accent-blue: #6B5A7E;
+  --accent-blue-hover: #806D96;
   --accent-gold: #d97706;
   --accent-green: #10b981;
   --accent-red: #ef4444;
+
+  --text-title: #D1D5DB;
+  --input-bg: #121217;
 }
 
-/* General / Layout Base */
+/* Variables para MODO CLARO (Sobrio y Profesional) */
+[data-theme="light"] {
+  --bg-main: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #F1F5F9;
+  --border-color: #E2E8F0;
+  
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  
+  --accent-blue: #5B4B6E;
+  --accent-blue-hover: #483A58;
+  --accent-gold: #d97706;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+
+  --text-title: #334155;
+  --input-bg: #FFFFFF;
+}
+
+/* General / Layout Base Adaptativo */
 body, main, html {
   background-color: var(--bg-main) !important;
   color: var(--text-main) !important;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Reemplazo global para títulos y textos primarios adaptativos */
+.text-primary, 
+h5.text-primary, 
+h6.text-primary, 
+a.text-primary,
+[class*="text-primary"] {
+  color: var(--text-title) !important;
 }
 
 /* Rediseño de la Sidebar */
@@ -40,8 +78,8 @@ body, main, html {
 }
 
 /* Inputs, Selects y Formularios estilo Dark Mode */
-.form-control, .form-select, select, select[multiple] {
-  background-color: #0f172a !important;
+.form-control, .form-select, select {
+  background-color: #121217 !important;
   border: 1px solid var(--border-color) !important;
   color: var(--text-main) !important;
   border-radius: 8px !important;
@@ -49,13 +87,13 @@ body, main, html {
 
 /* Opciones dentro de los selects/listas */
 option {
-  background-color: #0f172a !important;
+  background-color: #121217 !important;
   color: var(--text-main) !important;
 }
 
 .form-control:focus, .form-select:focus {
   border-color: var(--accent-blue) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(107, 90, 126, 0.25) !important;
 }
 
 .form-control::placeholder {
@@ -64,7 +102,7 @@ option {
 
 /* Checkboxes y Radios */
 .form-check-input {
-  background-color: #0f172a !important;
+  background-color: #121217 !important;
   border-color: var(--border-color) !important;
 }
 
@@ -95,7 +133,7 @@ option {
 }
 
 .table-light, .table thead th {
-  background-color: #182232 !important;
+  background-color: #18181F !important;
   color: var(--text-muted) !important;
   border-bottom: 1px solid var(--border-color) !important;
   text-transform: uppercase;
@@ -136,8 +174,9 @@ option {
 }
 
 .brand-icon {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #fff;
+  background: #292932 !important;
+  color: #E4E1E8 !important;
+  border: 1px solid #3A3A46 !important;
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -145,18 +184,18 @@ option {
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 .brand-text {
   font-weight: 700;
   font-size: 1.15rem;
-  color: var(--text-main);
+  color: #FFFFFF !important;
   letter-spacing: -0.02em;
 }
 
 .brand-text span {
-  color: #60a5fa; /* Azul claro para resaltar 'Legal' */
+  color: #96929E !important; /* Gris plata para resaltar 'Legal' */
 }
 
 /* Enlaces del Menú */
@@ -182,25 +221,169 @@ option {
   color: #ffffff !important;
   background-color: var(--accent-blue) !important;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px rgba(107, 90, 126, 0.3);
 }
 
 .nav-link i {
   font-size: 1.1rem;
 }
 
-/* Arreglo para Select Multiple de Prueba Documental */
-select[multiple], 
-select[multiple] option {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border: 1px solid var(--border-color) !important;
-  padding: 6px 10px;
-  border-radius: 6px;
+/* ===================================
+   CORRECCIONES DE MODO CLARO
+   =================================== */
+
+/* 1. Corrección del Logo / Marca */
+.brand-text {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-main) !important; /* Ahora cambia según el tema */
+  letter-spacing: -0.02em;
 }
 
-/* Color cuando una opción está seleccionada */
-select[multiple] option:checked {
+.brand-text span {
+  color: var(--text-muted) !important;
+}
+
+/* 2. Corrección de Inputs, Selects y Autocompletado */
+.form-control, .form-select, select, input {
+  background-color: var(--input-bg) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Evitar que el autocompletado del navegador ponga fondo negro/amarillo */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-main) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.form-control::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Opciones de los Selects */
+option {
+  background-color: var(--input-bg) !important;
+  color: var(--text-main) !important;
+}
+
+/* Corrección de títulos dentro de tarjetas y headers */
+.card-header, 
+.card-title, 
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-main) !important;
+}
+
+/* Si el elemento tiene text-white o text-light hardcodeado */
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-light {
+  color: var(--text-main) !important;
+}
+
+/* Corrección específica para el contenedor de Prueba Documental */
+.border.rounded.p-2.overflow-y-auto,
+[data-theme="light"] .border.rounded.p-2.overflow-y-auto {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Forzar que los textos dentro de la lista de checkboxes se adapten al tema */
+.form-check-label,
+.form-check span,
+.form-check label {
+  color: var(--text-main) !important;
+}
+
+/* Fondo y borde adaptativo de los checkboxes */
+.form-check-input {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Corrección de subtítulos y textos informativos dentro de tarjetas */
+.card-body p, 
+.card-body small,
+.card-body .text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* Forzar que el texto explicativo de Auditoría y Cálculos sea bien legible */
+[data-theme="dark"] .card-body p,
+[data-theme="dark"] .card-body small {
+  color: #96929E !important; /* Gris claro de alto contraste */
+}
+
+[data-theme="light"] .card-body p,
+[data-theme="light"] .card-body small {
+  color: #64748B !important; /* Gris azulado legible para fondo claro */
+}
+
+/* ===================================
+   ADAPTACIÓN PARA LANDING, LOGIN & REGISTER
+   =================================== */
+
+/* Fondos y cards principales */
+.auth-card, .landing-hero, .feature-card {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Encabezados y títulos de Auth / Landing */
+.auth-title, .landing-title, h1, h2 {
+  color: var(--text-main) !important;
+}
+
+.auth-subtitle, .landing-subtitle, .text-description {
+  color: var(--text-muted) !important;
+}
+
+/* Botones de acción principales (Login / Registro / CTA) */
+.btn-auth-submit, .btn-hero-cta {
   background-color: var(--accent-blue) !important;
-  color: #ffffff !important;
+  border-color: var(--accent-blue) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-auth-submit:hover, .btn-hero-cta:hover {
+  background-color: var(--accent-blue-hover) !important;
+}
+
+/* Corrección de contraste para la Hero Section de la Landing */
+.lead,
+.lead.text-muted {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .lead,
+[data-theme="dark"] .lead.text-muted {
+  color: #96929E !important; /* Gris plata muy claro y legible */
+}
+
+[data-theme="light"] .lead,
+[data-theme="light"] .lead.text-muted {
+  color: #475569 !important; /* Gris oscuro sobrio para fondo claro */
+}
+
+/* Corrección de contraste para textos legibles en Auth (Login/Register) */
+.text-muted,
+span.text-muted,
+p.text-muted {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] span.text-muted,
+[data-theme="dark"] p.text-muted {
+  color: #96929E !important; /* Gris plata claro para fondo oscuro */
+}
+
+[data-theme="light"] .text-muted,
+[data-theme="light"] span.text-muted,
+[data-theme="light"] p.text-muted {
+  color: #64748B !important; /* Gris sobrio para fondo claro */
 }

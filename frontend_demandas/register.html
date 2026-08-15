@@ -1,42 +1,102 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - SaaS Demandas Legal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light d-flex align-items-center py-5" style="min-height: 100vh;">
 
+    <!-- Fuente Premium -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Hoja de estilos principal -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100 position-relative py-5">
+
+<!-- Botón Toggle Flotante (Esquina Superior Derecha) -->
+<div class="position-absolute top-0 end-0 p-3">
+    <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" style="border-color: var(--border-color); color: var(--text-main);">
+        <span id="themeIcon">☀️</span>
+        <span id="themeText" class="small fw-semibold">Modo Claro</span>
+    </button>
+</div>
+
+<!-- Card de Registro -->
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 rounded-4 p-4">
-                <h3 class="text-center mb-4 fw-bold">Crear Cuenta</h3>
+        <div class="col-md-5 col-lg-4">
+            <div class="card p-4 shadow-lg border rounded-4" style="background-color: var(--bg-card); border-color: var(--border-color) !important;">
                 
+                <div class="text-center mb-4">
+                    <div class="fs-1 mb-1">⚖️</div>
+                    <h3 class="fw-bold m-0" style="color: var(--text-main);">Crear Cuenta</h3>
+                    <p class="small text-muted mt-1" style="color: var(--text-muted) !important;">Registrá tu estudio y comenzá a automatizar</p>
+                </div>
+
                 <form id="registerForm" onsubmit="registrarUsuario(event)">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre del Estudio Jurídico</label>
-                        <input type="text" id="nombre_estudio" class="form-control" required>
+                    <div class="mb-3 text-start">
+                        <label class="form-label small fw-semibold" style="color: var(--text-main);">Nombre del Estudio Jurídico</label>
+                        <input type="text" id="nombre_estudio" class="form-control" placeholder="Estudio Jurídico & Asociados" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Correo Electrónico</label>
-                        <input type="email" id="email" class="form-control" required>
+
+                    <div class="mb-3 text-start">
+                        <label class="form-label small fw-semibold" style="color: var(--text-main);">Correo Electrónico</label>
+                        <input type="email" id="email" class="form-control" placeholder="tu@email.com" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" id="password" class="form-control" required>
+
+                    <div class="mb-3 text-start">
+                        <label class="form-label small fw-semibold" style="color: var(--text-main);">Contraseña</label>
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2">Registrarse</button>
+
+                    <button type="submit" class="btn w-100 fw-semibold py-2 mt-2" style="background-color: var(--accent-blue); color: #ffffff;">Registrarse</button>
                 </form>
 
-                <div class="text-center mt-3">
-                    <p class="text-muted">¿Ya tenés cuenta? <a href="login.html">Iniciar Sesión</a></p>
+                <div class="text-center mt-4 pt-3 border-top" style="border-color: var(--border-color) !important;">
+                    <span class="small" style="color: var(--text-muted) !important;">¿Ya tenés cuenta?</span>
+                    <a href="login.html" class="small fw-semibold text-decoration-none ms-1" style="color: var(--accent-blue-hover);">Iniciar Sesión</a>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
 
+<!-- Script de Gestión de Tema / Persistencia -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const toggleBtn = document.getElementById("themeToggleBtn");
+        const themeIcon = document.getElementById("themeIcon");
+        const themeText = document.getElementById("themeText");
+        
+        // 1. Cargar tema guardado o aplicar 'dark'
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        if (toggleBtn) updateButtonUI(savedTheme);
+
+        // 2. Evento Toggle
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", () => {
+                const currentTheme = document.documentElement.getAttribute("data-theme");
+                const newTheme = currentTheme === "dark" ? "light" : "dark";
+                
+                document.documentElement.setAttribute("data-theme", newTheme);
+                localStorage.setItem("theme", newTheme);
+                updateButtonUI(newTheme);
+            });
+        }
+
+        function updateButtonUI(theme) {
+            if (themeIcon) themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+            if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
+        }
+    });
+</script>
+
+<!-- Lógica JS Original de la API -->
 <script>
     const API_URL = "http://127.0.0.1:8000";
 
@@ -56,19 +116,19 @@
                 body: JSON.stringify(data)
             });
 
-           if (response.ok) {
-            const data = await response.json();
-    
+            if (response.ok) {
+                const data = await response.json();
+                
                 // Si el registro ya devuelve el token, lo guardamos de una
                 if (data.access_token) {
                     localStorage.setItem("access_token", data.access_token);
-                     // Lo mandamos directo a la pasarela de pago o pantalla de suscripción
+                    // Lo mandamos directo a la pasarela de pago o pantalla de suscripción
                     window.location.href = "suscripcion.html"; 
                 } else {
                     // Si solo crea el usuario, lo mandamos al login con aviso
                     alert("¡Registro exitoso! Por favor inicie sesión para continuar con la suscripción.");
                     window.location.href = "login.html";
-                    }
+                }
             } else {
                 const errData = await response.json();
                 alert("Error al registrarse: " + (errData.detail || "Verifica los datos"));

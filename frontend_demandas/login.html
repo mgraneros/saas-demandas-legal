@@ -1,39 +1,65 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Iniciar Sesión - SaaS Demandas Legal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light d-flex align-items-center py-5" style="min-height: 100vh;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - SaaS Legal</title>
 
+    <!-- Fuente Premium -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Hoja de estilos principal -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100 position-relative py-5">
+
+<!-- Botón Toggle Flotante (Esquina Superior Derecha) -->
+<div class="position-absolute top-0 end-0 p-3">
+    <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" style="border-color: var(--border-color); color: var(--text-main);">
+        <span id="themeIcon">☀️</span>
+        <span id="themeText" class="small fw-semibold">Modo Claro</span>
+    </button>
+</div>
+
+<!-- Card de Login -->
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 rounded-4 p-4">
-                <h3 class="text-center mb-4 fw-bold">Iniciar Sesión</h3>
+        <div class="col-md-5 col-lg-4">
+            <div class="card p-4 shadow-lg border rounded-4" style="background-color: var(--bg-card); border-color: var(--border-color) !important;">
                 
+                <div class="text-center mb-4">
+                    <div class="fs-1 mb-1">⚖️</div>
+                    <h3 class="fw-bold m-0" style="color: var(--text-main);">Iniciar Sesión</h3>
+                    <p class="small text-muted mt-1">Ingresá a tu panel de SaaS Legal</p>
+                </div>
+
                 <form id="loginForm" onsubmit="iniciarSesion(event)">
-                    <div class="mb-3">
-                        <label class="form-label">Correo Electrónico (Usuario)</label>
-                        <input type="email" id="email" class="form-control" required>
+                    <div class="mb-3 text-start">
+                        <label class="form-label small fw-semibold" style="color: var(--text-main);">Correo Electrónico (Usuario)</label>
+                        <input type="email" id="email" class="form-control" placeholder="tu@email.com" required>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" id="password" class="form-control" required>
+
+                    <div class="mb-2 text-start">
+                        <label class="form-label small fw-semibold" style="color: var(--text-main);">Contraseña</label>
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required>
                     </div>
 
                     <!-- Enlace de Olvidaste tu contraseña -->
                     <div class="mb-3 text-end">
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalOlvidePassword" class="small text-muted text-decoration-none">¿Olvidaste tu contraseña?</a>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalOlvidePassword" class="small text-decoration-none" style="color: var(--accent-blue-hover);">¿Olvidaste tu contraseña?</a>
                     </div>
 
-                    <button type="submit" class="btn btn-dark w-100 py-2">Ingresar</button>
+                    <button type="submit" class="btn w-100 fw-semibold py-2" style="background-color: var(--accent-blue); color: #ffffff;">Ingresar</button>
                 </form>
 
-                <div class="text-center mt-3">
-                    <p class="text-muted">¿No tenés cuenta? <a href="register.html">Registrarse</a></p>
+                <div class="text-center mt-4 pt-3 border-top" style="border-color: var(--border-color) !important;">
+                    <span class="small text-muted">¿No tenés cuenta?</span>
+                    <a href="register.html" class="small fw-semibold text-decoration-none ms-1" style="color: var(--accent-blue-hover);">Registrarse</a>
                 </div>
+
             </div>
         </div>
     </div>
@@ -42,28 +68,60 @@
 <!-- MODAL PARA RECUPERAR CONTRASEÑA -->
 <div class="modal fade" id="modalOlvidePassword" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-<div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold">Recuperar Contraseña</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p class="text-muted small">Ingresá tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
-        <form id="form-olvide-password">
-          <div class="mb-3">
-            <label class="form-label">Correo electrónico</label>
-            <input type="email" id="email-recuperacion" class="form-control" placeholder="tu@email.com" required>
-          </div>
-          <button type="submit" id="btn-enviar-recuperacion" class="btn btn-primary w-100">Enviar enlace</button>
-        </form>
-      </div>
+        <div class="modal-content border rounded-4 shadow" style="background-color: var(--bg-card); border-color: var(--border-color) !important; color: var(--text-main);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" style="color: var(--text-main);">Recuperar Contraseña</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Ingresá tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+                <form id="form-olvide-password">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" style="color: var(--text-main);">Correo electrónico</label>
+                        <input type="email" id="email-recuperacion" class="form-control" placeholder="tu@email.com" required>
+                    </div>
+                    <button type="submit" id="btn-enviar-recuperacion" class="btn w-100 fw-semibold" style="background-color: var(--accent-blue); color: #ffffff;">Enviar enlace</button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- JS de Bootstrap imprescindible para que funcionen los Modales -->
+<!-- JS de Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- Script de Gestión de Tema / Persistencia -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const toggleBtn = document.getElementById("themeToggleBtn");
+        const themeIcon = document.getElementById("themeIcon");
+        const themeText = document.getElementById("themeText");
+        
+        // 1. Cargar tema guardado o aplicar 'dark'
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        if (toggleBtn) updateButtonUI(savedTheme);
+
+        // 2. Evento Toggle
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", () => {
+                const currentTheme = document.documentElement.getAttribute("data-theme");
+                const newTheme = currentTheme === "dark" ? "light" : "dark";
+                
+                document.documentElement.setAttribute("data-theme", newTheme);
+                localStorage.setItem("theme", newTheme);
+                updateButtonUI(newTheme);
+            });
+        }
+
+        function updateButtonUI(theme) {
+            if (themeIcon) themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+            if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
+        }
+    });
+</script>
+
+<!-- Lógica JS Original de la API -->
 <script>
     const API_URL = "http://127.0.0.1:8000";
 

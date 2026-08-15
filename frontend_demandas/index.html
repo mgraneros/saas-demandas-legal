@@ -17,14 +17,15 @@
   <aside class="sidebar p-3 d-flex flex-column justify-content-between flex-shrink-0" style="width: 260px;">
     <div>
       <!-- Logo / Marca -->
-      <div class="brand-container">
-        <div class="brand-icon">
-          ⚖️
-        </div>
-        <div class="brand-text">
-          SaaS <span>Legal</span>
-        </div>
-      </div>
+    
+<div class="brand-container">
+  <div class="brand-icon">
+    ⚖️
+  </div>
+  <div class="brand-text">
+    SaaS <span>Legal</span>
+  </div>
+</div>
 
       <!-- Navegación -->
       <ul class="nav nav-pills flex-column gap-2 mb-auto">
@@ -41,21 +42,28 @@
       </ul>
     </div>
 
-    <!-- Zona Inferior (Suscripción y Sesión) -->
-    <div class="pt-3 border-top border-secondary-subtle d-flex flex-column gap-2">
-      <div class="small p-2 rounded text-center" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color);">
-        <span id="badgeSuscripcion" class="fw-semibold text-muted">Verificando...</span>
-      </div>
+    <!-- Zona Inferior (Tema, Suscripción y Sesión) -->
+<div class="pt-3 border-top border-secondary-subtle d-flex flex-column gap-2">
+  <!-- Switch Modo Claro / Oscuro -->
+  <button id="themeToggleBtn" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2" style="border-color: var(--border-color); color: var(--text-main);">
+    <span id="themeIcon">☀️</span>
+    <span id="themeText" class="small fw-semibold">Modo Claro</span>
+  </button>
 
-      <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
-        💳 Pagar / Suscribirse
-      </button>
+  <div class="small p-2 rounded text-center" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color);">
+    <span id="badgeSuscripcion" class="fw-semibold text-muted">Verificando...</span>
+  </div>
 
-      <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
-        Cerrar Sesión
-      </button>
-    </div>
+  <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
+    💳 Pagar / Suscribirse
+  </button>
+
+  <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
+    Cerrar Sesión
+  </button>
+</div>
   </aside>
+  
 
   <!-- Área de Contenido Principal -->
   <main class="flex-grow-1 p-4 overflow-auto" style="height: 100vh;">
@@ -254,7 +262,7 @@
                                         
                                         <div class="col-md-12 mb-2 mt-2">
                                             <label class="form-label fw-bold small text-muted">Prueba Documental</label>
-                                            <div class="border rounded p-2 overflow-y-auto" style="max-height: 200px; background-color: #0f172a; border-color: var(--border-color) !important;">
+                                            <div class="border rounded p-2 overflow-y-auto" style="max-height: 200px; background-color: #121217; border-color: var(--border-color) !important;">
                                             <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small text-white" for="doc1">Acta de Mediación</label></div>
                                             <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small text-white" for="doc2">DNI Actor</label></div>
                                             <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small text-white" for="doc3">Licencia de Conducir Actor</label></div>
@@ -406,9 +414,9 @@
                                 <h3 class="card-title fw-bold text-primary mb-2">SaaS Legal Pro</h3>
                                 <p class="card-text text-muted small">Acceso ilimitado para abogados y estudios jurídicos.</p>
                                 
-                                <div class="my-3 p-3 rounded border" style="background: rgba(255, 255, 255, 0.03); border-color: var(--border-color) !important;">
-                                <span class="display-5 fw-bold text-white">$500.000</span>
-                                <span class="text-muted fw-bold">ARS / mes</span>
+                                <div class="my-3 p-3 rounded border" style="background: rgba(107, 90, 126, 0.1); border-color: var(--border-color) !important;">
+                                    <span class="display-5 fw-bold text-white">$500.000</span>
+                                    <span class="text-muted fw-bold">ARS / mes</span>
                                 </div>
 
                                 <ul class="list-unstyled mb-4 text-start small mx-auto" style="max-width: 300px;">
@@ -1093,6 +1101,39 @@ async function toggleSuscripcion(usuarioId) {
         console.error("Error al modificar la suscripción:", err);
     }
 }
+
+<!-- Script de Gestión de Tema / Persistencia (Light / Dark) -->
+  
+    document.addEventListener("DOMContentLoaded", () => {
+      const toggleBtn = document.getElementById("themeToggleBtn");
+      const themeIcon = document.getElementById("themeIcon");
+      const themeText = document.getElementById("themeText");
+      
+      // 1. Leer preferencia guardada o aplicar 'dark' por defecto
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+      if (toggleBtn) updateButtonUI(savedTheme);
+
+      // 2. Listener para cambiar de tema al hacer click
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+          const currentTheme = document.documentElement.getAttribute("data-theme");
+          const newTheme = currentTheme === "dark" ? "light" : "dark";
+          
+          document.documentElement.setAttribute("data-theme", newTheme);
+          localStorage.setItem("theme", newTheme);
+          updateButtonUI(newTheme);
+        });
+      }
+
+      function updateButtonUI(theme) {
+        if (themeIcon) themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+        if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
+      }
+    });
+  </script>
+</body>
+</html>
 </script>
 </body>
 </html>
