@@ -1,3 +1,5 @@
+import os
+import sys
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -5,32 +7,24 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# 1. Asegurar ruta raíz del proyecto
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+# 2. Importar Base, modelos y la DATABASE_URL dinámica
+from database import Base, DATABASE_URL
+import models
+
+# this is the Alembic Config object
 config = context.config
 
+# 3. Sobrescribir la URL de alembic.ini con la URL dinámica (SQLite en local o PostgreSQL en VPS)
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
 # Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# Importamos la base de datos y modelos del proyecto
-import os
-import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from database import Base
-import models
-
 target_metadata = Base.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:
@@ -41,7 +35,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # Necesario para SQLite
+        render_as_batch="sqlite" in url,  # Batch solo necesario para SQLite
     )
 
     with context.begin_transaction():
@@ -60,7 +54,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection, 
             target_metadata=target_metadata,
-            render_as_batch=True  # 👈 DEBE ESTAR ACÁ
+            render_as_batch="sqlite" in DATABASE_URL  # Batch solo si es SQLite
         )
 
         with context.begin_transaction():
