@@ -54,25 +54,35 @@ from security import (
     pwd_context,
 )
 
-ahora = datetime.now(timezone.utc)
-
 # Configurar Gemini IA
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# 1. Inicialización de la aplicación FastAPI
+# Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
+
+# Inicialización SDK Mercado Pago
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
-# ⚠️ ESTA LÍNEA CREA LAS TABLAS AUTOMÁTICAMENTE EN LA BASE DE DATOS
+
+# Creación automática de tablas en DB
 models.Base.metadata.create_all(bind=engine)
-# Agregar el middleware de CORS
+
+# Configuración Dinámica de CORS para Producción y Desarrollo
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+
+origins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:8000",
+    FRONTEND_URL,
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # 2. Configuración JWT
 SECRET_KEY = "admin123"
 ALGORITHM = "HS256"
