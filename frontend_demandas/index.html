@@ -10,6 +10,7 @@
     <!-- Tu CSS Personalizado -->
     <link rel="stylesheet" href="styles.css">
 </head>
+<body>
 <!-- Envoltorio Principal Flex -->
 <div class="d-flex min-vh-100">
 
@@ -17,15 +18,10 @@
   <aside class="sidebar p-3 d-flex flex-column justify-content-between flex-shrink-0" style="width: 260px;">
     <div>
       <!-- Logo / Marca -->
-    
-<div class="brand-container">
-  <div class="brand-icon">
-    ⚖️
-  </div>
-  <div class="brand-text">
-    SaaS <span>Legal</span>
-  </div>
-</div>
+      <div class="brand-container">
+        <div class="brand-icon">⚖️</div>
+        <div class="brand-text">SaaS <span>Legal</span></div>
+      </div>
 
       <!-- Navegación -->
       <ul class="nav nav-pills flex-column gap-2 mb-auto">
@@ -39,36 +35,41 @@
             📁 Historial
           </a>
         </li>
+        <!-- NUEVO: Pestaña exclusiva para el Administrador (Oculta por defecto) -->
+        <li class="nav-item" id="menu-admin" style="display: none;">
+          <a href="#" class="nav-link text-warning fw-bold" onclick="mostrarSeccion('seccion-admin', event)">
+            👑 Administración
+          </a>
+        </li>
       </ul>
     </div>
 
     <!-- Zona Inferior (Tema, Suscripción y Sesión) -->
-<div class="pt-3 border-top border-secondary-subtle d-flex flex-column gap-2">
-  <!-- Switch Modo Claro / Oscuro -->
-  <button id="themeToggleBtn" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2" style="border-color: var(--border-color); color: var(--text-main);">
-    <span id="themeIcon">☀️</span>
-    <span id="themeText" class="small fw-semibold">Modo Claro</span>
-  </button>
+    <div class="pt-3 border-top border-secondary-subtle d-flex flex-column gap-2">
+      <!-- Switch Modo Claro / Oscuro -->
+      <button id="themeToggleBtn" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2" style="border-color: var(--border-color); color: var(--text-main);">
+        <span id="themeIcon">☀️</span>
+        <span id="themeText" class="small fw-semibold">Modo Claro</span>
+      </button>
 
-  <div class="small p-2 rounded text-center" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color);">
-    <span id="badgeSuscripcion" class="fw-semibold text-muted">Verificando...</span>
-  </div>
+      <div class="small p-2 rounded text-center" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color);">
+        <span id="badgeSuscripcion" class="fw-semibold text-muted">Verificando...</span>
+      </div>
 
-  <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
-    💳 Pagar / Suscribirse
-  </button>
+      <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
+        💳 Pagar / Suscribirse
+      </button>
 
-  <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
-    Cerrar Sesión
-  </button>
-</div>
+      <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
+        Cerrar Sesión
+      </button>
+    </div>
   </aside>
-  
 
   <!-- Área de Contenido Principal -->
   <main class="flex-grow-1 p-4 overflow-auto" style="height: 100vh;">
     
-    <!-- Banner de Alerta de Suscripción (Ahora vive dentro del área principal) -->
+    <!-- Banner de Alerta de Suscripción -->
     <div id="alerta-suscripcion" class="mb-4" style="display: none;">
       <div class="alert alert-warning alert-dismissible fade show shadow-sm d-flex align-items-center justify-content-between" role="alert">
         <div>
@@ -78,745 +79,728 @@
       </div>
     </div>
 
-    <!-- AQUÍ CONTINÚA TU FORMULARIO, TABLAS, PANEL ADMIN, ETC. -->
+    <!-- ================= SECCIÓN 1: CREAR DEMANDA ================= -->
+    <section id="seccion-crear" class="seccion-app">
+      <div class="container-fluid mb-5">
+        <div class="row">
+          
+          <!-- Columna Izquierda: Formulario de Carga -->
+          <div class="col-lg-7">
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Carga de Datos</h5>
+              </div>
+              <div class="card-body">
+                <form id="formularioDemanda">
 
-    <!-- Panel de Contenido Principal -->
-    <main class="flex-grow-1 p-4 overflow-auto">
+                  <!-- Sección de Autocompletado con IA -->
+                  <div class="row mb-4 card p-3 border rounded mx-0 mt-3">
+                    <div class="col-12">
+                      <h6 class="text-primary mb-3">🤖 Autocompletar con Acta de Mediación (IA)</h6>
+                      <div class="d-flex align-items-center gap-3">
+                        <input class="form-control form-control-sm w-auto" type="file" id="actaFile" accept=".pdf, image/jpeg, image/png">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnExtraerIA" onclick="procesarActaIA()">
+                          Procesar Documento
+                        </button>
+                        <span id="loadingIA" class="text-primary small fw-bold" style="display: none;">
+                          ⏳ Leyendo documento con IA...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-        <!-- Alerta de pocos créditos / suscripción (Opcional arriba de todo) -->
-        <div id="alerta-suscripcion" class="container mt-3 mb-3" style="display: none;">
-            <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
-                <strong>¡Atención!</strong> Te quedan muy pocos créditos disponibles en tu cuenta para generar demandas.
-            </div>
-        </div>
-
-        <!-- ================= SECCIÓN 1: CREAR DEMANDA ================= -->
-        <section id="seccion-crear" class="seccion-app">
-            <div class="container-fluid mb-5">
-                <div class="row">
-                    <!-- Columna Izquierda: Formulario de Carga -->
-                    <div class="col-md-7">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-dark text-white">
-                                <h5 class="mb-0">Carga de Datos</h5>
-                            </div>
-                            <div class="card-body">
-                                <form id="formularioDemanda">
-
-                                    <!-- Sección de Autocompletado con IA -->
-<div class="row mb-4 card p-3 border rounded mx-0 mt-3">
-    <div class="col-12">
-        <h6 class="text-primary mb-3">🤖 Autocompletar con Acta de Mediación (IA)</h6>
-        <div class="d-flex align-items-center gap-3">
-            <input class="form-control form-control-sm w-auto" type="file" id="actaFile" accept=".pdf, image/jpeg, image/png">
-            <button type="button" class="btn btn-primary btn-sm" id="btnExtraerIA" onclick="procesarActaIA()">
-                Procesar Documento
-            </button>
-            <span id="loadingIA" class="text-primary small fw-bold" style="display: none;">
-                ⏳ Leyendo documento con IA...
-            </span>
-        </div>
-    </div>
-</div>
-
-<!-- Selector de Tipo de Demanda -->
-<div class="row mb-4 mt-3">
-    <div class="col-12">
-        <label class="form-label fw-bold text-primary">Seleccione el Tipo de Demanda a Generar</label>
-        <select class="form-select border-primary shadow-sm" id="TipoDemandaSelector" onchange="cambiarTipoDemanda()">
-            <option value="auto_moto" selected>Daños y Perjuicios: Auto vs. Moto</option>
-            <option value="auto_auto">Daños y Perjuicios: Auto vs. Auto</option>
-            <option value="modelo_3" disabled>Modelo 3 (Próximamente...)</option>
-            <option value="modelo_4" disabled>Modelo 4 (Próximamente...)</option>
-        </select>
-    </div>
-</div>
+                  <!-- Selector de Tipo de Demanda -->
+                  <div class="row mb-4 mt-3">
+                    <div class="col-12">
+                      <label class="form-label fw-bold text-primary">Seleccione el Tipo de Demanda a Generar</label>
+                      <select class="form-select border-primary shadow-sm" id="TipoDemandaSelector" onchange="cambiarTipoDemanda()">
+                        <option value="auto_moto" selected>Daños y Perjuicios: Auto vs. Moto</option>
+                        <option value="auto_auto">Daños y Perjuicios: Auto vs. Auto</option>
+                        <option value="modelo_3" disabled>Modelo 3 (Próximamente...)</option>
+                        <option value="modelo_4" disabled>Modelo 4 (Próximamente...)</option>
+                      </select>
+                    </div>
+                  </div>
                                     
-                                    <!-- 1. Datos del Actor -->
-                                    <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
-                                    <div class="row mb-3">
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small">Nombre</label>
-                                            <input type="text" class="form-control form-control-sm" id="NombreActor" required>
-                                        </div>
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small">DNI</label>
-                                            <input type="text" class="form-control form-control-sm" id="DniActor" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
-                                        </div>
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small">Domicilio</label>
-                                            <input type="text" class="form-control form-control-sm" id="DomicilioActor" required>
-                                        </div>
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small">Vehículo (marca, modelo, dominio)</label>
-                                            <input type="text" class="form-control form-control-sm" id="VehiculoActor" required>
-                                        </div>
-                                    </div>
+                  <!-- 1. Datos del Actor -->
+                  <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
+                  <div class="row mb-3">
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">Nombre</label>
+                      <input type="text" class="form-control form-control-sm" id="NombreActor" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">DNI</label>
+                      <input type="text" class="form-control form-control-sm" id="DniActor" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">Domicilio</label>
+                      <input type="text" class="form-control form-control-sm" id="DomicilioActor" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">Vehículo (marca, modelo, dominio)</label>
+                      <input type="text" class="form-control form-control-sm" id="VehiculoActor" required>
+                    </div>
+                  </div>
 
-                                    <!-- 2. Datos Demandado y Seguro -->
-<h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
-<div class="row mb-3">
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Nombre Demandado</label>
-        <input type="text" class="form-control form-control-sm" id="NombreDemandado" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">DNI Demandado</label>
-        <input type="text" class="form-control form-control-sm" id="DniDemandado" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-    </div>
-    <div class="col-md-12 mb-2">
-        <label class="form-label small">Domicilio Demandado</label>
-        <input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required>
-    </div>
-    <div class="col-md-12 mb-2">
-        <label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label>
-        <input type="text" class="form-control form-control-sm" id="AutoDemandado" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">Aseguradora</label>
-        <input type="text" class="form-control form-control-sm" id="NombreAseguradora" required>
-    </div>
-    <div class="col-md-6 mb-2">
-        <label class="form-label small">CUIT Aseguradora</label>
-        <input type="text" class="form-control form-control-sm" id="CuitAseguradora" required>
-    </div>
-    <div class="col-md-12 mb-2">
-        <label class="form-label small">Domicilio Aseguradora</label>
-        <input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required>
-    </div>
-</div>
+                  <!-- 2. Datos Demandado y Seguro -->
+                  <h6 class="text-primary border-bottom pb-2 mt-3">2. Demandado y Seguro</h6>
+                  <div class="row mb-3">
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">Nombre Demandado</label>
+                      <input type="text" class="form-control form-control-sm" id="NombreDemandado" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">DNI Demandado</label>
+                      <input type="text" class="form-control form-control-sm" id="DniDemandado" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                    <div class="col-md-12 mb-2">
+                      <label class="form-label small">Domicilio Demandado</label>
+                      <input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required>
+                    </div>
+                    <div class="col-md-12 mb-2">
+                      <label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label>
+                      <input type="text" class="form-control form-control-sm" id="AutoDemandado" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">Aseguradora</label>
+                      <input type="text" class="form-control form-control-sm" id="NombreAseguradora" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small">CUIT Aseguradora</label>
+                      <input type="text" class="form-control form-control-sm" id="CuitAseguradora" required>
+                    </div>
+                    <div class="col-md-12 mb-2">
+                      <label class="form-label small">Domicilio Aseguradora</label>
+                      <input type="text" class="form-control form-control-sm" id="DomicilioAseguradora" required>
+                    </div>
+                  </div>
 
-                                    <!-- 3. Hechos y Lesiones -->
-                                    <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
-                                    <div class="row mb-3">
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="date" class="form-control form-control-sm" id="FechaHecho" required></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
-                                        <div class="col-md-12 mb-3"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
-                                        
-                                        <div class="col-md-12 mb-3">
-                                            <label class="form-label fw-bold small text-secondary">Tipo de Lesión</label>
-                                            <div class="form-check">
-                                                <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion25" value="CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (Hombro, Rodilla, Pecho, Craneal)" data-porcentaje="25">
-                                                <label class="form-check-label small" for="lesion25">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion30" value="TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE" data-porcentaje="30">
-                                                <label class="form-check-label small" for="lesion30">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion35" value="ESGUINCE FRACTURA, HEMORRAGIA" data-porcentaje="35">
-                                                <label class="form-check-label small" for="lesion35">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
-                                            </div>
-                                        </div>
+                  <!-- 3. Hechos y Lesiones -->
+                  <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
+                  <div class="row mb-3">
+                    <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="date" class="form-control form-control-sm" id="FechaHecho" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Lugar del Hecho</label><input type="text" class="form-control form-control-sm" id="LugarHecho" required></div>
+                    <div class="col-md-12 mb-3"><label class="form-label small">Descripción de los Hechos</label><textarea class="form-control form-control-sm" id="DescripcionHechos" rows="2" required></textarea></div>
+                    
+                    <div class="col-md-12 mb-3">
+                      <label class="form-label fw-bold small text-secondary">Tipo de Lesión</label>
+                      <div class="form-check">
+                        <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion25" value="CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (Hombro, Rodilla, Pecho, Craneal)" data-porcentaje="25">
+                        <label class="form-check-label small" for="lesion25">CERVICALGIA, LUMBALGIA, TRAUMATISMOS VARIOS (25%)</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion30" value="TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE" data-porcentaje="30">
+                        <label class="form-check-label small" for="lesion30">TRAUMATISMO CRANEAL/PECHO/LESIÓN CORTOPUNZANTE (30%)</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input lesion-checkbox" type="checkbox" id="lesion35" value="ESGUINCE FRACTURA, HEMORRAGIA" data-porcentaje="35">
+                        <label class="form-check-label small" for="lesion35">ESGUINCE FRACTURA, HEMORRAGIA (35%)</label>
+                      </div>
+                    </div>
 
-                                        <div class="col-md-12 mb-3">
-                                            <label class="form-label fw-bold small text-secondary">Porcentaje Daño Psicológico</label>
-                                            <div class="d-flex gap-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico10" value="10%">
-                                                    <label class="form-check-label small" for="psico10">10%</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico15" value="15%">
-                                                    <label class="form-check-label small" for="psico15">15%</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="dano_psicologico" id="psico20" value="20%">
-                                                    <label class="form-check-label small" for="psico20">20%</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-12 mb-2">
-                                            <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
-                                            <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
-                                        </div>
-                                        <div class="col-md-12 mb-3">
-                                            <label class="form-label small">Listado de Secuelas</label>
-                                            <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
-                                        </div>
-                                    </div>
-
-                                    <!-- 4. Prueba y Atención -->
-                                    <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
-                                    <div class="row mb-3">
-                                        <div class="col-md-12 mb-3">
-                                            <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
-                                            <div class="d-flex gap-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
-                                                    <label class="form-check-label small" for="int_same">Solo SAME</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
-                                                    <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
-                                        <!-- Campo exclusivo Auto-Auto -->
-                                        <div class="col-md-6 mb-2 campo-auto-auto" style="display: none;"><label class="form-label fw-bold small text-info">Fecha de Atención Médica (Auto vs Auto)</label><input type="date" class="form-control form-control-sm" id="FechaMedica"></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
-                                        <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
-                                        <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="date" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
-                                        
-                                        <div class="col-md-12 mb-2 mt-2">
-                                            <label class="form-label fw-bold small text-muted">Prueba Documental</label>
-                                            <div class="border rounded p-2 overflow-y-auto" style="max-height: 200px; background-color: #121217; border-color: var(--border-color) !important;">
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small text-white" for="doc1">Acta de Mediación</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small text-white" for="doc2">DNI Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small text-white" for="doc3">Licencia de Conducir Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small text-white" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small text-white" for="doc5">Denuncia Administrativa Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small text-white" for="doc6">Certificado de Cobertura Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small text-white" for="doc7">DNI Demandado</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small text-white" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small text-white" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small text-white" for="doc10">Póliza de Seguro Demandado</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small text-white" for="doc11">Croquis del lugar del siniestro</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small text-white" for="doc12">Imágenes Daños Vehículo Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small text-white" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small text-white" for="doc14">Imágenes Lesiones Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small text-white" for="doc15">Imágenes Momento del Siniestro</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small text-white" for="doc16">Actuaciones Sumariales</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small text-white" for="doc17">Constancias de Atención Médica Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small text-white" for="doc18">Estudios Médicos Actor</label></div>
-                                            <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small text-white" for="doc19">Video del momento del siniestro</label></div>
-                                            </div>
-
-                                    <!-- 5. Competencia y Liquidación -->
-                                    <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
-                                    <div class="row mb-3">
-                                        <div class="col-md-12 mb-3">
-                                            <label class="form-label fw-bold small text-secondary">Competencia</label>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia1" value="Lugar del hecho" checked>
-                                                <label class="form-check-label small" for="competencia1">Lugar del hecho</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia2" value="Domicilio del demandado">
-                                                <label class="form-check-label small" for="competencia2">Domicilio del demandado</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia3" value="Domicilio de la citada (Aseguradora)">
-                                                <label class="form-check-label small" for="competencia3">Domicilio de la citada (Aseguradora)</label>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
-                                            <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
-                                        </div>
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small fw-bold">Incapacidad Total (%)</label>
-                                            <input type="number" class="form-control form-control-sm " id="PuntosdeIncapacidad" value="0" readonly>
-                                        </div>
-                                    </div>
-
-                                    <!-- Botones de Acción -->
-                                    <div class="d-grid gap-2 mt-4">
-                                        <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
-                                        <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
-                                    </div>
-                                </form>
-                            </div>
+                    <div class="col-md-12 mb-3">
+                      <label class="form-label fw-bold small text-secondary">Porcentaje Daño Psicológico</label>
+                      <div class="d-flex gap-3">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="dano_psicologico" id="psico10" value="10%">
+                          <label class="form-check-label small" for="psico10">10%</label>
                         </div>
-                    </div>
-
-                    <!-- Columna Derecha: Panel de Auditoría -->
-                    <div class="col-md-5">
-                        <div class="card shadow-sm sticky-top" style="top: 20px;">
-                            <div class="card-header bg-secondary text-white">
-                                <h5 class="mb-0">Auditoría y Cálculos</h5>
-                            </div>
-                            <div class="card-body">
-                                <p class="text-muted small">Los resultados estructurados de la API aparecerán aquí antes de generar el documento final.</p>
-                                <pre id="resultadoAuditoria" class="bg-dark text-success p-3 rounded" style="min-height: 400px; max-height: 700px; overflow-y: auto;">Esperando ejecución...</pre>
-                            </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="dano_psicologico" id="psico15" value="15%">
+                          <label class="form-check-label small" for="psico15">15%</label>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= SECCIÓN 2: HISTORIAL ================= -->
-        <section id="seccion-historial" class="seccion-app" style="display: none;">
-            <div class="container-fluid mb-5">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Historial de Demandas Generadas</h5>
-                        <button class="btn btn-sm btn-outline-light" onclick="cargarHistorial()">Actualizar Lista</button>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Actor / Cliente</th>
-                                        <th>DNI</th>
-                                        <th>Fecha</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaHistorialBody">
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">Cargando historial...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="dano_psicologico" id="psico20" value="20%">
+                          <label class="form-check-label small" for="psico20">20%</label>
                         </div>
+                      </div>
                     </div>
-                </div>
-            </div>
-        </section>
-        <!-- ================= SECCIÓN 3: ESTADO DE DEMANDA (ENDPOINT) ================= -->
-        <section id="seccion-estado" class="seccion-app" style="display: none;">
-            <div class="container-fluid mb-5">
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-dark text-white">
-                                <h5 class="mb-0">🔍 Consultar Estado de Demanda</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control" id="inputConsultaId" placeholder="Ingrese ID de demanda o número de expediente...">
-                                    <button class="btn btn-primary" type="button" onclick="consultarEstadoDemanda()">Consultar Endpoint</button>
-                                </div>
-                                <div class="mt-4">
-                                    <label class="form-label fw-bold text-secondary">Resultado de la consulta:</label>
-                                    <pre id="resultadoEstadoDemanda" class="bg-dark text-success p-3 rounded" style="min-height: 250px; max-height: 500px; overflow-y: auto;">Realice una consulta para ver la respuesta del servidor...</pre>
-                                </div>
-                            </div>
+                    <div class="col-md-12 mb-2">
+                      <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
+                      <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
+                    </div>
+                    <div class="col-md-12 mb-3">
+                      <label class="form-label small">Listado de Secuelas</label>
+                      <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
+                    </div>
+                  </div>
+
+                  <!-- 4. Prueba y Atención -->
+                  <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
+                  <div class="row mb-3">
+                    <div class="col-md-12 mb-3">
+                      <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
+                      <div class="d-flex gap-3">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
+                          <label class="form-check-label small" for="int_same">Solo SAME</label>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section id="seccion-suscripcion" class="seccion-app" style="display: none;">
-            <div class="container py-4">
-                <div class="row text-center mb-4">
-                    <div class="col-lg-8 mx-auto">
-                        <h2 class="fw-bold">Gestión de Suscripción</h2>
-                        <p class="text-muted">Activa o renueva tu cuenta profesional para continuar automatizando escritos y demandas legales.</p>
-                    </div>
-                </div>
-
-                <div class="row justify-content-center">
-                    <div class="col-md-6 col-lg-5">
-                        <div class="card h-100 shadow-lg border-primary position-relative">
-                            <div class="position-absolute top-0 start-50 translate-middle">
-                                <span class="badge bg-primary text-uppercase px-3 py-2 fs-6 shadow-sm">Plan Profesional</span>
-                            </div>
-                            <div class="card-body d-flex flex-column p-4 pt-5 text-center">
-                                <h3 class="card-title fw-bold text-primary mb-2">SaaS Legal Pro</h3>
-                                <p class="card-text text-muted small">Acceso ilimitado para abogados y estudios jurídicos.</p>
-                                
-                                <div class="my-3 p-3 rounded border" style="background: rgba(107, 90, 126, 0.1); border-color: var(--border-color) !important;">
-                                    <span class="display-5 fw-bold text-white">$500.000</span>
-                                    <span class="text-muted fw-bold">ARS / mes</span>
-                                </div>
-
-                                <ul class="list-unstyled mb-4 text-start small mx-auto" style="max-width: 300px;">
-                                    <li class="mb-2 d-flex align-items-center">
-                                        <span class="me-2 text-success fw-bold">✓</span> Generación ilimitada de demandas
-                                    </li>
-                                    <li class="mb-2 d-flex align-items-center">
-                                        <span class="me-2 text-success fw-bold">✓</span> Acceso a todas las plantillas
-                                    </li>
-                                    <li class="mb-2 d-flex align-items-center">
-                                        <span class="me-2 text-success fw-bold">✓</span> Auditoría de datos por IA
-                                    </li>
-                                    <li class="mb-2 d-flex align-items-center">
-                                        <span class="me-2 text-success fw-bold">✓</span> Consulta vía Endpoint de estado
-                                    </li>
-                                    <li class="mb-2 d-flex align-items-center">
-                                        <span class="me-2 text-success fw-bold">✓</span> Historial completo e ilimitado
-                                    </li>
-                                    <li class="mb-2 d-flex align-items-center">
-                                        <span class="me-2 text-success fw-bold">✓</span> Soporte prioritario
-                                    </li>
-                                </ul>
-
-                                <button id="btnPagarMP" class="btn btn-primary btn-lg w-100 mt-auto shadow-sm" onclick="pagarSuscripcionMensual(event)">
-                                    💳 Suscribirse con Mercado Pago
-                                </button>
-                                <p class="text-muted small mt-2 mb-0" style="font-size: 0.8rem;">Suscripción mensual recurrente de $500.000 ARS.</p>
-                            </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
+                          <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
                         </div>
+                      </div>
                     </div>
-                </div>
-            </div>
-        </section>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
+                    <div class="col-md-6 mb-2 campo-auto-auto" style="display: none;"><label class="form-label fw-bold small text-info">Fecha de Atención Médica (Auto vs Auto)</label><input type="date" class="form-control form-control-sm" id="FechaMedica"></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
+                    <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="date" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
+                    
+                    <div class="col-md-12 mb-2 mt-2">
+                      <label class="form-label fw-bold small text-muted">Prueba Documental</label>
+                      <div class="border rounded p-2 overflow-y-auto" style="max-height: 200px; background-color: #121217; border-color: var(--border-color) !important;">
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small text-white" for="doc1">Acta de Mediación</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small text-white" for="doc2">DNI Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small text-white" for="doc3">Licencia de Conducir Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small text-white" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small text-white" for="doc5">Denuncia Administrativa Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small text-white" for="doc6">Certificado de Cobertura Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small text-white" for="doc7">DNI Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small text-white" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small text-white" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small text-white" for="doc10">Póliza de Seguro Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small text-white" for="doc11">Croquis del lugar del siniestro</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small text-white" for="doc12">Imágenes Daños Vehículo Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small text-white" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small text-white" for="doc14">Imágenes Lesiones Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small text-white" for="doc15">Imágenes Momento del Siniestro</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small text-white" for="doc16">Actuaciones Sumariales</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small text-white" for="doc17">Constancias de Atención Médica Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small text-white" for="doc18">Estudios Médicos Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small text-white" for="doc19">Video del momento del siniestro</label></div>
+                      </div>
+                    </div>
+                  </div> 
 
-        <div id="seccion-admin" class="mt-5 display-none">
-    <hr class="my-4">
-    <h2 class="fw-bold mb-4">👑 Panel de Administración</h2>
+                  <!-- 5. Competencia y Liquidación -->
+                  <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
+                  <div class="row mb-3">
+                    <div class="col-md-12 mb-3">
+                      <label class="form-label fw-bold small text-secondary">Competencia</label>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia1" value="Lugar del hecho" checked>
+                        <label class="form-check-label small" for="competencia1">Lugar del hecho</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia2" value="Domicilio del demandado">
+                        <label class="form-check-label small" for="competencia2">Domicilio del demandado</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="OpcionCompetencia" id="competencia3" value="Domicilio de la citada (Aseguradora)">
+                        <label class="form-check-label small" for="competencia3">Domicilio de la citada (Aseguradora)</label>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
+                      <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                      <label class="form-label small fw-bold">Incapacidad Total (%)</label>
+                      <input type="number" class="form-control form-control-sm " id="PuntosdeIncapacidad" value="0" readonly>
+                    </div>
+                  </div>
 
-    <!-- Tarjetas de Métricas -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card bg-primary text-white p-3 shadow-sm">
-                <h5>Total Usuarios</h5>
-                <h2 id="metric-total-usuarios" class="fw-bold mb-0">0</h2>
+                  <!-- Botones de Acción -->
+                  <div class="d-grid gap-2 mt-4">
+                    <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
+                    <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
+                  </div>
+                </form>
+              </div>
             </div>
+          </div>
+
+          <!-- Columna Derecha: Panel de Auditoría -->
+          <div class="col-lg-5">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+              <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Auditoría y Cálculos</h5>
+              </div>
+              <div class="card-body">
+                <p class="text-muted small">Los resultados estructurados de la API aparecerán aquí antes de generar el documento final.</p>
+                <pre id="resultadoAuditoria" class="bg-dark text-success p-3 rounded" style="min-height: 400px; max-height: 700px; overflow-y: auto;">Esperando ejecución...</pre>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white p-3 shadow-sm">
-                <h5>Suscripciones Activas</h5>
-                <h2 id="metric-suscripciones-activas" class="fw-bold mb-0">0</h2>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-dark text-white p-3 shadow-sm">
-                <h5>Demandas Generadas</h5>
-                <h2 id="metric-total-demandas" class="fw-bold mb-0">0</h2>
-            </div>
-        </div>
-    </div>
+      </div>
+    </section>
 
-    <!-- Tabla de Usuarios -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white fw-bold">
-            Gestión de Usuarios y Suscripciones
-        </div>
-        <div class="card-body p-0">
+    <!-- ================= SECCIÓN 2: HISTORIAL ================= -->
+    <section id="seccion-historial" class="seccion-app" style="display: none;">
+      <div class="container-fluid mb-5">
+        <div class="card shadow-sm">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Historial de Demandas Generadas</h5>
+            <button class="btn btn-sm btn-outline-light" onclick="cargarHistorial()">Actualizar Lista</button>
+          </div>
+          <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Email</th>
-                            <th>Rol</th>
-                            <th>Estado Suscripción</th>
-                            <th>Créditos</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-usuarios-body">
-                        <!-- Se llena dinámicamente con JS -->
-                    </tbody>
-                </table>
+              <table class="table table-striped align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Actor / Cliente</th>
+                    <th>DNI</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaHistorialBody">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">Cargando historial...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+          </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ================= SECCIÓN 3: ESTADO DE DEMANDA (ENDPOINT) ================= -->
+    <section id="seccion-estado" class="seccion-app" style="display: none;">
+      <div class="container-fluid mb-5">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <div class="card shadow-sm">
+              <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">🔍 Consultar Estado de Demanda</h5>
+              </div>
+              <div class="card-body">
+                <div class="input-group mb-3">
+                  <input type="text" class="form-control" id="inputConsultaId" placeholder="Ingrese ID de demanda o número de expediente...">
+                  <button class="btn btn-primary" type="button" onclick="consultarEstadoDemanda()">Consultar Endpoint</button>
+                </div>
+                <div class="mt-4">
+                  <label class="form-label fw-bold text-secondary">Resultado de la consulta:</label>
+                  <pre id="resultadoEstadoDemanda" class="bg-dark text-success p-3 rounded" style="min-height: 250px; max-height: 500px; overflow-y: auto;">Realice una consulta para ver la respuesta del servidor...</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SECCIÓN SUSCRIPCIÓN ================= -->
+    <section id="seccion-suscripcion" class="seccion-app" style="display: none;">
+      <div class="container py-4">
+        <div class="row text-center mb-4">
+          <div class="col-lg-8 mx-auto">
+            <h2 class="fw-bold">Gestión de Suscripción</h2>
+            <p class="text-muted">Activa o renueva tu cuenta profesional para continuar automatizando escritos y demandas legales.</p>
+          </div>
+        </div>
+        <div class="row justify-content-center">
+          <div class="col-md-6 col-lg-5">
+            <div class="card h-100 shadow-lg border-primary position-relative">
+              <div class="position-absolute top-0 start-50 translate-middle">
+                <span class="badge bg-primary text-uppercase px-3 py-2 fs-6 shadow-sm">Plan Profesional</span>
+              </div>
+              <div class="card-body d-flex flex-column p-4 pt-5 text-center">
+                <h3 class="card-title fw-bold text-primary mb-2">SaaS Legal Pro</h3>
+                <p class="card-text text-muted small">Acceso ilimitado para abogados y estudios jurídicos.</p>
+                <div class="my-3 p-3 rounded border" style="background: rgba(107, 90, 126, 0.1); border-color: var(--border-color) !important;">
+                  <span class="display-5 fw-bold text-white">$500.000</span>
+                  <span class="text-muted fw-bold">ARS / mes</span>
+                </div>
+                <ul class="list-unstyled mb-4 text-start small mx-auto" style="max-width: 300px;">
+                  <li class="mb-2 d-flex align-items-center"><span class="me-2 text-success fw-bold">✓</span> Generación ilimitada de demandas</li>
+                  <li class="mb-2 d-flex align-items-center"><span class="me-2 text-success fw-bold">✓</span> Acceso a todas las plantillas</li>
+                  <li class="mb-2 d-flex align-items-center"><span class="me-2 text-success fw-bold">✓</span> Auditoría de datos por IA</li>
+                  <li class="mb-2 d-flex align-items-center"><span class="me-2 text-success fw-bold">✓</span> Consulta vía Endpoint de estado</li>
+                  <li class="mb-2 d-flex align-items-center"><span class="me-2 text-success fw-bold">✓</span> Historial completo e ilimitado</li>
+                  <li class="mb-2 d-flex align-items-center"><span class="me-2 text-success fw-bold">✓</span> Soporte prioritario</li>
+                </ul>
+                <button id="btnPagarMP" class="btn btn-primary btn-lg w-100 mt-auto shadow-sm" onclick="pagarSuscripcionMensual(event)">
+                  💳 Suscribirse con Mercado Pago
+                </button>
+                <p class="text-muted small mt-2 mb-0" style="font-size: 0.8rem;">Suscripción mensual recurrente de $500.000 ARS.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SECCIÓN 4: PANEL ADMIN ================= -->
+    <section id="seccion-admin" class="seccion-app" style="display: none;">
+      <div class="container-fluid mb-5">
+        <h2 class="fw-bold mb-4">👑 Panel de Administración</h2>
+
+        <!-- Tarjetas de Métricas -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="card bg-primary text-white p-3 shadow-sm">
+              <h5>Total Usuarios</h5>
+              <h2 id="metric-total-usuarios" class="fw-bold mb-0">0</h2>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-success text-white p-3 shadow-sm">
+              <h5>Suscripciones Activas</h5>
+              <h2 id="metric-suscripciones-activas" class="fw-bold mb-0">0</h2>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-dark text-white p-3 shadow-sm">
+              <h5>Demandas Generadas</h5>
+              <h2 id="metric-total-demandas" class="fw-bold mb-0">0</h2>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-warning text-dark p-3 shadow-sm">
+              <h5>Ingresos Mensuales</h5>
+              <h2 id="metric-ingresos" class="fw-bold mb-0">$0</h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Usuarios con Buscador -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span>Gestión de Usuarios y Suscripciones</span>
+            <input type="text" id="buscadorAdmin" class="form-control form-control-sm w-25" placeholder="🔍 Buscar por email..." onkeyup="filtrarUsuarios()">
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Estado Suscripción</th>
+                    <th>Créditos</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-usuarios-body">
+                  <!-- Se llena dinámicamente con JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODAL PARA AUDITAR DEMANDAS -->
+    <div class="modal fade" id="modalAuditoriaUsuario" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border rounded-4 shadow" style="background-color: var(--bg-card); border-color: var(--border-color) !important; color: var(--text-main);">
+          <div class="modal-header border-bottom border-secondary-subtle">
+            <h5 class="modal-title fw-bold">📁 Auditoría de Demandas - Usuario #<span id="auditoriaUsuarioId"></span></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>ID</th>
+                    <th>Actor / Cliente</th>
+                    <th>DNI</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-auditoria-body">
+                  <!-- Se llena dinámicamente con JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer border-top border-secondary-subtle">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
     </div>
+
+  </main>
 </div>
 
-    </main>
-</div>
-<!-- ========================================== -->
+<!-- JS de Bootstrap (NECESARIO PARA QUE EL MODAL ABRA) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    const API_URL = "http://127.0.0.1:8000";
+  const API_URL = "http://127.0.0.1:8000";
 
-// 1. VALIDACIÓN DE SESIÓN AL CARGAR LA PÁGINA
-document.addEventListener('DOMContentLoaded', async () => {
-    // Normalizamos la obtención del token
+  // 1. VALIDACIÓN DE SESIÓN AL CARGAR LA PÁGINA
+  document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
     if (!token) {
-        window.location.href = "landing.html";
-        return;
+      window.location.href = "landing.html";
+      return;
     }
-
-    // Aseguramos que 'access_token' quede siempre guardado de forma uniforme
     localStorage.setItem("access_token", token);
-
     console.log("Sesión activa, cargando panel...");
-
-    // Ejecutamos las funciones principales al iniciar
     await verificarEstadoSuscripcion();
     await cargarHistorial();
     await cargarPanelAdmin();
-});
+  });
 
-    // Automatización: Calcular el porcentaje de incapacidad máximo según las lesiones seleccionadas
-    document.addEventListener('DOMContentLoaded', () => {
-        const checkboxesLesion = document.querySelectorAll('.lesion-checkbox');
-        const inputIncapacidad = document.getElementById('PuntosdeIncapacidad');
+  // Automatización: Calcular el porcentaje de incapacidad máximo
+  document.addEventListener('DOMContentLoaded', () => {
+    const checkboxesLesion = document.querySelectorAll('.lesion-checkbox');
+    const inputIncapacidad = document.getElementById('PuntosdeIncapacidad');
 
-        checkboxesLesion.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                let maxPorcentaje = 0;
-                
-                document.querySelectorAll('.lesion-checkbox:checked').forEach(checked => {
-                    const porcentaje = parseInt(checked.getAttribute('data-porcentaje'));
-                    if (porcentaje > maxPorcentaje) {
-                        maxPorcentaje = porcentaje;
-                    }
-                });
-
-                inputIncapacidad.value = maxPorcentaje > 0 ? maxPorcentaje : '';
-            });
+    checkboxesLesion.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        let maxPorcentaje = 0;
+        document.querySelectorAll('.lesion-checkbox:checked').forEach(checked => {
+          const porcentaje = parseInt(checked.getAttribute('data-porcentaje'));
+          if (porcentaje > maxPorcentaje) {
+            maxPorcentaje = porcentaje;
+          }
         });
+        inputIncapacidad.value = maxPorcentaje > 0 ? maxPorcentaje : '';
+      });
     });
+  });
 
-    // --- LÓGICA DEL SELECTOR DE TIPO DE DEMANDA ---
-    function cambiarTipoDemanda() {
-        const selector = document.getElementById("TipoDemandaSelector").value;
-        const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
-        
-        if (selector === "auto_auto") {
-            // Mostrar los campos exclusivos de Auto-Auto
-            camposAutoAuto.forEach(campo => campo.style.display = 'block');
-        } else {
-            // Ocultarlos y limpiar su valor si el usuario vuelve a Auto-Moto
-            camposAutoAuto.forEach(campo => {
-                campo.style.display = 'none';
-                const input = campo.querySelector('input');
-                if(input) input.value = ''; 
-            });
-        }
+  // --- LÓGICA DEL SELECTOR DE TIPO DE DEMANDA ---
+  function cambiarTipoDemanda() {
+    const selector = document.getElementById("TipoDemandaSelector").value;
+    const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
+    
+    if (selector === "auto_auto") {
+      camposAutoAuto.forEach(campo => campo.style.display = 'block');
+    } else {
+      camposAutoAuto.forEach(campo => {
+        campo.style.display = 'none';
+        const input = campo.querySelector('input');
+        if(input) input.value = ''; 
+      });
+    }
+  }
+
+  // --- FUNCIÓN: PROCESAR ACTA CON IA ---
+  async function procesarActaIA() {
+    const fileInput = document.getElementById('actaFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      Swal.fire({
+        title: 'Atención',
+        text: 'Por favor, selecciona un Acta de Mediación (PDF o Imagen) primero.',
+        icon: 'warning',
+        confirmButtonColor: '#0d6efd'
+      });
+      return;
     }
 
-    // --- FUNCIÓN: PROCESAR ACTA CON IA ---
-    async function procesarActaIA() {
-        const fileInput = document.getElementById('actaFile');
-        const file = fileInput.files[0];
+    document.getElementById('loadingIA').style.display = 'inline-block';
+    document.getElementById('btnExtraerIA').disabled = true;
+
+    const formData = new FormData();
+    formData.append("archivo", file);
+    const token = localStorage.getItem("access_token");
+
+    try {
+      const response = await fetch(`${API_URL}/extraer-datos-acta/`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData
+      });
+
+      const jsonResponse = await response.json();
+
+      if (!response.ok) {
+        throw new Error(jsonResponse.detail || "Error al comunicarse con la IA.");
+      }
+      
+      if (jsonResponse.status === "success") {
+        const info = jsonResponse.datos;
         
-        if (!file) {
-            Swal.fire({
-                title: 'Atención',
-                text: 'Por favor, selecciona un Acta de Mediación (PDF o Imagen) primero.',
-                icon: 'warning',
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
-        }
+        if (info.NombreActor) document.getElementById('NombreActor').value = info.NombreActor;
+        if (info.DniActor) document.getElementById('DniActor').value = info.DniActor;
+        if (info.DomicilioActor) document.getElementById('DomicilioActor').value = info.DomicilioActor;
+        
+        if (info.NombreDemandado) document.getElementById('NombreDemandado').value = info.NombreDemandado;
+        if (info.DniDemandado) document.getElementById('DniDemandado').value = info.DniDemandado;
+        if (info.DomicilioDemandado) document.getElementById('DomicilioDemandado').value = info.DomicilioDemandado;
+        if (info.NombreAseguradora) document.getElementById('NombreAseguradora').value = info.NombreAseguradora;
+        if (info.CuitAseguradora) document.getElementById('CuitAseguradora').value = info.CuitAseguradora;
+        if (info.DomicilioAseguradora) document.getElementById('DomicilioAseguradora').value = info.DomicilioAseguradora;
 
-        // Mostrar estado de carga y deshabilitar botón
-        document.getElementById('loadingIA').style.display = 'inline-block';
-        document.getElementById('btnExtraerIA').disabled = true;
-
-        // Preparar el archivo
-        const formData = new FormData();
-        formData.append("archivo", file);
-
-        // Recuperar el token del usuario usando la key correcta de tu proyecto
-        const token = localStorage.getItem("access_token");
-
-        try {
-            // Enviar al backend
-            const response = await fetch(`${API_URL}/extraer-datos-acta/`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}` 
-                },
-                body: formData
-            });
-
-            const jsonResponse = await response.json();
-
-            // Manejo de errores del servidor (ej. 413 archivo muy grande o 500 error de IA)
-            if (!response.ok) {
-                throw new Error(jsonResponse.detail || "Error al comunicarse con la IA.");
-            }
-            
-            // Autocompletar el formulario
-            if (jsonResponse.status === "success") {
-                const info = jsonResponse.datos;
-                
-                // Sección 1: Actor
-                if (info.NombreActor) document.getElementById('NombreActor').value = info.NombreActor;
-                if (info.DniActor) document.getElementById('DniActor').value = info.DniActor;
-                if (info.DomicilioActor) document.getElementById('DomicilioActor').value = info.DomicilioActor;
-                
-                // Sección 2: Demandado y Seguro
-                if (info.NombreDemandado) document.getElementById('NombreDemandado').value = info.NombreDemandado;
-                if (info.DniDemandado) document.getElementById('DniDemandado').value = info.DniDemandado;
-                if (info.DomicilioDemandado) document.getElementById('DomicilioDemandado').value = info.DomicilioDemandado;
-                if (info.NombreAseguradora) document.getElementById('NombreAseguradora').value = info.NombreAseguradora;
-                if (info.CuitAseguradora) document.getElementById('CuitAseguradora').value = info.CuitAseguradora;
-                if (info.DomicilioAseguradora) document.getElementById('DomicilioAseguradora').value = info.DomicilioAseguradora;
-
-                Swal.fire({
-                    title: '¡Datos Extraídos!',
-                    text: 'Los datos del acta se han cargado con éxito. Por favor, revíselos.',
-                    icon: 'success',
-                    confirmButtonText: 'Aceptar',
-                    confirmButtonColor: '#0d6efd'
-                });
-            }
-        } catch (error) {
-            console.error("Error en la IA:", error);
-            Swal.fire({
-                title: 'Error al procesar',
-                text: error.message,
-                icon: 'error',
-                confirmButtonText: 'Cerrar',
-                confirmButtonColor: '#dc3545'
-            });
-        } finally {
-            // Restaurar interfaz visual
-            document.getElementById('loadingIA').style.display = 'none';
-            document.getElementById('btnExtraerIA').disabled = false;
-            fileInput.value = ""; // Limpiar el input file
-        }
+        Swal.fire({
+          title: '¡Datos Extraídos!',
+          text: 'Los datos del acta se han cargado con éxito. Por favor, revíselos.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+          confirmButtonColor: '#0d6efd'
+        });
+      }
+    } catch (error) {
+      console.error("Error en la IA:", error);
+      Swal.fire({
+        title: 'Error al procesar',
+        text: error.message,
+        icon: 'error',
+        confirmButtonText: 'Cerrar',
+        confirmButtonColor: '#dc3545'
+      });
+    } finally {
+      document.getElementById('loadingIA').style.display = 'none';
+      document.getElementById('btnExtraerIA').disabled = false;
+      fileInput.value = "";
     }
+  }
 
-function obtenerPayloadFormulario() {
+  function obtenerPayloadFormulario() {
     const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
-    // CAPTURAR EL PORCENTAJE PSICOLÓGICO DESDE LOS RADIO BUTTONS
     const danoPsico = document.querySelector('input[name="dano_psicologico"]:checked')?.value || "";
     const intervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "";
     const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value).join(', ');
 
     return {
-        // CAPTURAR EL TIPO DE DEMANDA SELECCIONADA
-        "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
-
-        "NombreActor": document.getElementById("NombreActor").value,
-        "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
-        "DomicilioActor": document.getElementById("DomicilioActor").value,
-        "VehiculoActor": document.getElementById("VehiculoActor").value,
-        
-        "NombreDemandado": document.getElementById("NombreDemandado").value,
-        "DniDemandado": document.getElementById("DniDemandado") ? document.getElementById("DniDemandado").value : "",
-        "DomicilioDemandado": document.getElementById("DomicilioDemandado").value,
-        "AutoDemandado": document.getElementById("AutoDemandado").value,
-        "NombreAseguradora": document.getElementById("NombreAseguradora").value,
-        "CuitAseguradora": document.getElementById("CuitAseguradora").value,
-        "DomicilioAseguradora": document.getElementById("DomicilioAseguradora").value,
-        
-        "FechaHecho": document.getElementById("FechaHecho").value,
-        "LugarHecho": document.getElementById("LugarHecho").value,
-        "DescripcionHechos": document.getElementById("DescripcionHechos").value,
-        
-        "TipoLesion": tipoLesion,
-        "PorcentajeDanoPsicologico": danoPsico,
-        "LesionesDetalles": document.getElementById('LesionesDetalles').value,
-        "ListadoSecuelas": document.getElementById("ListadoSecuelas").value,
-        "Intervencion": intervencion,
-        
-        "CentroMedico": document.getElementById("CentroMedico").value,
-        "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
-        
-        // CAPTURAR LA FECHA MÉDICA SI EXISTE
-        "FechaMedica": document.getElementById("FechaMedica") ? document.getElementById("FechaMedica").value : "",
-        
-        "TallerNombre": document.getElementById("TallerNombre").value,
-        "DirecciónTaller": document.getElementById("DirecciónTaller").value,
-        "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
-        
-        "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
-        
-        "ListaDocumental": documentosSeleccionados,
-        "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
-        "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
+      "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
+      "NombreActor": document.getElementById("NombreActor").value,
+      "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
+      "DomicilioActor": document.getElementById("DomicilioActor").value,
+      "VehiculoActor": document.getElementById("VehiculoActor").value,
+      "NombreDemandado": document.getElementById("NombreDemandado").value,
+      "DniDemandado": document.getElementById("DniDemandado") ? document.getElementById("DniDemandado").value : "",
+      "DomicilioDemandado": document.getElementById("DomicilioDemandado").value,
+      "AutoDemandado": document.getElementById("AutoDemandado").value,
+      "NombreAseguradora": document.getElementById("NombreAseguradora").value,
+      "CuitAseguradora": document.getElementById("CuitAseguradora").value,
+      "DomicilioAseguradora": document.getElementById("DomicilioAseguradora").value,
+      "FechaHecho": document.getElementById("FechaHecho").value,
+      "LugarHecho": document.getElementById("LugarHecho").value,
+      "DescripcionHechos": document.getElementById("DescripcionHechos").value,
+      "TipoLesion": tipoLesion,
+      "PorcentajeDanoPsicologico": danoPsico,
+      "LesionesDetalles": document.getElementById('LesionesDetalles').value,
+      "ListadoSecuelas": document.getElementById("ListadoSecuelas").value,
+      "Intervencion": intervencion,
+      "CentroMedico": document.getElementById("CentroMedico").value,
+      "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
+      "FechaMedica": document.getElementById("FechaMedica") ? document.getElementById("FechaMedica").value : "",
+      "TallerNombre": document.getElementById("TallerNombre").value,
+      "DirecciónTaller": document.getElementById("DirecciónTaller").value,
+      "FechaPresupuesto": document.getElementById("FechaPresupuesto").value,
+      "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
+      "ListaDocumental": documentosSeleccionados,
+      "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
+      "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
     };
-}
+  }
 
-    async function ejecutarPreview() {
-        const payload = obtenerPayloadFormulario();
-        const resultadoBox = document.getElementById("resultadoAuditoria");
-        const token = localStorage.getItem("access_token");
-        
-        resultadoBox.textContent = "Validando datos con el servidor...";
+  async function ejecutarPreview() {
+    const payload = obtenerPayloadFormulario();
+    const resultadoBox = document.getElementById("resultadoAuditoria");
+    const token = localStorage.getItem("access_token");
+    
+    resultadoBox.textContent = "Validando datos con el servidor...";
 
-        try {
-            const response = await fetch(`${API_URL}/preview-demanda/`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
+    try {
+      const response = await fetch(`${API_URL}/preview-demanda/`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(JSON.stringify(errorData, null, 2));
-            }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(JSON.stringify(errorData, null, 2));
+      }
 
-            const data = await response.json();
-            resultadoBox.textContent = JSON.stringify(data.datos_para_revision, null, 4);
-            document.getElementById("btnGenerarWord").disabled = false;
+      const data = await response.json();
+      resultadoBox.textContent = JSON.stringify(data.datos_para_revision, null, 4);
+      document.getElementById("btnGenerarWord").disabled = false;
 
-            Swal.fire({
-                title: '¡Validación Exitosa!',
-                text: 'Los datos están correctos. Ya puede generar la demanda.',
-                icon: 'success',
-                confirmButtonText: 'Aceptar',
-                confirmButtonColor: '#0d6efd'
-            });
+      Swal.fire({
+        title: '¡Validación Exitosa!',
+        text: 'Los datos están correctos. Ya puede generar la demanda.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#0d6efd'
+      });
 
-        } catch (error) {
-            resultadoBox.textContent = `Error de validación:\n${error.message}`;
-            document.getElementById("btnGenerarWord").disabled = true;
+    } catch (error) {
+      resultadoBox.textContent = `Error de validación:\n${error.message}`;
+      document.getElementById("btnGenerarWord").disabled = true;
 
-            Swal.fire({
-                title: 'Error de Validación',
-                text: 'Verifique que los campos ingresados sean correctos.',
-                icon: 'error',
-                confirmButtonText: 'Revisar',
-                confirmButtonColor: '#dc3545'
-            });
-        }
+      Swal.fire({
+        title: 'Error de Validación',
+        text: 'Verifique que los campos ingresados sean correctos.',
+        icon: 'error',
+        confirmButtonText: 'Revisar',
+        confirmButtonColor: '#dc3545'
+      });
     }
+  }
 
-    async function descargarWord() {
-        const payload = obtenerPayloadFormulario();
-        const resultadoBox = document.getElementById("resultadoAuditoria");
-        const token = localStorage.getItem("access_token");
-        
-        resultadoBox.textContent += "\n\nGenerando documento Word...";
+  async function descargarWord() {
+    const payload = obtenerPayloadFormulario();
+    const resultadoBox = document.getElementById("resultadoAuditoria");
+    const token = localStorage.getItem("access_token");
+    
+    resultadoBox.textContent += "\n\nGenerando documento Word...";
 
-        try {
-            const response = await fetch(`${API_URL}/generar-demanda/`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
+    try {
+      const response = await fetch(`${API_URL}/generar-demanda/`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-            if (!response.ok) throw new Error("Error en el servidor al generar el documento.");
+      if (!response.ok) throw new Error("Error en el servidor al generar el documento.");
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `Demanda_${payload.NombreActor.replace(/\s+/g, '_')}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Demanda_${payload.NombreActor.replace(/\s+/g, '_')}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
 
-            resultadoBox.textContent += "\n¡Documento generado y descargado con éxito!";
+      resultadoBox.textContent += "\n¡Documento generado y descargado con éxito!";
 
-            Swal.fire({
-                title: '¡Documento Generado!',
-                text: 'La demanda se ha procesado y descargado correctamente.',
-                icon: 'success',
-                confirmButtonText: 'Aceptar',
-                confirmButtonColor: '#0d6efd'
-            });
+      Swal.fire({
+        title: '¡Documento Generado!',
+        text: 'La demanda se ha procesado y descargado correctamente.',
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#0d6efd'
+      });
 
-        } catch (error) {
-            resultadoBox.textContent += `\nError crítico: ${error.message}`;
-
-            Swal.fire({
-                title: 'Error de Generación',
-                text: 'Hubo un problema al crear el documento. Intente nuevamente.',
-                icon: 'error',
-                confirmButtonText: 'Cerrar',
-                confirmButtonColor: '#dc3545'
-            });
-        }
+    } catch (error) {
+      resultadoBox.textContent += `\nError crítico: ${error.message}`;
+      Swal.fire({
+        title: 'Error de Generación',
+        text: 'Hubo un problema al crear el documento. Intente nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Cerrar',
+        confirmButtonColor: '#dc3545'
+      });
     }
+  }
 
-    // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
-
-// Al cargar la página, verificamos el estado y evaluamos si viene de un retorno de pago
-document.addEventListener("DOMContentLoaded", () => {
+  // --- LÓGICA DE SUSCRIPCIÓN Y MERCADO PAGO ---
+  document.addEventListener("DOMContentLoaded", () => {
     verificarEstadoSuscripcion();
     evaluarRetornoPago();
-});
+  });
 
-async function verificarEstadoSuscripcion() {
+  async function verificarEstadoSuscripcion() {
     const token = localStorage.getItem("access_token");
     const badge = document.getElementById("badgeSuscripcion");
     const btnPago = document.getElementById("btn-mercadopago");
@@ -824,357 +808,370 @@ async function verificarEstadoSuscripcion() {
     if (!token) return;
 
     try {
-        const response = await fetch(`${API_URL}/suscripcion/estado`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+      const response = await fetch(`${API_URL}/suscripcion/estado`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-        // 🟢 VALIDACIÓN DE TOKEN EXPIRADO / INVÁLIDO
-        if (response.status === 401 || response.status === 403) {
-            alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("token");
-            window.location.href = "landing.html";
-            return;
-        }
+      if (response.status === 401 || response.status === 403) {
+        alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("token");
+        window.location.href = "landing.html";
+        return;
+      }
 
-        if (response.ok) {
-            const data = await response.json();
-            
-            if (data.es_admin || data.activa) {
-                if (badge) {
-                    badge.className = "badge bg-success px-3 py-2";
-                    badge.textContent = data.es_admin ? "👑 Administrador" : "✓ Suscripción Activa";
-                }
-                if (btnPago) btnPago.style.display = "none";
-            } else {
-                if (badge) {
-                    badge.className = "badge bg-danger px-3 py-2";
-                    badge.textContent = "✕ Suscripción Inactiva";
-                }
-                if (btnPago) {
-                    btnPago.style.display = "inline-block";
-                    btnPago.onclick = async (e) => {
-                        e.preventDefault();
-                        await pagarSuscripcionMensual(e);
-                    };
-                }
-            }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.es_admin || data.activa) {
+          if (badge) {
+            badge.className = "badge bg-success px-3 py-2";
+            badge.textContent = data.es_admin ? "👑 Administrador" : "✓ Suscripción Activa";
+          }
+          if (btnPago) btnPago.style.display = "none";
+        } else {
+          if (badge) {
+            badge.className = "badge bg-danger px-3 py-2";
+            badge.textContent = "✕ Suscripción Inactiva";
+          }
+          if (btnPago) {
+            btnPago.style.display = "inline-block";
+            btnPago.onclick = async (e) => {
+              e.preventDefault();
+              await pagarSuscripcionMensual(e);
+            };
+          }
         }
+      }
     } catch (error) {
-        console.error("Error al verificar la suscripción:", error);
-        if (badge) {
-            badge.className = "badge bg-warning px-3 py-2";
-            badge.textContent = "⚠️ Estado desconocido";
-        }
+      console.error("Error al verificar la suscripción:", error);
+      if (badge) {
+        badge.className = "badge bg-warning px-3 py-2";
+        badge.textContent = "⚠️ Estado desconocido";
+      }
     }
-}
+  }
 
-async function pagarSuscripcionMensual(e) {
+  async function pagarSuscripcionMensual(e) {
     const btn = e.target.closest('button') || e.target;
     const textoOriginal = btn.innerHTML;
     const token = localStorage.getItem("access_token");
 
     if (!token) {
-        alert("Tu sesión ha expirado. Por favor iniciá sesión nuevamente.");
-        window.location.href = "login.html";
-        return;
+      alert("Tu sesión ha expirado. Por favor iniciá sesión nuevamente.");
+      window.location.href = "login.html";
+      return;
     }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando con Mercado Pago...';
 
     try {
-        // Apuntamos exacto a la ruta de FastAPI y quitamos el body (los datos los arma FastAPI con el token)
-        const response = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.init_point) {
-            // Redirige al checkout de Mercado Pago
-            window.location.href = data.init_point;
-        } else {
-            alert('No se pudo iniciar la suscripción: ' + (data.detail || data.error || 'Error del servidor'));
-            btn.disabled = false;
-            btn.innerHTML = textoOriginal;
+      const response = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
-    } catch (error) {
-        console.error('Error al procesar el pago:', error);
-        alert('Error de conexión con el servidor de pagos.');
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        alert('No se pudo iniciar la suscripción: ' + (data.detail || data.error || 'Error del servidor'));
         btn.disabled = false;
         btn.innerHTML = textoOriginal;
+      }
+    } catch (error) {
+      console.error('Error al procesar el pago:', error);
+      alert('Error de conexión con el servidor de pagos.');
+      btn.disabled = false;
+      btn.innerHTML = textoOriginal;
     }
-}
+  }
 
-function evaluarRetornoPago() {
+  function evaluarRetornoPago() {
     const urlParams = new URLSearchParams(window.location.search);
     const preapprovalId = urlParams.get('preapproval_id') || urlParams.get('payment_id');
     const status = urlParams.get('status');
 
     if (preapprovalId || status === 'approved') {
-        alert("¡Suscripción procesada con éxito! Se ha activado tu cuenta.");
-        // Limpiamos los parámetros de la URL para que no vuelva a saltar el alert si refresca
-        window.history.replaceState({}, document.title, window.location.pathname);
+      alert("¡Suscripción procesada con éxito! Se ha activado tu cuenta.");
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-}
+  }
 
-function cerrarSesion() {
+  function cerrarSesion() {
     localStorage.removeItem("access_token");
     window.location.href = "landing.html";
-}
+  }
 
-    // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
-    async function cargarHistorial() {
-        const token = localStorage.getItem("access_token");
-        const tbody = document.getElementById("tablaHistorialBody");
+  // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
+  async function cargarHistorial() {
+    const token = localStorage.getItem("access_token");
+    const tbody = document.getElementById("tablaHistorialBody");
 
-        try {
-            const response = await fetch(`${API_URL}/mis-demandas`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+    try {
+      const response = await fetch(`${API_URL}/mis-demandas`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-            if (response.status === 402) {
-                console.warn("Suscripción inactiva detectada. Redirigiendo a pago...");
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-warning">Suscripción requerida. Redirigiendo a Mercado Pago...</td></tr>`;
-                // NOTA: Cambié iniciarPagoMercadoPago por pagarSuscripcionMensual que es la función correcta que tenías definida
-                const btnFakeEvent = { target: { innerHTML: '', disabled: false } };
-                await pagarSuscripcionMensual(btnFakeEvent);
-                return;
-            }
+      if (response.status === 402) {
+        console.warn("Suscripción inactiva detectada. Redirigiendo a pago...");
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-warning">Suscripción requerida. Redirigiendo a Mercado Pago...</td></tr>`;
+        const btnFakeEvent = { target: { innerHTML: '', disabled: false } };
+        await pagarSuscripcionMensual(btnFakeEvent);
+        return;
+      }
 
-            if (!response.ok) throw new Error("No se pudo obtener el historial.");
+      if (!response.ok) throw new Error("No se pudo obtener el historial.");
 
-            const data = await response.json();
-            const demandas = data.demandas;
-            
-            tbody.innerHTML = "";
+      const data = await response.json();
+      const demandas = data.demandas;
+      
+      tbody.innerHTML = "";
 
-            if (demandas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay demandas generadas todavía.</td></tr>`;
-                return;
-            }
+      if (demandas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay demandas generadas todavía.</td></tr>`;
+        return;
+      }
 
-            demandas.forEach(d => {
-                const fechaFormateada = d.fecha_creacion !== "N/A" ? new Date(d.fecha_creacion).toLocaleString() : "N/A";
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${d.id}</td>
-                        <td>${d.nombre_actor || 'Sin nombre'}</td>
-                        <td>${d.dni_actor || '-'}</td>
-                        <td>${fechaFormateada}</td>
-                        <td><span class="badge bg-success">${d.estado_operativo || 'Generada'}</span></td>
-                        <td>
-                            <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                Descargar .docx
-                            </a>
-                        </td>
-                    </tr>
-                `;
-            });
+      demandas.forEach(d => {
+        const fechaFormateada = d.fecha_creacion !== "N/A" ? new Date(d.fecha_creacion).toLocaleString() : "N/A";
+        tbody.innerHTML += `
+          <tr>
+            <td>#${d.id}</td>
+            <td>${d.nombre_actor || 'Sin nombre'}</td>
+            <td>${d.dni_actor || '-'}</td>
+            <td>${fechaFormateada}</td>
+            <td><span class="badge bg-success">${d.estado_operativo || 'Generada'}</span></td>
+            <td>
+              <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank">
+                Descargar .docx
+              </a>
+            </td>
+          </tr>
+        `;
+      });
 
-        } catch (error) {
-            console.error("Error cargando historial:", error);
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
-        }
+    } catch (error) {
+      console.error("Error cargando historial:", error);
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
     }
+  }
 
-    // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
-    function mostrarSeccion(idSeccion, event) {
-        if (event) event.preventDefault();
-        
-        // Ocultar todas las secciones
-        const secciones = document.querySelectorAll('.seccion-app');
-        secciones.forEach(sec => sec.style.display = 'none');
-        
-        // Mostrar la sección seleccionada
-        const seccionActiva = document.getElementById(idSeccion);
-        if (seccionActiva) seccionActiva.style.display = 'block';
-
-        // Actualizar clase 'active' en el menú de navegación
-        const links = document.querySelectorAll('.nav-link');
-        links.forEach(link => link.classList.remove('active', 'bg-secondary'));
-        
-        if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
-            event.currentTarget.classList.add('active', 'bg-secondary');
-        }
-
-        // Si entra a historial, cargamos los datos automáticamente
-        if (idSeccion === 'seccion-historial') {
-            cargarHistorial();
-        }
-    }
-   
-    // URL base de la API
+  // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
+  function mostrarSeccion(idSeccion, event) {
+    if (event) event.preventDefault();
     
+    const secciones = document.querySelectorAll('.seccion-app');
+    secciones.forEach(sec => sec.style.display = 'none');
+    
+    const seccionActiva = document.getElementById(idSeccion);
+    if (seccionActiva) seccionActiva.style.display = 'block';
 
-    async function cargarPanelAdmin() {
+    const links = document.querySelectorAll('.nav-link');
+    links.forEach(link => link.classList.remove('active', 'bg-secondary'));
+    
+    if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
+      event.currentTarget.classList.add('active', 'bg-secondary');
+    }
+
+    if (idSeccion === 'seccion-historial') {
+      cargarHistorial();
+    }
+  }
+
+  // --- PANEL DE ADMINISTRACIÓN ---
+  async function cargarPanelAdmin() {
     const token = localStorage.getItem("access_token") || localStorage.getItem("token");
     const seccionAdmin = document.getElementById("seccion-admin");
 
     if (!seccionAdmin) return;
-
-    // Ocultar por defecto antes de verificar permisos
     seccionAdmin.style.display = "none";
-
     if (!token) return;
 
     try {
-        // 1. Cargar Métricas Generales
-        const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+      const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-        if (resMetricas.ok) {
-            const metricas = await resMetricas.json();
-            
-            // Mostrar la sección si tiene permisos de Admin
-            seccionAdmin.style.display = "block";
+      if (resMetricas.ok) {
+        const metricas = await resMetricas.json();
+        document.getElementById("menu-admin").style.display = "block";
 
-            // Inyectar métricas en las tarjetas comprobando existencia de los IDs
-            const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
-            const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
-            const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
+        const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
+        const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
+        const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
+        const metricIngresos = document.getElementById("metric-ingresos");
 
-            if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
-            if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
-            if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
-
-        } else {
-            // Si devuelve 403 (No es admin) o 401, se mantiene oculto y corta
-            return;
+        if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
+        if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
+        if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
+        
+        if (metricIngresos) {
+          const dinero = (metricas.suscripciones_activas || 0) * 500000;
+          metricIngresos.textContent = "$" + dinero.toLocaleString('es-AR');
         }
+      } else {
+        return;
+      }
 
-        // 2. Cargar Lista de Usuarios para la Tabla
-        const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+      const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-        if (resUsuarios.ok) {
-            const usuarios = await resUsuarios.json();
-            renderizarTablaUsuarios(usuarios);
-        }
-
+      if (resUsuarios.ok) {
+        const usuarios = await resUsuarios.json();
+        renderizarTablaUsuarios(usuarios);
+      }
     } catch (error) {
-        console.error("Error al cargar datos del panel de admin:", error);
+      console.error("Error al cargar datos del panel de admin:", error);
     }
-}
+  }
 
-function renderizarTablaUsuarios(usuarios) {
+  function renderizarTablaUsuarios(usuarios) {
     const tbody = document.getElementById("tabla-usuarios-body");
     if (!tbody) return;
 
     tbody.innerHTML = "";
 
     if (usuarios.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
-        return;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
+      return;
     }
 
     usuarios.forEach(u => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td><strong>#${u.id}</strong></td>
-            <td>${u.email}</td>
-            <td>
-                ${u.es_admin ? '<span class="badge bg-dark">Admin</span>' : '<span class="badge bg-secondary">Usuario</span>'}
-            </td>
-            <td>
-                <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
-                    ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
-                </span>
-            </td>
-            <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
-            <td>
-                <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="toggleSuscripcion(${u.id})">
-                    ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>#${u.id}</strong></td>
+        <td>${u.email}</td>
+        <td>
+          ${u.es_admin ? '<span class="badge bg-dark">Admin</span>' : '<span class="badge bg-secondary">Usuario</span>'}
+        </td>
+        <td>
+          <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
+            ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
+          </span>
+        </td>
+        <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
+        <td>
+          <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="toggleSuscripcion(${u.id})">
+            ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
+          </button>
+          <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${u.id})">
+            🔍 Auditar
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
     });
-}
+  }
 
-// Función auxiliar para activar/desactivar suscripciones
-async function toggleSuscripcion(userId) {
+  async function auditarUsuario(usuarioId) {
     const token = localStorage.getItem("access_token") || localStorage.getItem("token");
     if (!token) return;
 
+    document.getElementById("auditoriaUsuarioId").textContent = usuarioId;
+    const tbody = document.getElementById("tabla-auditoria-body");
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Buscando historial...</td></tr>`;
+
+    const modalAuditoria = new bootstrap.Modal(document.getElementById('modalAuditoriaUsuario'));
+    modalAuditoria.show();
+
     try {
-        const response = await fetch(`${API_URL}/admin/usuarios/${userId}/toggle-suscripcion`, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+      const response = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/demandas`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-        if (response.ok) {
-            // Recargar la tabla si la acción fue exitosa
-            cargarPanelAdmin();
-        } else {
-            alert("No se pudo cambiar el estado de la suscripción.");
-        }
+      if (!response.ok) throw new Error("Error al obtener las demandas.");
+
+      const demandas = await response.json();
+      tbody.innerHTML = "";
+
+      if (demandas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Este usuario no ha generado demandas.</td></tr>`;
+        return;
+      }
+
+      demandas.forEach(d => {
+        tbody.innerHTML += `
+          <tr>
+            <td>#${d.id}</td>
+            <td>${d.nombre_actor}</td>
+            <td>${d.dni_actor}</td>
+            <td><span class="badge bg-secondary">${d.estado_operativo}</span></td>
+            <td>
+              <a href="${d.download_url}" target="_blank" class="btn btn-sm btn-primary">
+                ⬇️ Word
+              </a>
+            </td>
+          </tr>
+        `;
+      });
     } catch (error) {
-        console.error("Error al cambiar suscripción:", error);
+      console.error("Error cargando auditoría:", error);
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudo cargar la información.</td></tr>`;
     }
-}
+  }
 
-// Ejecución automática al cargar el DOM
-document.addEventListener("DOMContentLoaded", cargarPanelAdmin);
-
-
-// Función para cambiar estado desde el botón de la tabla
-async function toggleSuscripcion(usuarioId) {
+  async function toggleSuscripcion(usuarioId) {
     const token = localStorage.getItem("token") || localStorage.getItem("access_token");
     try {
-        const res = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/toggle-suscripcion`, {
-            method: "PUT",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.ok) {
-            cargarPanelAdmin(); // Recargamos el panel para reflejar el cambio
-        }
-    } catch (err) {
-        console.error("Error al modificar la suscripción:", err);
-    }
-}
-
-<!-- Script de Gestión de Tema / Persistencia (Light / Dark) -->
-  
-    document.addEventListener("DOMContentLoaded", () => {
-      const toggleBtn = document.getElementById("themeToggleBtn");
-      const themeIcon = document.getElementById("themeIcon");
-      const themeText = document.getElementById("themeText");
-      
-      // 1. Leer preferencia guardada o aplicar 'dark' por defecto
-      const savedTheme = localStorage.getItem("theme") || "dark";
-      document.documentElement.setAttribute("data-theme", savedTheme);
-      if (toggleBtn) updateButtonUI(savedTheme);
-
-      // 2. Listener para cambiar de tema al hacer click
-      if (toggleBtn) {
-        toggleBtn.addEventListener("click", () => {
-          const currentTheme = document.documentElement.getAttribute("data-theme");
-          const newTheme = currentTheme === "dark" ? "light" : "dark";
-          
-          document.documentElement.setAttribute("data-theme", newTheme);
-          localStorage.setItem("theme", newTheme);
-          updateButtonUI(newTheme);
-        });
+      const res = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/toggle-suscripcion`, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        cargarPanelAdmin();
       }
+    } catch (err) {
+      console.error("Error al modificar la suscripción:", err);
+    }
+  }
 
-      function updateButtonUI(theme) {
-        if (themeIcon) themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
-        if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
+  function filtrarUsuarios() {
+    const textoBusqueda = document.getElementById("buscadorAdmin").value.toLowerCase();
+    const filas = document.querySelectorAll("#tabla-usuarios-body tr");
+
+    filas.forEach(fila => {
+      const email = fila.cells[1].textContent.toLowerCase();
+      if (email.includes(textoBusqueda)) {
+        fila.style.display = "";
+      } else {
+        fila.style.display = "none";
       }
     });
-  </script>
-</body>
-</html>
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const toggleBtn = document.getElementById("themeToggleBtn");
+    const themeIcon = document.getElementById("themeIcon");
+    const themeText = document.getElementById("themeText");
+    
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    if (toggleBtn) updateButtonUI(savedTheme);
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        const currentTheme = document.documentElement.getAttribute("data-theme");
+        const newTheme = currentTheme === "dark" ? "light" : "dark";
+        
+        document.documentElement.setAttribute("data-theme", newTheme);
+        localStorage.setItem("theme", newTheme);
+        updateButtonUI(newTheme);
+      });
+    }
+
+    function updateButtonUI(theme) {
+      if (themeIcon) themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
+      if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
+    }
+  });
 </script>
 </body>
 </html>

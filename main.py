@@ -73,6 +73,8 @@ origins = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "http://127.0.0.1:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     FRONTEND_URL,
 ]
 
@@ -610,12 +612,43 @@ def simular_pago(
         "fecha_inicio": suscripcion.fecha_inicio,
         "fecha_expiracion": suscripcion.fecha_expiracion
     }
-@app.get("/descargar-demanda/{demanda_id}", summary="Descargar un documento generado específico por su ID")
-def descargar_demanda_por_id(
+@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word generado")
+def descargar_demanda_unificada(
     demanda_id: int,
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
+    demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
+    
+    if not demanda:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="La demanda especificada no existe en la base de datos."
+        )
+    
+    # CONTROL DE SEGURIDAD VIP: Permite descargar si es el dueño O si es Administrador
+    es_administrador = getattr(current_user, "es_admin", False)
+    if demanda.usuario_id != current_user.id and not es_administrador:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tenés autorización para descargar este documento."
+        )
+    
+    # Manejar compatibilidad de variables entre las versiones antiguas
+    ruta_fisica = getattr(demanda, 'archivo_generado', None) or getattr(demanda, 'ruta_archivo', None)
+    
+    if not ruta_fisica or not os.path.exists(ruta_fisica):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El archivo físico ya no se encuentra disponible en el servidor."
+        )
+    
+    nombre_archivo = os.path.basename(ruta_fisica)
+    return FileResponse(
+        path=ruta_fisica,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=nombre_archivo
+    )
     # Buscar la demanda asegurando que pertenezca al usuario autenticado
     demanda = db.query(models.DemandaGenerada).filter(
         models.DemandaGenerada.id == demanda_id,
@@ -813,12 +846,6 @@ def obtener_estadisticas_admin(
         "suscripciones_activas": suscripciones_activas
     }
 
-@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word generado", operation_id="descargar_demanda_por_id")
-def descargar_demanda(
-    demanda_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
-):
     # 1. Buscar la demanda en la base de datos
     demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
     
@@ -1173,7 +1200,7 @@ async def solicitar_recuperacion(
     
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
-        link_recuperacion = f"http://localhost:3000/.github/workflows/frontend_demandas/reset-password.html?token={token}"
+        link_recuperacion = f"http://localhost:3000/frontend_demandas/reset-password.html?token={token}"
         
         # 🟢 PRINT DE PRUEBA PARA VER EL LINK EN LA CONSOLA DE FASTAPI
         print(f"\n==========================================")
@@ -1536,3 +1563,27 @@ def activar_prueba(email: str, db: Session = Depends(get_db)):
         
     db.commit()
     return {"mensaje": f"¡Éxito! Se le otorgó una suscripción Premium con 10 demandas de prueba a {email}."}
+
+# --- ENDPOINT 4: Obtener demandas de un usuario específico (Solo Admin) ---
+@app.get("/admin/usuarios/{usuario_id}/demandas", summary="Ver historial de demandas de un usuario")
+def ver_demandas_usuario_admin(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    demandas = db.query(models.DemandaGenerada).filter(
+        models.DemandaGenerada.usuario_id == usuario_id
+    ).order_by(models.DemandaGenerada.fecha_creacion.desc()).all()
+
+    lista_demandas = []
+    for d in demandas:
+        lista_demandas.append({
+            "id": d.id,
+            "nombre_actor": getattr(d, "nombre_actor", "Sin nombre"),
+            "dni_actor": getattr(d, "dni_actor", "-"),
+            "estado_operativo": getattr(d, "estado_operativo", "Generada"),
+            "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
+            "download_url": f"http://127.0.0.1:8000/descargar-demanda/{d.id}"
+        })
+
+    return lista_demandas
