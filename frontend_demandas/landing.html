@@ -41,6 +41,16 @@
 
 <!-- Hero Section -->
 <div class="container py-5 text-center my-5">
+    
+    <!-- ================= LOGO CENTRAL DINÁMICO ================= -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-auto" style="padding: 20px;">
+            <!-- Imagen con bordes circulares, tamaño aumentado (320px) y transición suave -->
+            <img id="mainLogo" src="../assets/logo-auto-oscuro.jpeg" alt="Logo SaaS Legal" class="img-fluid" style="width: 320px; height: 320px; object-fit: cover; border-radius: 50%; transition: all 0.4s ease;">
+        </div>
+    </div>
+    <!-- ========================================================= -->
+
     <h1 class="display-3 fw-bold mb-3">Automatizá tus demandas</h1>
     <p class="lead text-muted mx-auto" style="max-width: 650px;">
         Generá escritos, calculá daños y gestioná tu historial legal en minutos de forma automática.
@@ -56,6 +66,7 @@
         const toggleBtn = document.getElementById("themeToggleBtn");
         const themeIcon = document.getElementById("themeIcon");
         const themeText = document.getElementById("themeText");
+        const mainLogo = document.getElementById("mainLogo");
         
         // 1. Cargar tema guardado o usar 'dark'
         const savedTheme = localStorage.getItem("theme") || "dark";
@@ -77,6 +88,19 @@
         function updateButtonUI(theme) {
             if (themeIcon) themeIcon.textContent = theme === "dark" ? "☀️" : "🌙";
             if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
+            
+            // 3. INTERCAMBIO DINÁMICO DEL LOGO Y EFECTO DE FUSIÓN (GLOW)
+            if (mainLogo) {
+                if (theme === "dark") {
+                    mainLogo.src = "../assets/logo-auto-oscuro.jpeg";
+                    // Resplandor negro difuminado (Aumentado a 80px)
+                    mainLogo.style.boxShadow = "0 0 80px 40px #000000";
+                } else {
+                    mainLogo.src = "../assets/logo-auto-claro.jpeg";
+                    // Resplandor blanco difuminado (Aumentado a 80px)
+                    mainLogo.style.boxShadow = "0 0 80px 40px #ffffff";
+                }
+            }
         }
     });
 </script>
