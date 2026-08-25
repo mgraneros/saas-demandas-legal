@@ -1587,3 +1587,27 @@ def ver_demandas_usuario_admin(
         })
 
     return lista_demandas
+# --- ENDPOINT 5: Cambiar Rol de Usuario (Solo Admin) ---
+@app.put("/admin/usuarios/{usuario_id}/toggle-rol", summary="Cambiar rol de un usuario (Admin/Usuario)")
+def toggle_rol_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Seguridad: Evitar que el admin activo se quite el rol a sí mismo por error
+    if usuario.id == admin.id:
+        raise HTTPException(
+            status_code=400, 
+            detail="No puedes quitarte el rol de Administrador a tu propia cuenta activa."
+        )
+
+    # Invertir el estado actual (Si es True pasa a False, y viceversa)
+    usuario.es_admin = not usuario.es_admin
+    db.commit()
+    
+    return {"status": "success", "mensaje": "Rol actualizado correctamente", "es_admin": usuario.es_admin}

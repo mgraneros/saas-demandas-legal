@@ -1033,90 +1033,174 @@
     }
   }
 
-  function renderizarTablaUsuarios(usuarios) {
-    const tbody = document.getElementById("tabla-usuarios-body");
-    if (!tbody) return;
+function renderizarTablaUsuarios(usuarios) {
+        const tbody = document.getElementById("tabla-usuarios-body");
+        if (!tbody) return;
 
-    tbody.innerHTML = "";
+        tbody.innerHTML = "";
 
-    if (usuarios.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
-      return;
+        if (usuarios.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
+            return;
+        }
+
+        usuarios.forEach(u => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>#${u.id}</strong></td>
+                <td>${u.email}</td>
+                <td>
+                    <!-- BOTÓN INTERACTIVO DE ROL -->
+                    <button class="btn btn-sm ${u.es_admin ? 'btn-dark' : 'btn-secondary'}" onclick="confirmarToggleRol(${u.id}, ${u.es_admin})">
+                        ${u.es_admin ? '👑 Admin' : '👤 Usuario'}
+                    </button>
+                </td>
+                <td>
+                    <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
+                        ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
+                    </span>
+                </td>
+                <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
+                <td>
+                    <!-- BOTÓN DE SUSCRIPCIÓN CON ALERTA -->
+                    <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="confirmarToggleSuscripcion(${u.id}, ${u.suscripcion_activa})">
+                        ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${u.id})">
+                        🔍 Auditar
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
-    usuarios.forEach(u => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><strong>#${u.id}</strong></td>
-        <td>${u.email}</td>
-        <td>
-          ${u.es_admin ? '<span class="badge bg-dark">Admin</span>' : '<span class="badge bg-secondary">Usuario</span>'}
-        </td>
-        <td>
-          <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
-            ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
-          </span>
-        </td>
-        <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
-        <td>
-          <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="toggleSuscripcion(${u.id})">
-            ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
-          </button>
-          <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${u.id})">
-            🔍 Auditar
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  async function auditarUsuario(usuarioId) {
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-    if (!token) return;
-
-    document.getElementById("auditoriaUsuarioId").textContent = usuarioId;
-    const tbody = document.getElementById("tabla-auditoria-body");
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Buscando historial...</td></tr>`;
-
-    const modalAuditoria = new bootstrap.Modal(document.getElementById('modalAuditoriaUsuario'));
-    modalAuditoria.show();
-
-    try {
-      const response = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/demandas`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-
-      if (!response.ok) throw new Error("Error al obtener las demandas.");
-
-      const demandas = await response.json();
-      tbody.innerHTML = "";
-
-      if (demandas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Este usuario no ha generado demandas.</td></tr>`;
-        return;
-      }
-
-      demandas.forEach(d => {
-        tbody.innerHTML += `
-          <tr>
-            <td>#${d.id}</td>
-            <td>${d.nombre_actor}</td>
-            <td>${d.dni_actor}</td>
-            <td><span class="badge bg-secondary">${d.estado_operativo}</span></td>
-            <td>
-              <a href="${d.download_url}" target="_blank" class="btn btn-sm btn-primary">
-                ⬇️ Word
-              </a>
-            </td>
-          </tr>
-        `;
-      });
-    } catch (error) {
-      console.error("Error cargando auditoría:", error);
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudo cargar la información.</td></tr>`;
+    // --- ALERTA Y LÓGICA DE ROL ---
+    function confirmarToggleRol(usuarioId, esAdminActual) {
+        const accionTexto = esAdminActual ? "quitarle los permisos de administrador a" : "hacer administrador a";
+        
+        Swal.fire({
+            title: '¿Cambiar privilegios?',
+            text: `Estás a punto de ${accionTexto} este usuario.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, cambiar rol',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                toggleRol(usuarioId);
+            }
+        });
     }
-  }
+
+    async function toggleRol(usuarioId) {
+        const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+        try {
+            const res = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/toggle-rol`, {
+                method: "PUT",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                Swal.fire('¡Actualizado!', 'Los permisos fueron modificados con éxito.', 'success');
+                cargarPanelAdmin();
+            } else {
+                const data = await res.json();
+                Swal.fire('Error', data.detail || 'No se pudo cambiar el rol.', 'error');
+            }
+        } catch (err) {
+            console.error("Error al modificar el rol:", err);
+            Swal.fire('Error de conexión', 'Hubo un problema al contactar al servidor.', 'error');
+        }
+    }
+
+    // --- ALERTA Y LÓGICA DE SUSCRIPCIÓN ---
+    function confirmarToggleSuscripcion(usuarioId, estaActivaActual) {
+        const accionTexto = estaActivaActual ? "desactivar la cuenta VIP de" : "activar la cuenta VIP de";
+        const colorBoton = estaActivaActual ? '#dc3545' : '#198754';
+        
+        Swal.fire({
+            title: '¿Confirmar Acción?',
+            text: `Estás a punto de ${accionTexto} este usuario.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: colorBoton,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: estaActivaActual ? 'Sí, desactivar' : 'Sí, activar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                toggleSuscripcion(usuarioId);
+            }
+        });
+    }
+
+    async function toggleSuscripcion(usuarioId) {
+        const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+        try {
+            const res = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/toggle-suscripcion`, {
+                method: "PUT",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                Swal.fire('¡Suscripción Modificada!', 'El estado de la cuenta fue actualizado.', 'success');
+                cargarPanelAdmin();
+            } else {
+                Swal.fire('Error', 'No se pudo cambiar el estado de la suscripción.', 'error');
+            }
+        } catch (err) {
+            console.error("Error al modificar la suscripción:", err);
+        }
+    }
+
+    async function auditarUsuario(usuarioId) {
+        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+        if (!token) return;
+
+        document.getElementById("auditoriaUsuarioId").textContent = usuarioId;
+        const tbody = document.getElementById("tabla-auditoria-body");
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Buscando historial...</td></tr>`;
+
+        const modalAuditoria = new bootstrap.Modal(document.getElementById('modalAuditoriaUsuario'));
+        modalAuditoria.show();
+
+        try {
+            const response = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/demandas`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Error al obtener las demandas.");
+
+            const demandas = await response.json();
+            tbody.innerHTML = "";
+
+            if (demandas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Este usuario no ha generado demandas.</td></tr>`;
+                return;
+            }
+
+            demandas.forEach(d => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${d.id}</td>
+                        <td>${d.nombre_actor}</td>
+                        <td>${d.dni_actor}</td>
+                        <td><span class="badge bg-secondary">${d.estado_operativo}</span></td>
+                        <td>
+                            <a href="${d.download_url}" target="_blank" class="btn btn-sm btn-primary">
+                                ⬇️ Word
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (error) {
+            console.error("Error cargando auditoría:", error);
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudo cargar la información.</td></tr>`;
+        }
+    }
 
   async function toggleSuscripcion(usuarioId) {
     const token = localStorage.getItem("token") || localStorage.getItem("access_token");
