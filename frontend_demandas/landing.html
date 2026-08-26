@@ -59,7 +59,44 @@
         <a href="register.html" class="btn btn-primary btn-lg px-4 fw-semibold shadow-sm">Comenzar ahora</a>
     </div>
 </div>
-
+<!-- ================= SECCIÓN DE CONTACTO ================= -->
+<div class="container py-5 mb-5 border-top" style="border-color: var(--border-color) !important;">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">¿Tenés dudas? Contactanos</h2>
+                <p class="text-muted">Escribinos y te responderemos a la brevedad para ayudarte a impulsar tu estudio.</p>
+            </div>
+            
+            <div class="card shadow-sm p-4 border rounded-4" style="background-color: var(--bg-card); border-color: var(--border-color) !important; color: var(--text-main);">
+                <form id="formContacto" onsubmit="enviarContacto(event)">
+                    <div class="mb-3">
+                        <label for="nombreContacto" class="form-label small fw-bold">Nombre completo</label>
+                        <input type="text" class="form-control" id="nombreContacto" placeholder="Ej: Dra. García" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailContacto" class="form-label small fw-bold">Correo electrónico</label>
+                        <input type="email" class="form-control" id="emailContacto" placeholder="tu@email.com" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="mensajeContacto" class="form-label small fw-bold">Mensaje</label>
+                        <textarea class="form-control" id="mensajeContacto" rows="4" placeholder="¿En qué podemos ayudarte?" required></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" id="btnEnviarContacto" class="btn btn-primary fw-semibold shadow-sm">
+                            ✉️ Enviar Mensaje
+                        </button>
+                    </div>
+                    <!-- Mensaje de éxito (Oculto por defecto) -->
+                    <div id="alertaContacto" class="alert alert-success mt-3 mb-0 text-center" style="display: none; font-size: 0.9rem;">
+                        ¡Gracias por escribirnos! Te contactaremos pronto.
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ======================================================= -->
 <!-- Script de Gestión de Tema / Persistencia -->
 <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -103,6 +140,67 @@
             }
         }
     });
+    // =========================================================
+        // 4. LÓGICA DEL FORMULARIO DE CONTACTO
+        // =========================================================
+        
+        // Exponemos la función al ámbito global para que el HTML la encuentre
+        window.enviarContacto = async function(event) {
+            event.preventDefault(); // Evita que la página se recargue bruscamente
+
+            const btnEnviar = document.getElementById("btnEnviarContacto");
+            const alerta = document.getElementById("alertaContacto");
+            
+            // Recolectamos la información escrita por el cliente
+            const nombre = document.getElementById("nombreContacto").value;
+            const email = document.getElementById("emailContacto").value;
+            const mensaje = document.getElementById("mensajeContacto").value;
+
+            // Efecto visual: deshabilitamos el botón mientras "piensa"
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = "⏳ Enviando...";
+            alerta.style.display = "none"; // Ocultamos alertas previas
+
+            try {
+                // Enviamos los datos al backend (Ajusta el puerto si no usas el 8000)
+                const response = await fetch("http://127.0.0.1:8000/contacto", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ nombre, email, mensaje })
+                });
+
+                if (response.ok) {
+                    // ¡Éxito! Mostramos el cartel verde
+                    alerta.className = "alert alert-success mt-3 mb-0 text-center";
+                    alerta.innerText = "¡Gracias por escribirnos! Te contactaremos pronto.";
+                    alerta.style.display = "block";
+                    
+                    // Limpiamos el formulario para que quede como nuevo
+                    document.getElementById("formContacto").reset();
+                } else {
+                    throw new Error("El servidor rechazó la solicitud");
+                }
+            } catch (error) {
+                console.error("Error al enviar el contacto:", error);
+                // Si algo falla, mostramos un cartel rojo
+                alerta.className = "alert alert-danger mt-3 mb-0 text-center";
+                alerta.innerText = "Hubo un problema al enviar tu mensaje. Intentá de nuevo.";
+                alerta.style.display = "block";
+            } finally {
+                // Sin importar si funcionó o falló, volvemos a habilitar el botón
+                btnEnviar.disabled = false;
+                btnEnviar.innerHTML = "✉️ Enviar Mensaje";
+                
+                // Opcional: Ocultamos el cartel de éxito después de 5 segundos
+                setTimeout(() => {
+                    if (alerta.className.includes("alert-success")) {
+                        alerta.style.display = "none";
+                    }
+                }, 5000);
+            }
+        };
 </script>
 
 </body>

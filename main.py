@@ -1,7 +1,8 @@
 import os
 import json
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
+from typing import Optional, List, Any
+from pydantic import BaseModel
 
 # 1. CARGAR LAS VARIABLES DE ENTORNO ANTES DE CUALQUIER OTRA COSA
 from dotenv import load_dotenv
@@ -1611,3 +1612,53 @@ def toggle_rol_usuario(
     db.commit()
     
     return {"status": "success", "mensaje": "Rol actualizado correctamente", "es_admin": usuario.es_admin}
+# ==========================================
+# RUTAS DE CONTACTO (LANDING PAGE)
+# ==========================================
+
+# Modelo de datos para recibir la info del frontend
+class ContactoRequest(BaseModel):
+    nombre: str
+    email: str
+    mensaje: str
+
+@app.post("/contacto", summary="Procesar formulario de contacto desde Landing Page")
+def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks):
+    
+    # PON AQUÍ LOS DOS CORREOS QUE RECIBIRÁN LAS CONSULTAS
+    correos_destino = ["martin_graneros@hotmail.com", "pablodgargiulo.laboral@gmail.com"]
+
+    # Armamos un diseño HTML bonito para el correo que te va a llegar
+    cuerpo_mensaje = f"""
+    <div style="font-family: Arial, sans-serif; color: #333;">
+        <h2 style="color: #0d6efd;">Nueva consulta desde la Landing Page</h2>
+        <p><strong>👤 Nombre:</strong> {datos.nombre}</p>
+        <p><strong>📧 Email de contacto:</strong> {datos.email}</p>
+        <hr>
+        <p><strong>💬 Mensaje:</strong></p>
+        <blockquote style="background: #f8f9fa; padding: 15px; border-left: 5px solid #0d6efd; border-radius: 5px;">
+            {datos.mensaje}
+        </blockquote>
+        <br>
+        <p style="font-size: 12px; color: #6c757d;">Este es un mensaje automático de SaaS Demandas Legal.</p>
+    </div>
+    """
+
+    try:
+        # Reutilizamos tu configuración de FastMail existente!
+        mensaje = MessageSchema(
+            subject=f"NUEVO CONTACTO - SaaS Legal - {datos.nombre}",
+            recipients=correos_destino,
+            body=cuerpo_mensaje,
+            subtype=MessageType.html
+        )
+        
+        fm = FastMail(mail_config)
+        # Lo enviamos en segundo plano para que la web no se quede "pensando"
+        background_tasks.add_task(fm.send_message, mensaje)
+        
+    except Exception as e:
+        print(f"⚠️ Error al enviar el correo de contacto: {e}")
+        # No rompemos la app si falla el correo, pero lo registramos en consola
+
+    return {"status": "success", "mensaje": "Tu mensaje ha sido recibido. Te contactaremos pronto."}
