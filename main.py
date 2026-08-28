@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Any
 from pydantic import BaseModel
@@ -45,6 +46,7 @@ import models
 import schemas
 from models import Usuario as User
 from email_utils import enviar_correo
+from storage_utils import upload_to_gcp, generate_signed_url
 import security
 from security import (
     get_current_user,
@@ -86,6 +88,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # 2. Configuración JWT
 SECRET_KEY = "admin123"
 ALGORITHM = "HS256"
@@ -140,8 +143,6 @@ PARRAFOS_COMPETENCIA = {
 }
 
 
-
-
 # ==========================================
 # RUTAS DE USUARIOS Y AUTENTICACIÓN
 # ==========================================
@@ -178,6 +179,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, security.SECRET_KEY, algorithm=security.ALGORITHM)
     return encoded_jwt
 
+
 @app.post("/token", response_model=schemas.Token, summary="Iniciar sesión y obtener JWT")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     usuario = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
@@ -204,7 +206,6 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
 # ==========================================
 # RUTAS DE DEMANDAS E HISTORIAL
 # ==========================================
-
 
 @app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
 def generar_demanda(
@@ -237,7 +238,7 @@ def generar_demanda(
             detail="Tu suscripción mensual ha expirado. Por favor, actualizá tu pago para recuperar el acceso ilimitado."
         )
 
-    # 2. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO (NUESTRO CÓDIGO)
+    # 2. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO
     diccionario_plantillas = {
         "auto_moto": 1,
         "auto_auto": 2
@@ -287,25 +288,26 @@ def generar_demanda(
         opcion_comp_int, 
         PARRAFOS_COMPETENCIA[1]
     )
-    # Formatear la Fecha Médica de AAAA-MM-DD a DD/MM/AAAA
+    
+    # Formatear la Fecha Médica
     fecha_medica_formateada = datos.FechaMedica
     if datos.FechaMedica and "-" in datos.FechaMedica:
         anio, mes, dia = datos.FechaMedica.split("-")
         fecha_medica_formateada = f"{dia}/{mes}/{anio}"
         
-    # Formatear la Fecha Presupuesto de AAAA-MM-DD a DD/MM/AAAA
+    # Formatear la Fecha Presupuesto
     fecha_presupuesto_formateada = datos.FechaPresupuesto
     if datos.FechaPresupuesto and "-" in datos.FechaPresupuesto:
         anio_p, mes_p, dia_p = datos.FechaPresupuesto.split("-")
         fecha_presupuesto_formateada = f"{dia_p}/{mes_p}/{anio_p}"
         
-    # Formatear la Fecha del Hecho de AAAA-MM-DD a DD/MM/AAAA
+    # Formatear la Fecha del Hecho
     fecha_hecho_formateada = datos.FechaHecho
     if datos.FechaHecho and "-" in datos.FechaHecho:
         anio_h, mes_h, dia_h = datos.FechaHecho.split("-")
         fecha_hecho_formateada = f"{dia_h}/{mes_h}/{anio_h}"
 
-    # 4. MAPEO DE VARIABLES E INYECCIÓN (CON LOS NUEVOS CAMPOS)
+    # 4. MAPEO DE VARIABLES E INYECCIÓN
     if datos.ListaDocumental:
         lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
     else:
@@ -361,7 +363,6 @@ def generar_demanda(
 
     try:
         doc = DocxTemplate(plantilla.ruta_archivo)
-
         ruta_logo = "assets/logo_defecto.png"
         logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40)) if os.path.exists(ruta_logo) else ""
         datos_procesados["logo_estudio"] = logo_imagen
@@ -377,6 +378,11 @@ def generar_demanda(
         except (ValueError, TypeError):
             dni_val = None
 
+        # --- INICIO MAGIA GOOGLE CLOUD ---
+        nombre_unico = f"demandas/{current_user.id}_{uuid.uuid4().hex[:6]}_{nombre_limpio}.docx"
+        upload_to_gcp(ruta_salida, nombre_unico)
+        # --- FIN MAGIA GOOGLE CLOUD ---
+
         nueva_demanda = models.DemandaGenerada(
             usuario_id=current_user.id,
             plantilla_id=plantilla.id,
@@ -385,7 +391,7 @@ def generar_demanda(
             estado_operativo="Generada",
             ip_origen=ip_cliente,
             user_agent=user_agent_cliente,
-            archivo_generado=ruta_salida
+            archivo_generado=nombre_unico
         )
         db.add(nueva_demanda)
 
@@ -396,21 +402,21 @@ def generar_demanda(
             usuario_id=current_user.id,
             accion="GENERAR_DEMANDA",
             ip_origen=ip_cliente,
-            detalles=f"Demanda para {datos.NombreActor} generada con plantilla ID {plantilla.id}."
+            detalles=f"Demanda para {datos.NombreActor} generada y respaldada en GCP."
         )
         db.add(nuevo_log)
 
-        # Guardar todas las operaciones juntas (CÓDIGO DE TU COMPAÑERO)
         db.commit()
         db.refresh(nueva_demanda)
 
-        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} generada. Créditos restantes de Usuario #{current_user.id}: {suscripcion.demandas_restantes}")
+        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} guardada en GCP como: {nombre_unico}")
 
+        # ENVÍO DE CORREO
         try:
             enviar_correo(
                 destinatario=current_user.email,
                 asunto="Tu demanda legal ha sido generada",
-                contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento.</p>",
+                contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento respaldado en la nube.</p>",
                 ruta_adjunto=ruta_salida
             )
             print("📧 Correo ejecutado síncronamente con éxito.")
@@ -426,6 +432,7 @@ def generar_demanda(
         filename=f"demanda_{nombre_limpio}.docx",
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 # 🔄 WORKFLOW: Endpoint para actualizar el estado operativo de una demanda
 @app.patch("/demanda/{demanda_id}/estado", summary="Actualizar estado operativo de una demanda")
@@ -448,44 +455,47 @@ def actualizar_estado_demanda(demanda_id: int, nuevo_estado: str, db: Session = 
     }
 
 
-from fastapi.responses import FileResponse
-
-@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word generado", operation_id="descargar_demanda_por_id")
-def descargar_demanda(
+@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word seguro desde la nube")
+def descargar_demanda_nube(
     demanda_id: int,
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
-    # 1. Buscar el registro de la demanda en la base de datos
     demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
     
     if not demanda:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="La demanda especificada no existe en la base de datos."
-        )
+        raise HTTPException(status_code=404, detail="La demanda no existe.")
     
-    # 2. Control de seguridad: Verificar que la demanda pertenezca al usuario autenticado
-    if demanda.usuario_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tenés autorización para descargar este documento."
-        )
+    # CONTROL DE SEGURIDAD VIP: Permite descargar si es el dueño O si es Administrador
+    es_administrador = getattr(current_user, "es_admin", False)
+    if demanda.usuario_id != current_user.id and not es_administrador:
+        raise HTTPException(status_code=403, detail="No tenés autorización para descargar este documento.")
     
-    # 3. Verificar que el archivo físico exista en el servidor
-    if not os.path.exists(demanda.ruta_archivo):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="El archivo físico ya no se encuentra disponible en el servidor."
-        )
+    referencia_archivo = getattr(demanda, 'archivo_generado', None) or getattr(demanda, 'ruta_archivo', None)
     
-    # 4. Devolver el archivo como respuesta descargable
-    nombre_archivo = os.path.basename(demanda.ruta_archivo)
-    return FileResponse(
-        path=demanda.ruta_archivo,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename=nombre_archivo
-    )
+    if not referencia_archivo:
+        raise HTTPException(status_code=404, detail="Referencia de archivo no encontrada.")
+
+    # SISTEMA DE RETROCOMPATIBILIDAD
+    if "demandas_generadas" in referencia_archivo:
+        if os.path.exists(referencia_archivo):
+            return FileResponse(
+                path=referencia_archivo,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                filename=os.path.basename(referencia_archivo)
+            )
+        else:
+            raise HTTPException(status_code=404, detail="El archivo antiguo no se encuentra en el servidor local.")
+
+    # --- MAGIA DE GOOGLE CLOUD PARA NUEVAS DEMANDAS ---
+    try:
+        url_segura = generate_signed_url(referencia_archivo, expiration_minutes=5)
+        return RedirectResponse(url=url_segura)
+    except Exception as e:
+        print(f"Error de GCP: {e}")
+        raise HTTPException(status_code=500, detail="Error al conectar con la bóveda de seguridad en la nube.")
+    
+
 @app.get("/plantillas", response_model=List[schemas.PlantillaOut], summary="Listar plantillas de demandas disponibles")
 def obtener_plantillas(
     db: Session = Depends(get_db),
@@ -498,7 +508,7 @@ def obtener_plantillas(
     plantillas = db.query(models.Plantilla).filter(models.Plantilla.activa == True).all()
     return plantillas
     
-    # PREVISUALIZACIÓN DE AUDITORÍA
+
 @app.post("/preview-demanda/")
 def preview_demanda(datos: schemas.DatosDemanda):
     # 1. Cálculos matemáticos idénticos al generador final
@@ -524,7 +534,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
         PARRAFOS_COMPETENCIA[1]
     )
 
-    # 3. Retorno del 100% de los datos mapeados (Los 24 campos expuestos)
+    # 3. Retorno del 100% de los datos mapeados
     return {
         "estado": "Éxito",
         "mensaje": "Auditoría generada. Verifique todos los campos ingresados.",
@@ -583,11 +593,6 @@ def simular_pago(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    """
-    Simula una pasarela de pago exitosa (como Mercado Pago o Stripe).
-    Actualiza la suscripción del usuario actual, activándola, otorgando
-    nuevos créditos y extendiendo la fecha de expiración 30 días a partir de hoy.
-    """
     ahora = datetime.now(timezone.utc)
 
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
@@ -613,68 +618,6 @@ def simular_pago(
         "fecha_inicio": suscripcion.fecha_inicio,
         "fecha_expiracion": suscripcion.fecha_expiracion
     }
-@app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word generado")
-def descargar_demanda_unificada(
-    demanda_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
-):
-    demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
-    
-    if not demanda:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="La demanda especificada no existe en la base de datos."
-        )
-    
-    # CONTROL DE SEGURIDAD VIP: Permite descargar si es el dueño O si es Administrador
-    es_administrador = getattr(current_user, "es_admin", False)
-    if demanda.usuario_id != current_user.id and not es_administrador:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tenés autorización para descargar este documento."
-        )
-    
-    # Manejar compatibilidad de variables entre las versiones antiguas
-    ruta_fisica = getattr(demanda, 'archivo_generado', None) or getattr(demanda, 'ruta_archivo', None)
-    
-    if not ruta_fisica or not os.path.exists(ruta_fisica):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="El archivo físico ya no se encuentra disponible en el servidor."
-        )
-    
-    nombre_archivo = os.path.basename(ruta_fisica)
-    return FileResponse(
-        path=ruta_fisica,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename=nombre_archivo
-    )
-    # Buscar la demanda asegurando que pertenezca al usuario autenticado
-    demanda = db.query(models.DemandaGenerada).filter(
-        models.DemandaGenerada.id == demanda_id,
-        models.DemandaGenerada.usuario_id == current_user.id
-    ).first()
-
-    if not demanda:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="La demanda especificada no existe o no tenés permisos para acceder a ella."
-        )
-
-    if not demanda.archivo_generado or not os.path.exists(demanda.archivo_generado):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="El archivo físico asociado a esta demanda ya no se encuentra disponible en el servidor."
-        )
-
-    nombre_archivo = os.path.basename(demanda.archivo_generado)
-
-    return FileResponse(
-        path=demanda.archivo_generado,
-        filename=nombre_archivo,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
 
 @app.post("/crear-preferencia-suscripcion/", summary="Crear preferencia de pago en Mercado Pago")
 def crear_preferencia_suscripcion(
@@ -698,7 +641,7 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 500000.0  # Recordá ajustar este monto al precio real final
+                    "unit_price": 500000.0  # Ajustar este monto al precio real final
                 }
             ],
             "payer": {
@@ -710,7 +653,7 @@ def crear_preferencia_suscripcion(
                 "pending": f"{base_url}/pago-pendiente"
             },
             "auto_return": "approved",
-            "notification_url": f"{base_url}/webhook-mercadopago/",  # <- Indispensable para procesar el pago
+            "notification_url": f"{base_url}/webhook-mercadopago/",
             "external_reference": str(current_user.id)
         }
 
@@ -736,25 +679,23 @@ def crear_preferencia_suscripcion(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error interno del servidor: {str(e)}"
         )
+
+
 @app.post("/webhook-mercadopago/", summary="Webhook de notificaciones para Mercado Pago")
 async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
         print("-> Webhook recibido de Mercado Pago:", body)
 
-        # Identificar el tipo de notificación
         topic = body.get("type") or body.get("topic")
         action = body.get("action")
         payment_id = None
 
-        # Formato moderno (action: payment.created / payment.updated)
         if action and "payment" in action:
             data = body.get("data", {})
             payment_id = data.get("id")
-        # Formato clásico
         elif topic == "payment":
             payment_id = body.get("id") or body.get("data", {}).get("id")
-        # Formato IPN clásico
         elif "resource" in body:
             resource_url = body.get("resource")
             if "payments" in resource_url:
@@ -768,7 +709,6 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             print("⚠️ Token de Mercado Pago no configurado.")
             return {"status": "error", "message": "Configuración de credenciales incompleta"}
 
-        # Consultar los detalles reales del pago
         async with httpx.AsyncClient() as client:
             headers = {"Authorization": f"Bearer {mp_access_token}"}
             response = await client.get(f"https://api.mercadopago.com/v1/payments/{payment_id}", headers=headers)
@@ -778,7 +718,7 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             
             payment_data = response.json()
 
-        status_pago = payment_data.get("status")  # "approved", "rejected", "pending"
+        status_pago = payment_data.get("status")
         status_detail = payment_data.get("status_detail")
         external_reference = payment_data.get("external_reference")
 
@@ -787,22 +727,18 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
         if not external_reference:
             return {"status": "ignored", "message": "El pago no tiene un external_reference asociado"}
 
-        # Buscamos al usuario en la BD
         user = db.query(models.Usuario).filter(models.Usuario.id == int(external_reference)).first()
         if not user:
             print(f"⚠️ Usuario ID {external_reference} no encontrado.")
             return {"status": "error", "message": "Usuario no encontrado"}
 
-        # Obtenemos o creamos el registro en la tabla Suscripcion
         suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user.id).first()
         if not suscripcion:
             suscripcion = models.Suscripcion(usuario_id=user.id)
             db.add(suscripcion)
 
-        # 1. Pago Aprobado -> Otorgamos vigencia por 30 días y acreditamos demandas
         if status_pago == "approved":
             ahora = datetime.now(timezone.utc)
-            
             suscripcion.plan = "Pro"
             suscripcion.activa = True
             suscripcion.demandas_restantes = (suscripcion.demandas_restantes or 0) + 50
@@ -812,7 +748,6 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
             db.commit()
             print(f"✅ [DB] Suscripción activada y renovada para el usuario ID: {user.id}")
 
-        # 2. Pago Pendiente o Rechazado
         elif status_pago in ["pending", "in_process", "rejected"]:
             suscripcion.activa = False
             db.commit()
@@ -825,12 +760,12 @@ async def mercadopago_webhook(request: Request, db: Session = Depends(get_db)):
         print(f"❌ Error crítico en webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
+
 @app.get("/admin/estadisticas", summary="Estadísticas globales para el panel de administración")
 def obtener_estadisticas_admin(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    # Verificamos si el usuario actual es administrador
     if not getattr(current_user, "es_admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -847,42 +782,12 @@ def obtener_estadisticas_admin(
         "suscripciones_activas": suscripciones_activas
     }
 
-    # 1. Buscar la demanda en la base de datos
-    demanda = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
-    
-    if not demanda:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="La demanda especificada no existe en la base de datos."
-        )
-    
-    # 2. Control de seguridad: Verificar que la demanda pertenezca al usuario autenticado
-    if demanda.usuario_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tenés autorización para descargar este documento."
-        )
-    
-    # 3. Verificar que el archivo físico exista en el servidor
-    if not os.path.exists(demanda.ruta_archivo):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="El archivo físico ya no se encuentra disponible en el servidor."
-        )
-    
-    # 4. Devolver el archivo como respuesta descargable
-    nombre_archivo = os.path.basename(demanda.ruta_archivo)
-    return FileResponse(
-        path=demanda.ruta_archivo,
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        filename=nombre_archivo
-    )
+
 @app.get("/suscripcion/estado", summary="Verificar el estado de la suscripción actual")
 def verificar_estado_suscripcion(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    # Buscamos la suscripción asociada al usuario autenticado
     suscripcion = db.query(models.Suscripcion).filter(
         models.Suscripcion.usuario_id == current_user.id
     ).first()
@@ -894,7 +799,6 @@ def verificar_estado_suscripcion(
             "mensaje": "No posees ningún plan o suscripción registrada."
         }
 
-    # Verificamos si expiró por fecha (solo desactiva si efectivamente hay una fecha de expiración y ya venció)
     if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
         if suscripcion.activa:
             suscripcion.activa = False
@@ -907,9 +811,11 @@ def verificar_estado_suscripcion(
         "fecha_expiracion": suscripcion.fecha_expiracion,
         "usuario_email": current_user.email
     }
+
+
 @app.get("/pago-exitoso", summary="Maneja el retorno de un pago exitoso")
 def pago_exitoso(
-    external_reference: str = Query(None), # Recibe el ID del usuario desde Mercado Pago
+    external_reference: str = Query(None),
     collection_status: str = Query(None),
     payment_id: str = Query(None),
     db: Session = Depends(get_db)
@@ -917,12 +823,9 @@ def pago_exitoso(
     if external_reference and external_reference != "None":
         try:
             user_id = int(external_reference)
-            
-            # Definimos las fechas de inicio y vencimiento (30 días de suscripción)
             ahora = datetime.utcnow()
             expiracion = ahora + timedelta(days=30)
 
-            # Buscamos o creamos el registro en la tabla Suscripciones
             suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == user_id).first()
             
             if suscripcion:
@@ -950,7 +853,6 @@ def pago_exitoso(
             print(f"Error al actualizar la suscripción en la base de datos: {e}")
             db.rollback()
 
-    # Redirige de vuelta al dashboard local (o tu frontend) tras mostrar un mensaje
     url_retorno = "http://127.0.0.1:5500/frontend_demandas/index.html"
     
     response = HTMLResponse(content=f"""
@@ -977,16 +879,14 @@ def pago_exitoso(
     
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
+
+
 @app.post("/admin/plantillas", response_model=schemas.PlantillaResponse, status_code=status.HTTP_201_CREATED, summary="Registrar nueva plantilla")
 def registrar_plantilla(
     plantilla: schemas.PlantillaCreate,
     db: Session = Depends(get_db),
     admin_user: models.Usuario = Depends(get_current_admin_user)
 ):
-    """
-    Registra una nueva plantilla legal en el sistema. 
-    Exclusivo para administradores.
-    """
     nueva_plantilla = models.Plantilla(
         nombre=plantilla.nombre,
         categoria=plantilla.categoria,
@@ -1001,6 +901,7 @@ def registrar_plantilla(
     
     return nueva_plantilla
 
+
 @app.patch("/admin/plantillas/{plantilla_id}/estado", summary="Habilitar o deshabilitar una plantilla existente")
 def cambiar_estado_plantilla(
     plantilla_id: int,
@@ -1008,9 +909,6 @@ def cambiar_estado_plantilla(
     db: Session = Depends(get_db),
     admin_user: models.Usuario = Depends(get_current_admin_user)
 ):
-    """
-    Permite activar o desactivar una plantilla mediante un JSON en el body.
-    """
     plantilla = db.query(models.Plantilla).filter(models.Plantilla.id == plantilla_id).first()
     if not plantilla:
         raise HTTPException(status_code=404, detail="Plantilla no encontrada")
@@ -1020,6 +918,7 @@ def cambiar_estado_plantilla(
     
     estado_texto = "habilitada" if estado_data.activa else "deshabilitada"
     return {"status": "success", "mensaje": f"La plantilla ha sido {estado_texto} correctamente."}
+
 
 @app.post("/extraer-datos-acta/", summary="Extraer datos del acta de mediación con IA")
 async def extraer_datos_acta(
@@ -1044,7 +943,6 @@ async def extraer_datos_acta(
             raise HTTPException(status_code=400, detail="Formato no soportado. Sube un PDF o imagen.")
 
         print("▶️ [DEBUG IA] 3. Conectando con Gemini (modelo gemini-1.5-flash)...")
-        # Usamos el nombre del modelo más estable de Google
         modelo = genai.GenerativeModel('gemini-flash-latest')
         
         prompt = """
@@ -1072,7 +970,6 @@ async def extraer_datos_acta(
         Asegúrate de limpiar los números de DNI y CUIT quitando puntos si los tuvieran.
         """
 
-        # 5. Enviar a Gemini
         respuesta = await modelo.generate_content_async([
             {"mime_type": mime_type, "data": contenido_archivo}, 
             prompt
@@ -1097,6 +994,7 @@ async def extraer_datos_acta(
         print(f"❌ [DEBUG IA] Error crítico: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error interno al procesar el acta con IA: {str(e)}")
         
+
 @app.get("/modelos-ia", summary="Listar modelos permitidos por mi API Key")
 def listar_modelos():
     try:
@@ -1113,7 +1011,7 @@ def listar_modelos():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al conectar con Google: {str(e)}")
 
-    # --- DEPENDENCIA PARA VERIFICAR SI ES ADMIN ---
+
 def require_admin(current_user: models.Usuario = Depends(get_current_user)):
     if not current_user.es_admin:
         raise HTTPException(
@@ -1122,7 +1020,7 @@ def require_admin(current_user: models.Usuario = Depends(get_current_user)):
         )
     return current_user
 
-# --- ENDPOINT 1: Métricas Globales del SaaS ---
+
 @app.get("/admin/metricas", summary="Obtener estadísticas generales para el Admin")
 def obtener_metricas_admin(
     db: Session = Depends(get_db),
@@ -1131,8 +1029,7 @@ def obtener_metricas_admin(
     total_usuarios = db.query(models.Usuario).count()
     suscripciones_activas = db.query(models.Suscripcion).filter(models.Suscripcion.activa == True).count()
     
-    # Si tenés tabla de Demandas/Historial:
-    total_demandas = db.query(models.Demanda).count() if hasattr(models, 'Demanda') else 0
+    total_demandas = db.query(models.DemandaGenerada).count() if hasattr(models, 'DemandaGenerada') else 0
 
     return {
         "total_usuarios": total_usuarios,
@@ -1140,7 +1037,7 @@ def obtener_metricas_admin(
         "total_demandas": total_demandas
     }
 
-# --- ENDPOINT 2: Listar todos los usuarios con su suscripción ---
+
 @app.get("/admin/usuarios", summary="Obtener lista de usuarios y sus estados")
 def listar_usuarios_admin(
     db: Session = Depends(get_db),
@@ -1162,7 +1059,7 @@ def listar_usuarios_admin(
 
     return resultado
 
-# --- ENDPOINT 3: Alternar estado de suscripción de un usuario ---
+
 @app.put("/admin/usuarios/{usuario_id}/toggle-suscripcion")
 def toggle_suscripcion_usuario(
     usuario_id: int,
@@ -1171,7 +1068,6 @@ def toggle_suscripcion_usuario(
 ):
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == usuario_id).first()
     if not suscripcion:
-        # Si no tiene registro, se lo creamos
         suscripcion = models.Suscripcion(
             usuario_id=usuario_id,
             plan="Premium (Manual)",
@@ -1190,7 +1086,7 @@ def toggle_suscripcion_usuario(
     db.commit()
     return {"mensaje": f"Estado de la suscripción actualizado a {suscripcion.activa}"}
 
-# --- ENDPOINT 1: Solicitud de restablecimiento de contraseña ---
+
 @app.post("/auth/olvide-password", summary="Solicitar restablecimiento de contraseña")
 async def solicitar_recuperacion(
     email: str = Form(...),
@@ -1203,7 +1099,6 @@ async def solicitar_recuperacion(
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
         link_recuperacion = f"http://localhost:3000/frontend_demandas/reset-password.html?token={token}"
         
-        # 🟢 PRINT DE PRUEBA PARA VER EL LINK EN LA CONSOLA DE FASTAPI
         print(f"\n==========================================")
         print(f"🔗 LINK DE RECUPERACIÓN GENERADO:")
         print(f"{link_recuperacion}")
@@ -1228,7 +1123,6 @@ async def solicitar_recuperacion(
     return {"mensaje": "Si el correo está registrado, recibirás un enlace de recuperación a la brevedad."}
 
 
-# --- ENDPOINT 2: Confirmación y cambio de contraseña con el Token ---
 @app.post("/auth/reset-password", summary="Cambiar la contraseña usando el token")
 def resetear_password(
     token: str = Form(...),
@@ -1236,7 +1130,6 @@ def resetear_password(
     db: Session = Depends(get_db)
 ):
     try:
-        # Validar token (max_age = 900 segundos = 15 minutos)
         email = serializer.loads(token, salt="reset-password-salt", max_age=900)
     except SignatureExpired:
         raise HTTPException(status_code=400, detail="El enlace ha expirado. Solicita uno nuevo.")
@@ -1247,11 +1140,12 @@ def resetear_password(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
-    # Actualizar contraseña con el hash de security.py
     usuario.hashed_password = pwd_context.hash(nueva_password)
     db.commit()
 
     return {"mensaje": "Contraseña actualizada exitosamente. Ya puedes iniciar sesión."}
+
+
 @app.get("/mis-demandas", summary="Listar todas las demandas generadas por el usuario actual")
 def listar_mis_demandas(
     db: Session = Depends(get_db),
@@ -1269,7 +1163,7 @@ def listar_mis_demandas(
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"http://127.0.0.1:8000/descargar-demanda/{d.id}"
+            "download_url": f"[http://127.0.0.1:8000/descargar-demanda/](http://127.0.0.1:8000/descargar-demanda/){d.id}"
         })
 
     return {
@@ -1298,203 +1192,8 @@ def obtener_historial(
     return demandas
 
 
-@app.post("/generar-demanda/", summary="Generar documento Word y registrar en la BD")
-def generar_demanda(
-    datos: schemas.DatosDemanda, 
-    request: Request, 
-    background_tasks: BackgroundTasks, 
-    db: Session = Depends(get_db), 
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
-):
-    # 1. VERIFICAR SUSCRIPCIÓN
-    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
-
-    if not suscripcion or not suscripcion.activa:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No posees una suscripción activa o se encuentra inactiva."
-        )
-
-    if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
-        suscripcion.activa = False
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tu suscripción mensual ha expirado."
-        )
-
-    # 2. SELECCIÓN DE PLANTILLA
-    diccionario_plantillas = {
-        "auto_moto": 1,
-        "auto_auto": 2
-    }
-    plantilla_seleccionada = diccionario_plantillas.get(datos.TipoDemanda, 1)
-
-    plantilla = db.query(models.Plantilla).filter(
-        models.Plantilla.id == plantilla_seleccionada,
-        models.Plantilla.activa == True
-    ).first()
-
-    if not plantilla or not os.path.exists(plantilla.ruta_archivo):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"La plantilla (ID: {plantilla_seleccionada}) no existe o no está disponible."
-        )
-
-    carpeta_salida = "demandas_generadas"
-    os.makedirs(carpeta_salida, exist_ok=True)
-    nombre_limpio = datos.NombreActor.replace(' ', '_')
-    ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
-
-    # 3. CÁLCULOS MATEMÁTICOS
-    valor_punto = 2000000.0
-    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
-    dano_moral = incapacidad_fisica * 0.33
-    dano_psicologico = incapacidad_fisica * 0.15
-    gastos_farmacia = 1500000.0
-    gastos_medicos = 2000000.0
-    
-    liquidacion_total = (
-        datos.LiquiDanoMaterialNum + 
-        incapacidad_fisica + 
-        dano_moral + 
-        dano_psicologico + 
-        gastos_farmacia + 
-        gastos_medicos
-    )
-
-    try:
-        opcion_comp_int = int(datos.OpcionCompetencia)
-    except ValueError:
-        opcion_comp_int = 1
-
-    texto_competencia = PARRAFOS_COMPETENCIA.get(opcion_comp_int, PARRAFOS_COMPETENCIA[1])
-
-    if datos.ListaDocumental:
-        lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
-    else:
-        lista_doc_limpia = []
-
-    # 4. MAPEO DE VARIABLES E INYECCIÓN
-    datos_procesados = {
-        "NombreActor": datos.NombreActor,
-        "DniActor": f"{datos.DniActor:,}".replace(",", "."),
-        "ParrafoCompetencia": texto_competencia,
-        "PuntosdeIncapacidad": str(datos.PuntosdeIncapacidad),
-        "IncapacidadFisicaPorcentaje": f"{datos.PuntosdeIncapacidad}%",
-        
-        "LiquiDanoMaterialNum": formatear_moneda(datos.LiquiDanoMaterialNum),
-        "LiquiDanoMaterialLetras": monto_a_letras_legal(datos.LiquiDanoMaterialNum),
-        "LiquiIncapacidadFisicaNum": formatear_moneda(incapacidad_fisica),
-        "LiquiIncapacidadFisicaLetras": monto_a_letras_legal(incapacidad_fisica),
-        "LiquiDanoMoralNum": formatear_moneda(dano_moral),
-        "LiquiDanoMoralLetras": monto_a_letras_legal(dano_moral),
-        "LiquiDanoPsicologicoNum": formatear_moneda(dano_psicologico),
-        "LiquiDanoPsicologicoLetras": monto_a_letras_legal(dano_psicologico),
-        "LiquiGastosFarmaciaNum": formatear_moneda(gastos_farmacia),
-        "LiquiGastosFarmaciaLetras": monto_a_letras_legal(gastos_farmacia),
-        "LiquiGastosMedicosNum": formatear_moneda(gastos_medicos),
-        "LiquiGastosMedicosLetras": monto_a_letras_legal(gastos_medicos),
-        "LiquiTotalNum": formatear_moneda(liquidacion_total),
-        "LiquiTotalLetras": monto_a_letras_legal(liquidacion_total),
-        
-        "DomicilioActor": datos.DomicilioActor,
-        "NombreDemandado": datos.NombreDemandado,
-        "DniDemandado": datos.DniDemandado,
-        "DomicilioDemandado": datos.DomicilioDemandado,
-        "AutoDemandado": datos.AutoDemandado,
-        "FechaHecho": datos.FechaHecho,
-        "NombreAseguradora": datos.NombreAseguradora,
-        "CuitAseguradora": datos.CuitAseguradora,
-        "DomicilioAseguradora": datos.DomicilioAseguradora,
-        "DescripcionHechos": datos.DescripcionHechos,
-        "LesionesDetalles": datos.LesionesDetalles,
-        "ListadoSecuelas": datos.ListadoSecuelas,
-        "VehiculoActor": datos.VehiculoActor,
-        "TallerNombre": datos.TallerNombre,
-        "DireccionTaller": datos.DirecciónTaller,
-        
-        "ListaDocumental": lista_doc_limpia,
-        
-        "CentroMedico": datos.CentroMedico,
-        "CentroMedicoDireccion": datos.CentroMedicoDireccion,
-        "LugarHecho": datos.LugarHecho,
-        "FechaPresupuesto": datos.FechaPresupuesto,
-        "FechaMedica": datos.FechaMedica,
-        "PorcentajeDanoPsicologico": datos.PorcentajeDanoPsicologico
-    }
-
-    try:
-        doc = DocxTemplate(plantilla.ruta_archivo)
-        ruta_logo = "assets/logo_defecto.png"
-        logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40)) if os.path.exists(ruta_logo) else ""
-        datos_procesados["logo_estudio"] = logo_imagen
-
-        doc.render(datos_procesados)
-        doc.save(ruta_salida)
-
-        ip_cliente = request.client.host if request.client else "Desconocida"
-        user_agent_cliente = request.headers.get("user-agent", "Desconocido")
-
-        try:
-            dni_val = int(datos.DniActor) if datos.DniActor else None
-        except (ValueError, TypeError):
-            dni_val = None
-
-        nueva_demanda = models.DemandaGenerada(
-            usuario_id=current_user.id,
-            plantilla_id=plantilla.id,
-            dni_actor=dni_val,
-            nombre_actor=datos.NombreActor,
-            estado_operativo="Generada",
-            ip_origen=ip_cliente,
-            user_agent=user_agent_cliente,
-            archivo_generado=ruta_salida
-        )
-        db.add(nueva_demanda)
-
-        if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
-            suscripcion.demandas_restantes -= 1
-
-        nuevo_log = models.AuditoriaLog(
-            usuario_id=current_user.id,
-            accion="GENERAR_DEMANDA",
-            ip_origen=ip_cliente,
-            detalles=f"Demanda para {datos.NombreActor} generada."
-        )
-        db.add(nuevo_log)
-        db.commit()
-        db.refresh(nueva_demanda)
-
-        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} generada.")
-
-        # ENVÍO DE CORREO (Trabajo de tu compañero)
-        try:
-            enviar_correo(
-                destinatario=current_user.email,
-                asunto="Tu demanda legal ha sido generada",
-                contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento.</p>",
-                ruta_adjunto=ruta_salida
-            )
-            print("📧 Correo ejecutado síncronamente con éxito.")
-        except Exception as mail_err:
-            print(f"❌ Error al intentar disparar el correo: {mail_err}")
-
-        return FileResponse(
-            path=ruta_salida,
-            filename=f"demanda_{nombre_limpio}.docx",
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error interno al procesar la demanda: {str(e)}")
-    
-# ---- ASEGURATE DE QUE ESTO EMPIECE PEGADO AL MARGEN IZQUIERDO ----
-
 @app.get("/registrar-plantillas")
 def registrar_plantillas(db: Session = Depends(get_db)):
-    # Plantilla 1: Auto vs Moto
     p1 = db.query(models.Plantilla).filter(models.Plantilla.id == 1).first()
     if not p1:
         nueva_p1 = models.Plantilla(
@@ -1507,10 +1206,8 @@ def registrar_plantillas(db: Session = Depends(get_db)):
         )
         db.add(nueva_p1)
     else:
-        # Actualizamos la ruta por si estaba mal cargada previamente
         p1.ruta_archivo = "templates/Borrador_Demanda_Auto_Moto.docx"
     
-    # Plantilla 2: Auto vs Auto
     p2 = db.query(models.Plantilla).filter(models.Plantilla.id == 2).first()
     if not p2:
         nueva_p2 = models.Plantilla(
@@ -1523,28 +1220,22 @@ def registrar_plantillas(db: Session = Depends(get_db)):
         )
         db.add(nueva_p2)
     else:
-        # Actualizamos la ruta por si estaba mal cargada previamente
         p2.ruta_archivo = "templates/Borrador_Demanda_Auto_Auto.docx"
     
     db.commit()
     return {"mensaje": "¡Las plantillas se registraron y actualizaron correctamente en la base de datos con la ruta 'templates/'!"}
 
-# ---- ATAJO PARA DAR CRÉDITOS DE PRUEBA ----
+
 @app.get("/activar-prueba/{email}")
 def activar_prueba(email: str, db: Session = Depends(get_db)):
-    from datetime import datetime, timedelta # Lo importamos acá por si no está arriba
-    
-    # 1. Buscamos al usuario
     usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
     
     if not usuario:
         return {"error": f"Usuario con correo {email} no encontrado."}
         
-    # 2. Buscamos si ya tiene un registro de suscripción
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == usuario.id).first()
     
     if not suscripcion:
-        # Si no tiene, se la creamos con 10 créditos y 30 días
         nueva_suscripcion = models.Suscripcion(
             usuario_id=usuario.id,
             activa=True,
@@ -1553,19 +1244,17 @@ def activar_prueba(email: str, db: Session = Depends(get_db)):
         )
         db.add(nueva_suscripcion)
     else:
-        # Si ya la tenía inactiva, se la reactivamos
         suscripcion.activa = True
         suscripcion.demandas_restantes = 10
         suscripcion.fecha_expiracion = datetime.utcnow() + timedelta(days=30)
         
-    # Por si tu modelo de Usuario también guarda el estado
     if hasattr(usuario, 'suscripcion_activa'):
         usuario.suscripcion_activa = True
         
     db.commit()
     return {"mensaje": f"¡Éxito! Se le otorgó una suscripción Premium con 10 demandas de prueba a {email}."}
 
-# --- ENDPOINT 4: Obtener demandas de un usuario específico (Solo Admin) ---
+
 @app.get("/admin/usuarios/{usuario_id}/demandas", summary="Ver historial de demandas de un usuario")
 def ver_demandas_usuario_admin(
     usuario_id: int,
@@ -1584,11 +1273,12 @@ def ver_demandas_usuario_admin(
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"http://127.0.0.1:8000/descargar-demanda/{d.id}"
+            "download_url": f"[http://127.0.0.1:8000/descargar-demanda/](http://127.0.0.1:8000/descargar-demanda/){d.id}"
         })
 
     return lista_demandas
-# --- ENDPOINT 5: Cambiar Rol de Usuario (Solo Admin) ---
+
+
 @app.put("/admin/usuarios/{usuario_id}/toggle-rol", summary="Cambiar rol de un usuario (Admin/Usuario)")
 def toggle_rol_usuario(
     usuario_id: int,
@@ -1600,23 +1290,22 @@ def toggle_rol_usuario(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
-    # Seguridad: Evitar que el admin activo se quite el rol a sí mismo por error
     if usuario.id == admin.id:
         raise HTTPException(
             status_code=400, 
             detail="No puedes quitarte el rol de Administrador a tu propia cuenta activa."
         )
 
-    # Invertir el estado actual (Si es True pasa a False, y viceversa)
     usuario.es_admin = not usuario.es_admin
     db.commit()
     
     return {"status": "success", "mensaje": "Rol actualizado correctamente", "es_admin": usuario.es_admin}
+
+
 # ==========================================
 # RUTAS DE CONTACTO (LANDING PAGE)
 # ==========================================
 
-# Modelo de datos para recibir la info del frontend
 class ContactoRequest(BaseModel):
     nombre: str
     email: str
@@ -1624,11 +1313,8 @@ class ContactoRequest(BaseModel):
 
 @app.post("/contacto", summary="Procesar formulario de contacto desde Landing Page")
 def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks):
-    
-    # PON AQUÍ LOS DOS CORREOS QUE RECIBIRÁN LAS CONSULTAS
     correos_destino = ["martin_graneros@hotmail.com", "pablodgargiulo.laboral@gmail.com"]
 
-    # Armamos un diseño HTML bonito para el correo que te va a llegar
     cuerpo_mensaje = f"""
     <div style="font-family: Arial, sans-serif; color: #333;">
         <h2 style="color: #0d6efd;">Nueva consulta desde la Landing Page</h2>
@@ -1645,7 +1331,6 @@ def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks)
     """
 
     try:
-        # Reutilizamos tu configuración de FastMail existente!
         mensaje = MessageSchema(
             subject=f"NUEVO CONTACTO - SaaS Legal - {datos.nombre}",
             recipients=correos_destino,
@@ -1654,11 +1339,9 @@ def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks)
         )
         
         fm = FastMail(mail_config)
-        # Lo enviamos en segundo plano para que la web no se quede "pensando"
         background_tasks.add_task(fm.send_message, mensaje)
         
     except Exception as e:
         print(f"⚠️ Error al enviar el correo de contacto: {e}")
-        # No rompemos la app si falla el correo, pero lo registramos en consola
 
     return {"status": "success", "mensaje": "Tu mensaje ha sido recibido. Te contactaremos pronto."}

@@ -228,3 +228,7 @@ test_smtp.py
 # Documentos generados y temporales
 demandas_generadas/*.docx
 temp_string.docx
+
+# Llave de Google Cloud
+gcp-key.json
+*.json
