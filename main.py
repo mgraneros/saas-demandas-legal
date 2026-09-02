@@ -1087,6 +1087,8 @@ def toggle_suscripcion_usuario(
     return {"mensaje": f"Estado de la suscripción actualizado a {suscripcion.activa}"}
 
 
+import os # Asegúrate de que 'os' esté importado al inicio de tu main.py
+
 @app.post("/auth/olvide-password", summary="Solicitar restablecimiento de contraseña")
 async def solicitar_recuperacion(
     email: str = Form(...),
@@ -1097,7 +1099,10 @@ async def solicitar_recuperacion(
     
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
-        link_recuperacion = f"http://localhost:3000/frontend_demandas/reset-password.html?token={token}"
+        
+        # Lee tu URL de producción (Render) o usa localhost por defecto si estás en tu PC
+        frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+        link_recuperacion = f"{frontend_url}/reset-password.html?token={token}"
         
         print(f"\n==========================================")
         print(f"🔗 LINK DE RECUPERACIÓN GENERADO:")
