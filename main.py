@@ -1121,12 +1121,10 @@ async def solicitar_recuperacion(
             )
             fm = FastMail(mail_config)
             
-            # Forzamos el envío en tiempo real para capturar cualquier error de Google
-            await fm.send_message(mensaje)
-            print("✅ [SMTP] Correo enviado exitosamente al servidor de Google.")
+            # Lo enviamos en segundo plano para evitar el error 502 por el bloqueo de Render
+            background_tasks.add_task(fm.send_message, mensaje)
             
         except Exception as e:
-            # Ahora sí veremos el motivo exacto del rechazo
             print(f"⚠️ [ERROR CRÍTICO SMTP]: {e}")
 
     return {"mensaje": "Si el correo está registrado, recibirás un enlace de recuperación a la brevedad."}
