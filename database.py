@@ -15,10 +15,18 @@ if DATABASE_URL.startswith("postgres://"):
 # Print de diagnóstico para la consola
 print(f"🚀 [DEBUG DB] CONECTANDO A: {DATABASE_URL}")
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+# Separamos la configuración según el motor de base de datos
+if "sqlite" in DATABASE_URL:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,  # Verifica que la conexión con Neon siga viva
+        pool_recycle=300     # Renueva conexiones inactivas cada 5 minutos
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
