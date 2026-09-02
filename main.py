@@ -1100,7 +1100,6 @@ async def solicitar_recuperacion(
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
         
-        # Lee tu URL de producción (Render) o usa localhost por defecto si estás en tu PC
         frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
         link_recuperacion = f"{frontend_url}/reset-password.html?token={token}"
         
@@ -1121,9 +1120,14 @@ async def solicitar_recuperacion(
                 subtype=MessageType.html
             )
             fm = FastMail(mail_config)
-            background_tasks.add_task(fm.send_message, mensaje)
+            
+            # Forzamos el envío en tiempo real para capturar cualquier error de Google
+            await fm.send_message(mensaje)
+            print("✅ [SMTP] Correo enviado exitosamente al servidor de Google.")
+            
         except Exception as e:
-            print(f"⚠️ No se pudo enviar el correo por SMTP: {e}")
+            # Ahora sí veremos el motivo exacto del rechazo
+            print(f"⚠️ [ERROR CRÍTICO SMTP]: {e}")
 
     return {"mensaje": "Si el correo está registrado, recibirás un enlace de recuperación a la brevedad."}
 
