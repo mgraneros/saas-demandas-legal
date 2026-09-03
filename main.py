@@ -13,13 +13,13 @@ load_dotenv(override=True)  # El override=True obliga a leer siempre del .env
 import bcrypt
 import httpx
 import mercadopago
+import resend  # <-- NUEVA INTEGRACIÓN DE CORREOS
 from docx import Document
 from docx.shared import Mm
 from docxtpl import DocxTemplate, InlineImage, RichText
 from num2words import num2words
 from jose import JWTError, jwt
 from itsdangerous import SignatureExpired, BadSignature
-from fastapi_mail import FastMail, MessageSchema, MessageType
 import google.generativeai as genai
 
 # FastAPI y utilidades de Web/API
@@ -53,24 +53,22 @@ from security import (
     get_current_admin_user,
     verificar_suscripcion_activa,
     serializer,
-    mail_config,
     pwd_context,
 )
 
-# Configurar Gemini IA
+# Configuración de integraciones externas
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+resend.api_key = os.getenv("RESEND_API_KEY")  # <-- CLAVE API DE RESEND
+sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(title="SaaS Demandas Legal API", version="0.3.0")
-
-# Inicialización SDK Mercado Pago
-sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
 
 # Creación automática de tablas en DB
 models.Base.metadata.create_all(bind=engine)
 
 # Configuración Dinámica de CORS para Producción y Desarrollo
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500/frontend_demandas")
 
 origins = [
     "http://127.0.0.1:5500",
@@ -411,7 +409,7 @@ def generar_demanda(
 
         print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} guardada en GCP como: {nombre_unico}")
 
-        # ENVÍO DE CORREO
+        # ENVÍO DE CORREO (Se mantiene la función externa, asegúrate de actualizarla en email_utils si aplica)
         try:
             enviar_correo(
                 destinatario=current_user.email,
@@ -586,6 +584,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
         }
     }
 
+
 @app.post("/simular-pago/", summary="Simular pago exitoso y renovar suscripción por 30 días")
 def simular_pago(
     plan: str = "Pro",
@@ -618,6 +617,7 @@ def simular_pago(
         "fecha_inicio": suscripcion.fecha_inicio,
         "fecha_expiracion": suscripcion.fecha_expiracion
     }
+
 
 @app.post("/crear-preferencia-suscripcion/", summary="Crear preferencia de pago en Mercado Pago")
 def crear_preferencia_suscripcion(
@@ -1087,8 +1087,6 @@ def toggle_suscripcion_usuario(
     return {"mensaje": f"Estado de la suscripción actualizado a {suscripcion.activa}"}
 
 
-import os # Asegúrate de que 'os' esté importado al inicio de tu main.py
-
 @app.post("/auth/olvide-password", summary="Solicitar restablecimiento de contraseña")
 async def solicitar_recuperacion(
     email: str = Form(...),
@@ -1100,32 +1098,31 @@ async def solicitar_recuperacion(
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
         
-        frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500")
+        frontend_url = os.getenv("FRONTEND_URL", "[http://127.0.0.1:5500/frontend_demandas](http://127.0.0.1:5500/frontend_demandas)")
         link_recuperacion = f"{frontend_url}/reset-password.html?token={token}"
         
-        print(f"\n==========================================")
-        print(f"🔗 LINK DE RECUPERACIÓN GENERADO:")
-        print(f"{link_recuperacion}")
-        print(f"==========================================\n")
+        # Función interna que Resend ejecutará en segundo plano
+        def enviar_correo_resend():
+            try:
+                resend.Emails.send({
+                    "from": "SaaS Legal <onboarding@resend.dev>",
+                    "to": [email],
+                    "subject": "Restablecimiento de Contraseña - SaaS Legal",
+                    "html": f"""
+                    <h3>Restablecimiento de Contraseña</h3>
+                    <p>Haz clic en el siguiente enlace para continuar:</p>
+                    <p><a href="{link_recuperacion}">Restablecer mi contraseña</a></p>
+                    """
+                })
+                print("✅ [API HTTP] Correo de recuperación enviado exitosamente vía Resend.")
+            except Exception as e:
+                print(f"⚠️ [ERROR RESEND]: {e}")
 
-        try:
-            mensaje = MessageSchema(
-                subject="Restablecimiento de Contraseña - SaaS Legal",
-                recipients=[email],
-                body=f"""
-                <h3>Restablecimiento de Contraseña</h3>
-                <p>Haz clic en el siguiente enlace para continuar:</p>
-                <p><a href="{link_recuperacion}">Restablecer mi contraseña</a></p>
-                """,
-                subtype=MessageType.html
-            )
-            fm = FastMail(mail_config)
-            
-            # Lo enviamos en segundo plano para evitar el error 502 por el bloqueo de Render
-            background_tasks.add_task(fm.send_message, mensaje)
-            
-        except Exception as e:
-            print(f"⚠️ [ERROR CRÍTICO SMTP]: {e}")
+        # Ejecutamos la tarea sin bloquear la respuesta al usuario
+        if background_tasks:
+            background_tasks.add_task(enviar_correo_resend)
+        else:
+            enviar_correo_resend()
 
     return {"mensaje": "Si el correo está registrado, recibirás un enlace de recuperación a la brevedad."}
 
@@ -1337,18 +1334,21 @@ def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks)
     </div>
     """
 
-    try:
-        mensaje = MessageSchema(
-            subject=f"NUEVO CONTACTO - SaaS Legal - {datos.nombre}",
-            recipients=correos_destino,
-            body=cuerpo_mensaje,
-            subtype=MessageType.html
-        )
-        
-        fm = FastMail(mail_config)
-        background_tasks.add_task(fm.send_message, mensaje)
-        
-    except Exception as e:
-        print(f"⚠️ Error al enviar el correo de contacto: {e}")
+    def enviar_contacto_resend():
+        try:
+            resend.Emails.send({
+                "from": "SaaS Legal <onboarding@resend.dev>",
+                "to": correos_destino,
+                "subject": f"NUEVO CONTACTO - SaaS Legal - {datos.nombre}",
+                "html": cuerpo_mensaje
+            })
+            print("✅ [API HTTP] Correo de contacto enviado exitosamente vía Resend.")
+        except Exception as e:
+            print(f"⚠️ [ERROR RESEND]: {e}")
+
+    if background_tasks:
+        background_tasks.add_task(enviar_contacto_resend)
+    else:
+        enviar_contacto_resend()
 
     return {"status": "success", "mensaje": "Tu mensaje ha sido recibido. Te contactaremos pronto."}

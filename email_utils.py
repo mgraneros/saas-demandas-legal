@@ -1,56 +1,50 @@
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication  # Importación necesaria para adjuntos
+import resend
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_FROM = os.getenv("SMTP_FROM")
+# Configurar la clave API de Resend
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 def enviar_correo(destinatario: str, asunto: str, contenido_html: str, ruta_adjunto: str = None):
     """
-    Función síncrona para enviar correos electrónicos mediante SMTP.
+    Función síncrona para enviar correos electrónicos mediante la API HTTP de Resend.
     Soporta el envío de archivos adjuntos (ej. .docx).
-    Diseñada para ejecutarse en segundo plano con FastAPI BackgroundTasks.
+    Diseñada para saltar los bloqueos SMTP y ejecutarse en segundo plano.
     """
-    if not SMTP_USER or not SMTP_PASSWORD:
-        print("⚠️ [EMAIL] Las credenciales SMTP no están configuradas en el archivo .env")
+    if not resend.api_key:
+        print("⚠️ [EMAIL] La API Key de Resend (RESEND_API_KEY) no está configurada en el archivo .env")
         return
 
     try:
-        # Configurar mensaje (usamos "mixed" cuando hay adjuntos)
-        mensaje = MIMEMultipart("mixed")
-        mensaje["Subject"] = asunto
-        mensaje["From"] = SMTP_FROM
-        mensaje["To"] = destinatario
+        # Construir la estructura principal del correo
+        parametros_correo = {
+            "from": "SaaS Legal <onboarding@resend.dev>",
+            "to": [destinatario],
+            "subject": asunto,
+            "html": contenido_html
+        }
 
-        # Adjuntar contenido HTML
-        parte_html = MIMEText(contenido_html, "html", "utf-8")
-        mensaje.attach(parte_html)
-
-        # Lógica para adjuntar archivo si se proporciona la ruta
+        # Lógica para procesar e inyectar el archivo adjunto si existe
         if ruta_adjunto and os.path.exists(ruta_adjunto):
+            nombre_archivo = os.path.basename(ruta_adjunto)
             with open(ruta_adjunto, "rb") as f:
-                adjunto = MIMEApplication(f.read(), _subtype="vnd.openxmlformats-officedocument.wordprocessingml.document")
-                nombre_archivo = os.path.basename(ruta_adjunto)
-                adjunto.add_header("Content-Disposition", "attachment", filename=nombre_archivo)
-                mensaje.attach(adjunto)
-        elif ruta_adjunto:
-            print(f"⚠️ [EMAIL] No se encontró el archivo adjunto en la ruta: {ruta_adjunto}")
-
-        # Conectar al servidor SMTP y enviar
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as servidor:
-            servidor.starttls()
-            servidor.login(SMTP_USER, SMTP_PASSWORD)
-            servidor.sendmail(SMTP_FROM, destinatario, mensaje.as_string())
+                # El SDK de Resend en Python requiere transformar los bytes en una lista de enteros
+                contenido_bytes = list(f.read())
             
-        print(f"📧 [EMAIL] Correo enviado exitosamente a: {destinatario}")
+            parametros_correo["attachments"] = [
+                {
+                    "filename": nombre_archivo,
+                    "content": contenido_bytes
+                }
+            ]
+        elif ruta_adjunto:
+            print(f"⚠️ [EMAIL] No se encontró el archivo adjunto en la ruta local: {ruta_adjunto}")
+
+        # Ejecutar el disparo mediante la API
+        respuesta = resend.Emails.send(parametros_correo)
+        print(f"📧 [EMAIL API] Correo enviado exitosamente a: {destinatario} | ID Resend: {respuesta.get('id', 'Desconocido')}")
 
     except Exception as e:
-        print(f"❌ [EMAIL] Error al enviar el correo a {destinatario}: {str(e)}")
+        print(f"❌ [EMAIL API] Error al enviar el correo a {destinatario}: {str(e)}")
