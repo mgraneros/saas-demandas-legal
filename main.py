@@ -1317,7 +1317,7 @@ class ContactoRequest(BaseModel):
 
 @app.post("/contacto", summary="Procesar formulario de contacto desde Landing Page")
 def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks):
-    correos_destino = ["martin_graneros@hotmail.com", "pablodgargiulo.laboral@gmail.com"]
+    correos_destino = ["martin_graneros@hotmail.com"]
 
     cuerpo_mensaje = f"""
     <div style="font-family: Arial, sans-serif; color: #333;">
