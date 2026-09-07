@@ -76,6 +76,7 @@ origins = [
     "https://saas-demandas-legal.onrender.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://saas-demandas-legal.vercel.app",
     FRONTEND_URL,
 ]
 
