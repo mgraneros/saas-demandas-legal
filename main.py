@@ -73,7 +73,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500/frontend_demanda
 origins = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
-    "http://127.0.0.1:8000",
+    "https://saas-demandas-legal.onrender.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     FRONTEND_URL,
@@ -1167,7 +1167,7 @@ def listar_mis_demandas(
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"[http://127.0.0.1:8000/descargar-demanda/](http://127.0.0.1:8000/descargar-demanda/){d.id}"
+            "download_url": f"[https://saas-demandas-legal.onrender.com/descargar-demanda/](https://saas-demandas-legal.onrender.com/descargar-demanda/){d.id}"
         })
 
     return {
@@ -1277,7 +1277,7 @@ def ver_demandas_usuario_admin(
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"[http://127.0.0.1:8000/descargar-demanda/](http://127.0.0.1:8000/descargar-demanda/){d.id}"
+            "download_url": f"[https://saas-demandas-legal.onrender.com/descargar-demanda/](https://saas-demandas-legal.onrender.com/descargar-demanda/){d.id}"
         })
 
     return lista_demandas
