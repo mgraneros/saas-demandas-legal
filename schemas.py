@@ -155,3 +155,7 @@ class PlantillaEstadoUpdate(BaseModel):
 class CreditosUpdate(BaseModel):
     monto: int
     motivo: str
+    
+class PasswordUpdate(BaseModel):
+    password_actual: str
+    password_nueva: str

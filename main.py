@@ -196,7 +196,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-
 @app.get("/usuarios/me", response_model=schemas.PerfilOut, summary="Obtener información ampliada del usuario autenticado")
 def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     # Buscamos la suscripción vinculada al usuario
@@ -216,6 +215,28 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
         "plan_actual": plan
     }
     
+@app.put("/usuarios/password", summary="Actualizar contraseña desde el perfil")
+def cambiar_password(
+    datos: schemas.PasswordUpdate,
+    current_user: models.Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Verificar que el usuario conoce su contraseña actual
+    if not verify_password(datos.password_actual, current_user.hashed_password):
+        raise HTTPException(
+            status_code=400, 
+            detail="La contraseña actual ingresada es incorrecta."
+        )
+    
+    # 2. Encriptar la nueva contraseña
+    nuevo_hash = get_password_hash(datos.password_nueva)
+    
+    # 3. Guardar en la base de datos
+    current_user.hashed_password = nuevo_hash
+    db.commit()
+    
+    return {"mensaje": "Contraseña actualizada exitosamente."}
+
 @app.post("/admin/usuarios/{usuario_id}/creditos", summary="Asignar o descontar créditos manualmente")
 def actualizar_creditos(
     usuario_id: int, 
