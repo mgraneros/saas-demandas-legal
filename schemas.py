@@ -24,9 +24,18 @@ class UsuarioResponse(BaseModel):
 class UsuarioOut(BaseModel):
     id: int
     email: EmailStr
+    nombre_estudio: Optional[str] = None
+    es_admin: bool
+    activo: bool
+    rol_estudio: Optional[str] = "titular"
+    cuenta_madre_id: Optional[int] = None
 
     class Config:
         from_attributes = True
+
+class PerfilOut(UsuarioOut):
+    creditos_disponibles: int
+    plan_actual: str
 
 
 class Token(BaseModel):

@@ -15,6 +15,10 @@ class Usuario(Base):
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     es_admin = Column(Boolean, default=False)
 
+    # Jerarquía de Estudio Jurídico
+    cuenta_madre_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    rol_estudio = Column(String(50), default="titular")
+
     # Relaciones
     demandas = relationship("DemandaGenerada", back_populates="usuario")
     suscripcion = relationship("Suscripcion", back_populates="usuario", uselist=False)
@@ -88,3 +92,13 @@ class AuditoriaLog(Base):
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="logs")
+    
+# --- TABLA DE HISTORIAL DE CRÉDITOS ---
+class HistorialCreditos(Base):
+    __tablename__ = "historial_creditos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    monto = Column(Integer, nullable=False)
+    motivo = Column(String, nullable=False)
+    fecha = Column(DateTime, default=datetime.utcnow)

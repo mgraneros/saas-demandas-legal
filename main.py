@@ -197,10 +197,23 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/users/me", response_model=schemas.UsuarioOut, summary="Obtener información del usuario autenticado")
-def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_user)):
-    return current_user
-
+@app.get("/usuarios/me", response_model=schemas.PerfilOut, summary="Obtener información ampliada del usuario autenticado")
+def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Buscamos la suscripción vinculada al usuario
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
+    creditos = suscripcion.demandas_restantes if suscripcion else 0
+    plan = suscripcion.plan if suscripcion else "Sin Plan"
+    
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "nombre_estudio": current_user.nombre_estudio,
+        "es_admin": current_user.es_admin,
+        "rol_estudio": current_user.rol_estudio,
+        "cuenta_madre_id": current_user.cuenta_madre_id,
+        "creditos_disponibles": creditos,
+        "plan_actual": plan
+    }
 
 # ==========================================
 # RUTAS DE DEMANDAS E HISTORIAL
