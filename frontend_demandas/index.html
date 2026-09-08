@@ -14,6 +14,7 @@
 <!-- Envoltorio Principal Flex -->
 <div class="d-flex min-vh-100">
 
+
   <!-- Sidebar Vertical Unificado -->
   <aside class="sidebar p-3 d-flex flex-column justify-content-between flex-shrink-0" style="width: 260px;">
     <div>
@@ -43,7 +44,7 @@
         </li>
       </ul>
     </div>
-
+ 
     <!-- Zona Inferior (Tema, Suscripción y Sesión) -->
     <div class="pt-3 border-top border-secondary-subtle d-flex flex-column gap-2">
       <!-- Switch Modo Claro / Oscuro -->
@@ -78,6 +79,69 @@
         <button id="btn-mercadopago-alert" class="btn btn-sm btn-dark">Recargar / Suscribirme con Mercado Pago</button>
       </div>
     </div>
+    <!-- TABLERO MI CUENTA -->
+<section id="seccion-cuenta" class="panel-card">
+  <h2>Mi Cuenta</h2>
+  <div id="cuenta-loading">Cargando perfil...</div>
+  
+  <div id="cuenta-datos" style="display: none;">
+    <p><strong>Email:</strong> <span id="perfil-email"></span></p>
+    <p><strong>Estudio Jurídico:</strong> <span id="perfil-estudio"></span></p>
+    <p><strong>Créditos disponibles:</strong> <span id="perfil-creditos"></span></p>
+    <p><strong>Plan actual:</strong> <span id="perfil-plan"></span></p>
+    <p><strong>Rol en el estudio:</strong> <span id="perfil-rol"></span></p>
+    <p><strong>Tipo de cuenta:</strong> <span id="perfil-tipo"></span></p>
+  </div>
+
+  <hr>
+
+  <!-- FORMULARIO CAMBIO DE CLAVE -->
+  <h3>Seguridad</h3>
+  <form id="form-cambio-password">
+    <div>
+      <label for="password_actual">Contraseña Actual:</label>
+      <input type="password" id="password_actual" required>
+    </div>
+    <div>
+      <label for="password_nueva">Nueva Contraseña:</label>
+      <input type="password" id="password_nueva" minlength="6" required>
+    </div>
+    <button type="submit" id="btn-guardar-password">Actualizar Contraseña</button>
+  </form>
+  <div id="password-feedback" style="display: none; margin-top: 10px; font-weight: bold;"></div>
+</section>
+
+<!-- PANEL DE CONTROL ADMIN (SOLO VISIBLE SI ES ADMIN) -->
+<section id="seccion-admin" class="panel-card" style="display: none; margin-top: 20px;">
+  <h2>Panel de Administración</h2>
+  <button id="btn-abrir-modal-creditos" type="button">Asignar / Descontar Saldo a Usuario</button>
+</section>
+
+<!-- MODAL ASIGNACIÓN DE SALDO -->
+<div id="modal-creditos" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+  <div style="background: #fff; color: #111; padding: 20px; border-radius: 8px; width: 320px;">
+    <h3>Gestión de Créditos</h3>
+    <form id="form-admin-creditos">
+      <div>
+        <label for="admin-usuario-id">ID de Usuario:</label>
+        <input type="number" id="admin-usuario-id" required style="width: 100%;">
+      </div>
+      <div style="margin-top: 8px;">
+        <label for="admin-monto">Monto (positivo o negativo):</label>
+        <input type="number" id="admin-monto" required style="width: 100%;">
+      </div>
+      <div style="margin-top: 8px;">
+        <label for="admin-motivo">Motivo:</label>
+        <input type="text" id="admin-motivo" placeholder="Ej: Prueba B2B" required style="width: 100%;">
+      </div>
+      <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" id="btn-cerrar-modal">Cancelar</button>
+        <button type="submit">Ejecutar</button>
+      </div>
+    </form>
+    <div id="modal-feedback" style="display: none; margin-top: 10px;"></div>
+  </div>
+</div>
 
     <!-- ================= SECCIÓN 1: CREAR DEMANDA ================= -->
     <section id="seccion-crear" class="seccion-app">
@@ -1256,6 +1320,147 @@ function renderizarTablaUsuarios(usuarios) {
       if (themeText) themeText.textContent = theme === "dark" ? "Modo Claro" : "Modo Oscuro";
     }
   });
+
+
+const token = localStorage.getItem("access_token");
+
+if (!token) {
+  window.location.href = "login.html";
+}
+
+const authHeaders = {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
+};
+
+// 1. CARGA DE PERFIL (GET /usuarios/me)
+async function cargarPerfil() {
+  try {
+    const res = await fetch(`${API_URL}/usuarios/me`, { headers: authHeaders });
+    if (!res.ok) throw new Error("No se pudo obtener el perfil");
+
+    const data = await res.json();
+
+    document.getElementById("perfil-email").textContent = data.email || "-";
+    document.getElementById("perfil-estudio").textContent = data.nombre_estudio || "Sin asignar";
+    document.getElementById("perfil-creditos").textContent = data.creditos_disponibles;
+    document.getElementById("perfil-plan").textContent = data.plan_actual || "Estándar";
+    document.getElementById("perfil-rol").textContent = data.rol_estudio || "Sin rol";
+
+    // Lógica de cuenta madre
+    const esTitular = data.cuenta_madre_id === null;
+    document.getElementById("perfil-tipo").textContent = esTitular 
+      ? "Titular / Independiente" 
+      : `Asistente (Cuenta Madre ID: ${data.cuenta_madre_id})`;
+
+    document.getElementById("cuenta-loading").style.display = "none";
+    document.getElementById("cuenta-datos").style.display = "block";
+
+    // 3. RENDERIZADO CONDICIONAL DE ADMIN
+    if (data.es_admin === true) {
+      document.getElementById("seccion-admin").style.display = "block";
+    }
+  } catch (err) {
+    document.getElementById("cuenta-loading").textContent = "Error al cargar la información.";
+  }
+}
+
+// 2. CAMBIO DE CONTRASEÑA (PUT /usuarios/password)
+const formPassword = document.getElementById("form-cambio-password");
+const passFeedback = document.getElementById("password-feedback");
+
+formPassword.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  passFeedback.style.display = "none";
+
+  const password_actual = document.getElementById("password_actual").value;
+  const password_nueva = document.getElementById("password_nueva").value;
+
+  try {
+    const res = await fetch(`${API_URL}/usuarios/password`, {
+      method: "PUT",
+      headers: authHeaders,
+      body: JSON.stringify({ password_actual, password_nueva })
+    });
+
+    if (res.status === 400) {
+      passFeedback.textContent = "La contraseña actual ingresada es incorrecta.";
+      passFeedback.style.color = "#ef4444"; // Rojo
+      passFeedback.style.display = "block";
+      return;
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || "Error al actualizar la contraseña");
+    }
+
+    passFeedback.textContent = "Contraseña actualizada exitosamente.";
+    passFeedback.style.color = "#22c55e"; // Verde
+    passFeedback.style.display = "block";
+    formPassword.reset();
+  } catch (err) {
+    passFeedback.textContent = err.message || "Error al conectar con el servidor.";
+    passFeedback.style.color = "#ef4444";
+    passFeedback.style.display = "block";
+  }
+});
+
+// 3. GESTIÓN DEL MODAL Y ASIGNACIÓN DE CRÉDITOS (POST /admin/usuarios/{id}/creditos)
+const modal = document.getElementById("modal-creditos");
+const btnAbrirModal = document.getElementById("btn-abrir-modal-creditos");
+const btnCerrarModal = document.getElementById("btn-cerrar-modal");
+const formCreditos = document.getElementById("form-admin-creditos");
+const modalFeedback = document.getElementById("modal-feedback");
+
+btnAbrirModal.addEventListener("click", () => {
+  modal.style.display = "flex";
+  modalFeedback.style.display = "none";
+});
+
+btnCerrarModal.addEventListener("click", () => {
+  modal.style.display = "none";
+  formCreditos.reset();
+});
+
+formCreditos.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  modalFeedback.style.display = "none";
+
+  const usuarioId = document.getElementById("admin-usuario-id").value;
+  const monto = parseInt(document.getElementById("admin-monto").value, 10);
+  const motivo = document.getElementById("admin-motivo").value;
+
+  try {
+    const res = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/creditos`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ monto, motivo })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "No se pudo actualizar el saldo");
+    }
+
+    modalFeedback.textContent = "Créditos modificados correctamente.";
+    modalFeedback.style.color = "#22c55e";
+    modalFeedback.style.display = "block";
+
+    setTimeout(() => {
+      modal.style.display = "none";
+      formCreditos.reset();
+      cargarPerfil(); // Refresca créditos si el usuario modificado es el propio
+    }, 1200);
+  } catch (err) {
+    modalFeedback.textContent = err.message;
+    modalFeedback.style.color = "#ef4444";
+    modalFeedback.style.display = "block";
+  }
+});
+
+// Inicializar al cargar la página
+document.addEventListener("DOMContentLoaded", cargarPerfil);
 </script>
 </body>
 </html>
