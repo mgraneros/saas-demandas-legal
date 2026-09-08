@@ -209,10 +209,48 @@ def obtener_perfil_usuario(current_user: models.Usuario = Depends(get_current_us
         "email": current_user.email,
         "nombre_estudio": current_user.nombre_estudio,
         "es_admin": current_user.es_admin,
+        "activo": current_user.activo,
         "rol_estudio": current_user.rol_estudio,
         "cuenta_madre_id": current_user.cuenta_madre_id,
         "creditos_disponibles": creditos,
         "plan_actual": plan
+    }
+    
+@app.post("/admin/usuarios/{usuario_id}/creditos", summary="Asignar o descontar créditos manualmente")
+def actualizar_creditos(
+    usuario_id: int, 
+    datos: schemas.CreditosUpdate, 
+    current_user: models.Usuario = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    # 1. Bloqueo de seguridad: Solo administradores
+    if not current_user.es_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado: Permisos de administrador requeridos")
+    
+    # 2. Buscar al usuario y su billetera (Suscripcion)
+    usuario_destino = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not usuario_destino:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == usuario_id).first()
+    if not suscripcion:
+        raise HTTPException(status_code=400, detail="El usuario no tiene una suscripción inicializada")
+    
+    # 3. Aplicar el ajuste de saldo (permite números negativos para descontar)
+    suscripcion.demandas_restantes += datos.monto
+    
+    # 4. Grabar el comprobante en la auditoría
+    nuevo_movimiento = models.HistorialCreditos(
+        usuario_id=usuario_id,
+        monto=datos.monto,
+        motivo=datos.motivo
+    )
+    db.add(nuevo_movimiento)
+    db.commit()
+    
+    return {
+        "mensaje": "Saldo actualizado exitosamente", 
+        "nuevo_saldo": suscripcion.demandas_restantes
     }
 
 # ==========================================

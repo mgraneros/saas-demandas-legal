@@ -151,3 +151,7 @@ class DemandaHistorial(BaseModel):
 
 class PlantillaEstadoUpdate(BaseModel):
     activa: bool
+    
+class CreditosUpdate(BaseModel):
+    monto: int
+    motivo: str
