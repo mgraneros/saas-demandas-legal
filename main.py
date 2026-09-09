@@ -1199,14 +1199,15 @@ async def solicitar_recuperacion(
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
         
-        frontend_url = os.getenv("FRONTEND_URL", "[http://127.0.0.1:5500/frontend_demandas](http://127.0.0.1:5500/frontend_demandas)")
+        # Actualizado con tu dominio oficial de producción
+        frontend_url = os.getenv("FRONTEND_URL", "https://autodemandas.com.ar")
         link_recuperacion = f"{frontend_url}/reset-password.html?token={token}"
         
         # Función interna que Resend ejecutará en segundo plano
         def enviar_correo_resend():
             try:
                 resend.Emails.send({
-                    "from": "SaaS Legal <onboarding@resend.dev>",
+                    "from": "SaaS Legal <soporte@autodemandas.com.ar>", # <-- DOMINIO VERIFICADO
                     "to": [email],
                     "subject": "Restablecimiento de Contraseña - SaaS Legal",
                     "html": f"""
@@ -1226,7 +1227,6 @@ async def solicitar_recuperacion(
             enviar_correo_resend()
 
     return {"mensaje": "Si el correo está registrado, recibirás un enlace de recuperación a la brevedad."}
-
 
 @app.post("/auth/reset-password", summary="Cambiar la contraseña usando el token")
 def resetear_password(
