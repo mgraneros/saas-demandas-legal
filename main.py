@@ -1187,7 +1187,6 @@ def toggle_suscripcion_usuario(
     db.commit()
     return {"mensaje": f"Estado de la suscripción actualizado a {suscripcion.activa}"}
 
-
 @app.post("/auth/olvide-password", summary="Solicitar restablecimiento de contraseña")
 async def solicitar_recuperacion(
     email: str = Form(...),
@@ -1199,15 +1198,15 @@ async def solicitar_recuperacion(
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
         
-        # Actualizado con tu dominio oficial de producción
-        frontend_url = os.getenv("FRONTEND_URL", "https://autodemandas.com.ar")
+        # ELIMINAMOS os.getenv para forzar SIEMPRE el dominio de producción
+        frontend_url = "https://autodemandas.com.ar"
         link_recuperacion = f"{frontend_url}/reset-password.html?token={token}"
         
         # Función interna que Resend ejecutará en segundo plano
         def enviar_correo_resend():
             try:
                 resend.Emails.send({
-                    "from": "SaaS Legal <soporte@autodemandas.com.ar>", # <-- DOMINIO VERIFICADO
+                    "from": "SaaS Legal <soporte@autodemandas.com.ar>", 
                     "to": [email],
                     "subject": "Restablecimiento de Contraseña - SaaS Legal",
                     "html": f"""
