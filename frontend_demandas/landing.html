@@ -46,7 +46,7 @@
     <div class="row justify-content-center mb-4">
         <div class="col-auto" style="padding: 20px;">
             <!-- Imagen con bordes circulares, tamaño aumentado (320px) y transición suave -->
-            <img id="mainLogo" src="../assets/logo-auto-oscuro.jpeg" alt="Logo SaaS Legal" class="img-fluid" style="width: 320px; height: 320px; object-fit: cover; border-radius: 50%; transition: all 0.4s ease;">
+            <img id="mainLogo" src="./assets/logo-auto-oscuro.jpeg" alt="Logo SaaS Legal" class="img-fluid" style="width: 320px; height: 320px; object-fit: cover; border-radius: 50%; transition: all 0.4s ease;">
         </div>
     </div>
     <!-- ========================================================= -->
@@ -129,11 +129,11 @@
             // 3. INTERCAMBIO DINÁMICO DEL LOGO Y EFECTO DE FUSIÓN (GLOW)
             if (mainLogo) {
                 if (theme === "dark") {
-                    mainLogo.src = "../assets/logo-auto-oscuro.jpeg";
+                    mainLogo.src = "./assets/logo-auto-oscuro.jpeg";
                     // Resplandor negro difuminado (Aumentado a 80px)
                     mainLogo.style.boxShadow = "0 0 80px 40px #000000";
                 } else {
-                    mainLogo.src = "../assets/logo-auto-claro.jpeg";
+                    mainLogo.src = "./assets/logo-auto-claro.jpeg";
                     // Resplandor blanco difuminado (Aumentado a 80px)
                     mainLogo.style.boxShadow = "0 0 80px 40px #ffffff";
                 }
