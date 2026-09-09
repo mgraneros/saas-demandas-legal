@@ -284,21 +284,36 @@ def generar_demanda(
     request: Request, 
     background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db), 
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
+    current_user: models.Usuario = Depends(get_current_user) # Cambiado a get_current_user para no bloquear asistentes prematuramente
 ):
-    # 1. VERIFICAR Y CONSULTAR LA SUSCRIPCIÓN DEL USUARIO
-    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == current_user.id).first()
+    # 1. DETERMINAR LA CUENTA TITULAR (MADRE O PROPIA)
+    cuenta_titular = current_user
+    es_asistente = False
+    
+    # Si el current_user tiene configurada una cuenta madre, redirigimos las validaciones a ese ID
+    if getattr(current_user, 'cuenta_madre_id', None):
+        cuenta_titular = db.query(models.Usuario).filter(models.Usuario.id == current_user.cuenta_madre_id).first()
+        es_asistente = True
+        
+        if not cuenta_titular:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Error de jerarquía: La cuenta principal (estudio jurídico) asociada no existe."
+            )
+
+    # 2. VERIFICAR LA SUSCRIPCIÓN DE LA CUENTA TITULAR (En vez del current_user directo)
+    suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == cuenta_titular.id).first()
 
     if not suscripcion:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No posees una suscripción activa. Este servicio requiere un plan mensual pago para su uso."
+            detail="La cuenta principal no posee una suscripción activa. Este servicio requiere un plan mensual pago."
         )
 
     if not suscripcion.activa:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tu suscripción se encuentra inactiva. Por favor, renová tu plan para continuar."
+            detail="La suscripción de la cuenta principal se encuentra inactiva."
         )
 
     if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
@@ -306,10 +321,18 @@ def generar_demanda(
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tu suscripción mensual ha expirado. Por favor, actualizá tu pago para recuperar el acceso ilimitado."
+            detail="La suscripción de la cuenta principal ha expirado."
         )
+        
+    # Verificar si le quedan demandas a la cuenta titular
+    if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
+        if suscripcion.demandas_restantes < 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="La cuenta principal ya no tiene demandas disponibles en su plan actual."
+            )
 
-    # 2. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO
+    # 3. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO
     diccionario_plantillas = {
         "auto_moto": 1,
         "auto_auto": 2
@@ -333,7 +356,7 @@ def generar_demanda(
     nombre_limpio = datos.NombreActor.replace(' ', '_')
     ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
 
-    # 3. CÁLCULOS MATEMÁTICOS
+    # 4. CÁLCULOS MATEMÁTICOS (Sin alterar tu lógica)
     valor_punto = 2000000.0
     incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
     dano_moral = incapacidad_fisica * 0.33
@@ -360,25 +383,23 @@ def generar_demanda(
         PARRAFOS_COMPETENCIA[1]
     )
     
-    # Formatear la Fecha Médica
+    # Formatear Fechas
     fecha_medica_formateada = datos.FechaMedica
     if datos.FechaMedica and "-" in datos.FechaMedica:
         anio, mes, dia = datos.FechaMedica.split("-")
         fecha_medica_formateada = f"{dia}/{mes}/{anio}"
         
-    # Formatear la Fecha Presupuesto
     fecha_presupuesto_formateada = datos.FechaPresupuesto
     if datos.FechaPresupuesto and "-" in datos.FechaPresupuesto:
         anio_p, mes_p, dia_p = datos.FechaPresupuesto.split("-")
         fecha_presupuesto_formateada = f"{dia_p}/{mes_p}/{anio_p}"
         
-    # Formatear la Fecha del Hecho
     fecha_hecho_formateada = datos.FechaHecho
     if datos.FechaHecho and "-" in datos.FechaHecho:
         anio_h, mes_h, dia_h = datos.FechaHecho.split("-")
         fecha_hecho_formateada = f"{dia_h}/{mes_h}/{anio_h}"
 
-    # 4. MAPEO DE VARIABLES E INYECCIÓN
+    # 5. MAPEO DE VARIABLES E INYECCIÓN
     if datos.ListaDocumental:
         lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
     else:
@@ -454,6 +475,7 @@ def generar_demanda(
         upload_to_gcp(ruta_salida, nombre_unico)
         # --- FIN MAGIA GOOGLE CLOUD ---
 
+        # Registramos la demanda a nombre del usuario actual (el asistente) para que pueda verla en "Mis Demandas"
         nueva_demanda = models.DemandaGenerada(
             usuario_id=current_user.id,
             plantilla_id=plantilla.id,
@@ -466,14 +488,19 @@ def generar_demanda(
         )
         db.add(nueva_demanda)
 
+        # 6. IMPACTAR LOS CRÉDITOS Y LA AUDITORÍA A NOMBRE DE LA CUENTA TITULAR
         if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
             suscripcion.demandas_restantes -= 1
 
+        detalles_auditoria = f"Demanda para {datos.NombreActor} generada y respaldada en GCP."
+        if es_asistente:
+            detalles_auditoria += f" (Ejecutado por asistente: {current_user.email})"
+
         nuevo_log = models.AuditoriaLog(
-            usuario_id=current_user.id,
+            usuario_id=cuenta_titular.id, # Asignamos el log a la cuenta principal para su control
             accion="GENERAR_DEMANDA",
             ip_origen=ip_cliente,
-            detalles=f"Demanda para {datos.NombreActor} generada y respaldada en GCP."
+            detalles=detalles_auditoria
         )
         db.add(nuevo_log)
 
@@ -482,7 +509,7 @@ def generar_demanda(
 
         print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} guardada en GCP como: {nombre_unico}")
 
-        # ENVÍO DE CORREO (Se mantiene la función externa, asegúrate de actualizarla en email_utils si aplica)
+        # ENVÍO DE CORREO
         try:
             enviar_correo(
                 destinatario=current_user.email,
@@ -503,7 +530,6 @@ def generar_demanda(
         filename=f"demanda_{nombre_limpio}.docx",
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-
 
 # 🔄 WORKFLOW: Endpoint para actualizar el estado operativo de una demanda
 @app.patch("/demanda/{demanda_id}/estado", summary="Actualizar estado operativo de una demanda")
