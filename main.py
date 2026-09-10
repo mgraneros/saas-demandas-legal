@@ -243,6 +243,7 @@ def cambiar_password(
 def actualizar_creditos(
     usuario_id: int, 
     datos: schemas.CreditosUpdate, 
+    background_tasks: BackgroundTasks, # <-- Agregamos el gestor de tareas en segundo plano
     current_user: models.Usuario = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
@@ -271,8 +272,28 @@ def actualizar_creditos(
     db.add(nuevo_movimiento)
     db.commit()
     
+    # 5. Notificación por correo vía Resend
+    def notificar_recarga():
+        try:
+            resend.Emails.send({
+                "from": "SaaS Legal <soporte@autodemandas.com.ar>",
+                "to": [usuario_destino.email],
+                "subject": "Actualización de saldo - SaaS Legal",
+                "html": f"""
+                <h3>¡Tu saldo ha sido actualizado!</h3>
+                <p>Se ha registrado un movimiento de <strong>{datos.monto}</strong> créditos en tu cuenta.</p>
+                <p><strong>Motivo:</strong> {datos.motivo}</p>
+                <p><strong>Saldo actual disponible:</strong> {suscripcion.demandas_restantes}</p>
+                """
+            })
+            print(f"✅ Notificación de saldo enviada a {usuario_destino.email}")
+        except Exception as e:
+            print(f"⚠️ Error enviando notificación: {e}")
+
+    background_tasks.add_task(notificar_recarga)
+
     return {
-        "mensaje": "Saldo actualizado exitosamente", 
+        "mensaje": "Saldo actualizado exitosamente y correo enviado", 
         "nuevo_saldo": suscripcion.demandas_restantes
     }
 
@@ -1153,6 +1174,7 @@ def listar_usuarios_admin(
             "id": u.id,
             "email": u.email,
             "es_admin": u.es_admin,
+            "activo": u.activo,
             "suscripcion_activa": suscripcion.activa if suscripcion else False,
             "plan": suscripcion.plan if suscripcion else "Sin Plan",
             "demandas_restantes": suscripcion.demandas_restantes if suscripcion else 0
@@ -1198,7 +1220,6 @@ async def solicitar_recuperacion(
     if usuario:
         token = serializer.dumps(usuario.email, salt="reset-password-salt")
         
-        # ELIMINAMOS os.getenv para forzar SIEMPRE el dominio de producción
         frontend_url = "https://autodemandas.com.ar"
         link_recuperacion = f"{frontend_url}/reset-password.html?token={token}"
         
@@ -1404,6 +1425,35 @@ def toggle_rol_usuario(
     db.commit()
     
     return {"status": "success", "mensaje": "Rol actualizado correctamente", "es_admin": usuario.es_admin}
+
+@app.put("/admin/usuarios/{usuario_id}/toggle-activo", summary="Habilitar o inhabilitar a un usuario")
+def toggle_activo_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin)
+):
+    usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Evitamos que el administrador principal se bloquee a sí mismo por error
+    if usuario.id == admin.id:
+        raise HTTPException(
+            status_code=400, 
+            detail="Por seguridad, no puedes inhabilitar tu propia cuenta."
+        )
+
+    # Invertimos el estado (si estaba activo pasa a inactivo, y viceversa)
+    usuario.activo = not usuario.activo
+    db.commit()
+    
+    estado_texto = "habilitado" if usuario.activo else "inhabilitado"
+    return {
+        "status": "success", 
+        "mensaje": f"El usuario ha sido {estado_texto} correctamente.", 
+        "activo": usuario.activo
+    }
 
 
 # ==========================================
