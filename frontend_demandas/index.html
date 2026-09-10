@@ -1118,6 +1118,7 @@ function mostrarSeccion(idSeccion, event) {
 }
 
   // --- PANEL DE ADMINISTRACIÓN ---
+// --- PANEL DE ADMINISTRACIÓN ---
 async function cargarPanelAdmin() {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
   const seccionAdmin = document.getElementById("seccion-admin");
@@ -1125,7 +1126,7 @@ async function cargarPanelAdmin() {
   if (!token) return;
 
   try {
-    const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
+    const resMetricas = await fetch(`${API_URL}/admin/estadisticas`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
 
@@ -1136,22 +1137,22 @@ async function cargarPanelAdmin() {
       const btnMenu = document.getElementById("menu-admin") || document.getElementById("btn-admin");
       if (btnMenu) btnMenu.style.display = "flex";
 
-      // 3. Completar tarjetas de métricas
+      // 2. Completar tarjetas de métricas
       const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
       const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
       const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
       const metricIngresos = document.getElementById("metric-ingresos");
 
-      if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
-      if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
-      if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
+      if (metricUsers) metricUsers.textContent = metricas.total_usuarios ?? 0;
+      if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas ?? 0;
+      if (metricDemandas) metricDemandas.textContent = metricas.demandas_generadas ?? 0;
 
       if (metricIngresos) {
-        const dinero = (metricas.suscripciones_activas || 0) * 500000;
-        metricIngresos.textContent = "$" + dinero.toLocaleString('es-AR');
+        const ingresos = metricas.ingresos_mensuales ?? 0;
+        metricIngresos.textContent = `$${ingresos.toLocaleString('es-AR')}`;
       }
 
-      // 4. Traer y renderizar usuarios
+      // 3. Traer y renderizar usuarios
       const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1174,46 +1175,82 @@ async function cargarPanelAdmin() {
 }
 
 function renderizarTablaUsuarios(usuarios) {
-        const tbody = document.getElementById("tabla-usuarios-body");
-        if (!tbody) return;
+  const tbody = document.getElementById("tabla-usuarios-body");
+  if (!tbody) return;
 
-        tbody.innerHTML = "";
+  tbody.innerHTML = "";
 
-        if (usuarios.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
-            return;
-        }
+  if (usuarios.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No hay usuarios registrados.</td></tr>`;
+    return;
+  }
 
-        usuarios.forEach(u => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><strong>#${u.id}</strong></td>
-                <td>${u.email}</td>
-                <td>
-                    <!-- BOTÓN INTERACTIVO DE ROL -->
-                    <button class="btn btn-sm ${u.es_admin ? 'btn-dark' : 'btn-secondary'}" onclick="confirmarToggleRol(${u.id}, ${u.es_admin})">
-                        ${u.es_admin ? '👑 Admin' : '👤 Usuario'}
-                    </button>
-                </td>
-                <td>
-                    <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
-                        ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
-                    </span>
-                </td>
-                <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
-                <td>
-                    <!-- BOTÓN DE SUSCRIPCIÓN CON ALERTA -->
-                    <button class="btn btn-sm ${u.suscripcion_activa ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="confirmarToggleSuscripcion(${u.id}, ${u.suscripcion_activa})">
-                        ${u.suscripcion_activa ? 'Desactivar' : 'Activar VIP'}
-                    </button>
-                    <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${u.id})">
-                        🔍 Auditar
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+  usuarios.forEach(u => {
+    const tr = document.createElement("tr");
+
+    // Rol de estudio: Titular / Asistente
+    const badgeEstudio = u.rol_estudio 
+      ? `<span class="badge bg-secondary ms-1" style="font-size: 0.75rem;">${u.rol_estudio}</span>` 
+      : "";
+
+    tr.innerHTML = `
+      <td><strong>#${u.id}</strong></td>
+      <td>
+        ${u.email}
+        ${badgeEstudio}
+      </td>
+      <td>
+        <!-- BOTÓN INTERACTIVO DE ROL -->
+        <button class="btn btn-sm ${u.es_admin ? 'btn-dark' : 'btn-secondary'}" onclick="confirmarToggleRol(${u.id}, ${u.es_admin})">
+          ${u.es_admin ? '👑 Admin' : '👤 Usuario'}
+        </button>
+      </td>
+      <td>
+        <span class="badge ${u.suscripcion_activa ? 'bg-success' : 'bg-danger'}">
+          ${u.suscripcion_activa ? 'Activa ' + (u.plan ? '(' + u.plan + ')' : '') : 'Inactiva'}
+        </span>
+      </td>
+      <td>${u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0)}</td>
+      <td>
+        <!-- BOTÓN DE ACTIVAR / DESACTIVAR ACCESO -->
+        <button class="btn btn-sm ${u.activo ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="toggleActivoUsuario(${u.id}, ${u.activo})">
+          ${u.activo ? 'Desactivar' : 'Activar'}
+        </button>
+        <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${u.id})">
+          🔍 Auditar
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// TOGGLE ACTIVO / INACTIVO (Bloqueo de cuenta)
+async function toggleActivoUsuario(id, estadoActual) {
+  const accion = estadoActual ? "desactivar y cortar el acceso a" : "activar el acceso para";
+  if (!confirm(`¿Seguro que querés ${accion} este usuario?`)) return;
+
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  try {
+    const res = await fetch(`${API_URL}/admin/usuarios/${id}/toggle-activo`, {
+      method: "PUT",
+      headers: { 
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Error al modificar estado del usuario");
     }
+
+    // Refrescar métricas y tabla
+    await cargarPanelAdmin();
+  } catch (err) {
+    alert(err.message);
+  }
+}
 
     // --- ALERTA Y LÓGICA DE ROL ---
     function confirmarToggleRol(usuarioId, esAdminActual) {
