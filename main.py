@@ -1328,33 +1328,44 @@ def resetear_password(
     return {"mensaje": "Contraseña actualizada exitosamente. Ya puedes iniciar sesión."}
 
 
-@app.get("/mis-demandas", summary="Listar todas las demandas generadas por el usuario actual")
+@app.get("/mis-demandas", summary="Listar todas las demandas del equipo (Titular) o propias (Asistente)")
 def listar_mis_demandas(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
-    demandas = db.query(models.DemandaGenerada).filter(
-        models.DemandaGenerada.usuario_id == current_user.id
+    # 1. Lógica Jerárquica: Determinar qué demandas puede ver
+    if getattr(current_user, 'cuenta_madre_id', None) is None:
+        # Es Titular: obtenemos su ID y los IDs de sus asistentes
+        asistentes = db.query(models.Usuario.id).filter(models.Usuario.cuenta_madre_id == current_user.id).all()
+        ids_permitidos = [current_user.id] + [a.id for a in asistentes]
+    else:
+        # Es Asistente: solo ve las suyas
+        ids_permitidos = [current_user.id]
+
+    # 2. Búsqueda con JOIN para traer el email del creador
+    demandas_con_creador = db.query(models.DemandaGenerada, models.Usuario.email).join(
+        models.Usuario, models.DemandaGenerada.usuario_id == models.Usuario.id
+    ).filter(
+        models.DemandaGenerada.usuario_id.in_(ids_permitidos)
     ).all()
 
     lista_demandas = []
-    for d in demandas:
+    for d, email_creador in demandas_con_creador:
         lista_demandas.append({
             "id": d.id,
             "nombre_actor": getattr(d, "nombre_actor", "Sin nombre"),
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"[https://saas-demandas-legal.onrender.com/descargar-demanda/](https://saas-demandas-legal.onrender.com/descargar-demanda/){d.id}"
+            "creado_por": email_creador, # <-- Dato clave para el Titular
+            "download_url": f"https://saas-demandas-legal.onrender.com/descargar-demanda/{d.id}"
         })
 
     return {
-        "cantidad": len(demandas),
+        "cantidad": len(lista_demandas),
         "demandas": lista_demandas
     }
-
-
-@app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas del usuario")
+@app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas jerárquico")
 def obtener_historial(
     limit: int = 10,
     skip: int = 0,
@@ -1363,7 +1374,14 @@ def obtener_historial(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
-    query = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.usuario_id == current_user.id)
+    # Lógica Jerárquica B2B
+    if getattr(current_user, 'cuenta_madre_id', None) is None:
+        asistentes = db.query(models.Usuario.id).filter(models.Usuario.cuenta_madre_id == current_user.id).all()
+        ids_permitidos = [current_user.id] + [a.id for a in asistentes]
+    else:
+        ids_permitidos = [current_user.id]
+
+    query = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.usuario_id.in_(ids_permitidos))
 
     if nombre_actor:
         query = query.filter(models.DemandaGenerada.nombre_actor.ilike(f"%{nombre_actor}%"))
