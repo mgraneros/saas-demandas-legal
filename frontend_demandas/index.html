@@ -147,28 +147,28 @@
 
 
 <!-- MODAL ASIGNACIÓN DE SALDO -->
-<div id="modal-creditos" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
-  <div style="background: #fff; color: #111; padding: 20px; border-radius: 8px; width: 320px;">
-    <h3>Gestión de Créditos</h3>
+<div id="modal-creditos" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #16181f; color: #f8fafc; padding: 24px; border-radius: 12px; width: 100%; max-width: 380px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+    <h3 style="margin: 0 0 16px; font-size: 1.25rem; font-weight: 600;">Gestión de Créditos</h3>
     <form id="form-admin-creditos">
       <div>
-        <label for="admin-usuario-id">ID de Usuario:</label>
-        <input type="number" id="admin-usuario-id" required style="width: 100%;">
+        <label for="admin-usuario-id" style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 4px;">ID de Usuario:</label>
+        <input type="number" id="admin-usuario-id" required style="width: 100%; background: #0f1117; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 8px 12px; border-radius: 6px; box-sizing: border-box;">
       </div>
-      <div style="margin-top: 8px;">
-        <label for="admin-monto">Monto (positivo o negativo):</label>
-        <input type="number" id="admin-monto" required style="width: 100%;">
+      <div style="margin-top: 12px;">
+        <label for="admin-monto" style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 4px;">Monto (positivo o negativo):</label>
+        <input type="number" id="admin-monto" required style="width: 100%; background: #0f1117; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 8px 12px; border-radius: 6px; box-sizing: border-box;">
       </div>
-      <div style="margin-top: 8px;">
-        <label for="admin-motivo">Motivo:</label>
-        <input type="text" id="admin-motivo" placeholder="Ej: Prueba B2B" required style="width: 100%;">
+      <div style="margin-top: 12px;">
+        <label for="admin-motivo" style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 4px;">Motivo:</label>
+        <input type="text" id="admin-motivo" placeholder="Ej: Prueba B2B" required style="width: 100%; background: #0f1117; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 8px 12px; border-radius: 6px; box-sizing: border-box;">
       </div>
-      <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" id="btn-cerrar-modal">Cancelar</button>
-        <button type="submit">Ejecutar</button>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" id="btn-cerrar-modal" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #94a3b8; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+        <button type="submit" style="background: #d97706; border: none; color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">Ejecutar</button>
       </div>
     </form>
-    <div id="modal-feedback" style="display: none; margin-top: 10px;"></div>
+    <div id="modal-feedback" style="display: none; margin-top: 12px; font-size: 0.9rem;"></div>
   </div>
 </div>
 
@@ -1510,7 +1510,8 @@ formCreditos.addEventListener("submit", async (e) => {
     setTimeout(() => {
       modal.style.display = "none";
       formCreditos.reset();
-      cargarPerfil(); // Refresca créditos si el usuario modificado es el propio
+      cargarPerfil();
+      cargarPanelAdmin(); // Refresca créditos si el usuario modificado es el propio
     }, 1200);
   } catch (err) {
     modalFeedback.textContent = err.message;
