@@ -254,7 +254,7 @@ def cambiar_password(
 def actualizar_creditos(
     usuario_id: int, 
     datos: schemas.CreditosUpdate, 
-    background_tasks: BackgroundTasks, # <-- Agregamos el gestor de tareas en segundo plano
+    background_tasks: BackgroundTasks, 
     current_user: models.Usuario = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
@@ -262,19 +262,30 @@ def actualizar_creditos(
     if not current_user.es_admin:
         raise HTTPException(status_code=403, detail="Acceso denegado: Permisos de administrador requeridos")
     
-    # 2. Buscar al usuario y su billetera (Suscripcion)
+    # 2. Buscar al usuario
     usuario_destino = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
     if not usuario_destino:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
         
+    # 3. Buscar la billetera (Suscripcion)
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == usuario_id).first()
-    if not suscripcion:
-        raise HTTPException(status_code=400, detail="El usuario no tiene una suscripción inicializada")
     
-    # 3. Aplicar el ajuste de saldo (permite números negativos para descontar)
+    # --- NUEVA LÓGICA: Si no existe, la inicializamos automáticamente ---
+    if not suscripcion:
+        suscripcion = models.Suscripcion(
+            usuario_id=usuario_id,
+            plan="Free",           # Inicializamos con el plan base
+            activa=True,
+            demandas_restantes=0   # Arranca en 0, luego le suma el monto
+        )
+        db.add(suscripcion)
+        db.flush() # Sincronizamos con la base de datos antes del commit final
+    # ---------------------------------------------------------------------
+    
+    # 4. Aplicar el ajuste de saldo (permite números negativos para descontar)
     suscripcion.demandas_restantes += datos.monto
     
-    # 4. Grabar el comprobante en la auditoría
+    # 5. Grabar el comprobante en la auditoría
     nuevo_movimiento = models.HistorialCreditos(
         usuario_id=usuario_id,
         monto=datos.monto,
@@ -283,7 +294,7 @@ def actualizar_creditos(
     db.add(nuevo_movimiento)
     db.commit()
     
-    # 5. Notificación por correo vía Resend
+    # 6. Notificación por correo vía Resend
     def notificar_recarga():
         try:
             resend.Emails.send({
