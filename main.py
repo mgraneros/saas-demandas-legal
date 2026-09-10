@@ -889,20 +889,23 @@ def obtener_estadisticas_admin(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
+    # Lógica de seguridad intacta
     if not getattr(current_user, "es_admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acceso denegado. Se requieren permisos de administrador."
         )
 
+    # Consultas a la base de datos intactas
     total_usuarios = db.query(models.Usuario).count()
     total_demandas = db.query(models.DemandaGenerada).count()
     suscripciones_activas = db.query(models.Suscripcion).filter(models.Suscripcion.activa == True).count()
 
     return {
         "total_usuarios": total_usuarios,
-        "total_demandas_generadas": total_demandas,
-        "suscripciones_activas": suscripciones_activas
+        "suscripciones_activas": suscripciones_activas,
+        "demandas_generadas": total_demandas, 
+        "ingresos_mensuales": 0  # <- Valor temporal para que la 4ta tarjeta del panel no tire error
     }
 
 
@@ -1519,7 +1522,28 @@ def agregar_asistente(
         "mensaje": f"Asistente {nuevo_asistente.email} agregado exitosamente.",
         "asistente_id": nuevo_asistente.id
     }
+@app.delete("/equipo/{asistente_id}", summary="Desvincular a un asistente del equipo")
+def desvincular_asistente(
+    asistente_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Buscamos al asistente asegurándonos de que su jefe sea el usuario logueado
+    asistente = db.query(models.Usuario).filter(
+        models.Usuario.id == asistente_id,
+        models.Usuario.cuenta_madre_id == current_user.id
+    ).first()
 
+    if not asistente:
+        raise HTTPException(status_code=404, detail="Asistente no encontrado o no pertenece a tu equipo.")
+
+    # Lo desvinculamos del titular y por seguridad inhabilitamos la cuenta
+    asistente.cuenta_madre_id = None
+    asistente.activo = False
+    
+    db.commit()
+    
+    return {"status": "success", "mensaje": "Asistente desvinculado e inhabilitado correctamente."}
 # ==========================================
 # RUTAS DE CONTACTO (LANDING PAGE)
 # ==========================================
