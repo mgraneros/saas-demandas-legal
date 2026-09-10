@@ -92,9 +92,9 @@ app.add_middleware(
 )
 
 # 2. Configuración JWT
-SECRET_KEY = "admin123"
+SECRET_KEY = "4ut0D3m4nd452027#"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
+ACCESS_TOKEN_EXPIRE_MINUTES = 10  # La sesión expira 10 minutos después del login
 
 # 3. Esquema OAuth2 para Swagger UI
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -576,23 +576,43 @@ def generar_demanda(
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
 
-# 🔄 WORKFLOW: Endpoint para actualizar el estado operativo de una demanda
+from pydantic import BaseModel
+
+# Definimos la estructura para recibir el dato de forma segura
+class EstadoUpdate(BaseModel):
+    nuevo_estado: str
+
 @app.patch("/demanda/{demanda_id}/estado", summary="Actualizar estado operativo de una demanda")
-def actualizar_estado_demanda(demanda_id: int, nuevo_estado: str, db: Session = Depends(get_db)):
+def actualizar_estado_demanda(
+    demanda_id: int, 
+    datos: EstadoUpdate, 
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user) # <- Bloqueo de seguridad agregado
+):
     """
-    Estados permitidos recomendados: 'Generada', 'Presentada', 'En Notificacion', 'Archivada'
+    Estados permitidos recomendados: 'Generada', 'En Revisión', 'Lista para Presentar', 'Presentada', 'En Mediación', 'Archivada'
     """
     registro = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
     
     if not registro:
         raise HTTPException(status_code=404, detail="No se encontró la demanda especificada.")
-        
-    registro.estado_operativo = nuevo_estado
+
+    # 1. Validación B2B: Verificar que la demanda pertenezca al mismo paraguas (estudio jurídico)
+    cuenta_madre_actual = getattr(current_user, 'cuenta_madre_id', None) or current_user.id
+    
+    creador = db.query(models.Usuario).filter(models.Usuario.id == registro.usuario_id).first()
+    cuenta_madre_creador = getattr(creador, 'cuenta_madre_id', None) or creador.id
+
+    if cuenta_madre_actual != cuenta_madre_creador:
+        raise HTTPException(status_code=403, detail="No tienes permisos para editar el estado de esta demanda.")
+
+    # 2. Aplicar el cambio
+    registro.estado_operativo = datos.nuevo_estado
     db.commit()
     db.refresh(registro)
     
     return {
-        "mensaje": f"Estado de la demanda #{demanda_id} actualizado a '{nuevo_estado}' con éxito.",
+        "mensaje": f"Estado de la demanda #{demanda_id} actualizado a '{datos.nuevo_estado}' con éxito.",
         "demanda": registro
     }
 
