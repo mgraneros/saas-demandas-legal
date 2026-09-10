@@ -43,7 +43,7 @@
         </li>
         <!-- NUEVO: Pestaña exclusiva para el Administrador (Oculta por defecto) -->
         <li class="nav-item" id="menu-admin" style="display: none;">
-          <a href="#" class="nav-link text-warning fw-bold" onclick="mostrarSeccion('seccion-admin', event)">
+          <a href="#" id="menu-admin" class="nav-link text-warning fw-bold" style="display: none;" onclick="mostrarSeccion('seccion-admin', event)">
             👑 Administración
           </a>
         </li>
@@ -640,18 +640,26 @@
   const API_URL = "https://saas-demandas-legal.onrender.com";
 
   // 1. VALIDACIÓN DE SESIÓN AL CARGAR LA PÁGINA
-  document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "landing.html";
-      return;
-    }
-    localStorage.setItem("access_token", token);
-    console.log("Sesión activa, cargando panel...");
-    await verificarEstadoSuscripcion();
-    await cargarHistorial();
-    await cargarPanelAdmin();
-  });
+document.addEventListener('DOMContentLoaded', async () => {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "landing.html";
+    return;
+  }
+
+  localStorage.setItem("access_token", token);
+  console.log("Sesión activa, cargando panel...");
+
+  await verificarEstadoSuscripcion();
+  await cargarHistorial();
+  await cargarPanelAdmin();
+
+  // Asegurar que el panel de administración quede oculto por defecto
+  const seccionAdmin = document.getElementById("seccion-admin");
+  if (seccionAdmin) {
+    seccionAdmin.style.display = "none";
+  }
+});
 
   // Automatización: Calcular el porcentaje de incapacidad máximo
   document.addEventListener('DOMContentLoaded', () => {
@@ -1070,28 +1078,42 @@
   }
 
   // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
-  function mostrarSeccion(idSeccion, event) {
-    if (event) event.preventDefault();
-    
-    const secciones = document.querySelectorAll('.seccion-app');
-    secciones.forEach(sec => sec.style.display = 'none');
-    
-    const seccionActiva = document.getElementById(idSeccion);
-    if (seccionActiva) seccionActiva.style.display = 'block';
+function mostrarSeccion(idSeccion, event) {
+  if (event) event.preventDefault();
 
-    const links = document.querySelectorAll('.nav-link');
-    links.forEach(link => link.classList.remove('active', 'bg-secondary'));
-    
-    if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
-      event.currentTarget.classList.add('active', 'bg-secondary');
-    }
+  // 1. Ocultar todas las secciones con la clase
+  const secciones = document.querySelectorAll('.seccion-app');
+  secciones.forEach(sec => sec.style.display = 'none');
 
-    if (idSeccion === 'seccion-historial') {
+  // 2. Apagar explícitamente el panel admin para evitar que quede visible por herencia
+  const secAdmin = document.getElementById('seccion-admin');
+  if (secAdmin) secAdmin.style.display = 'none';
+
+  // 3. Mostrar únicamente la sección solicitada
+  const seccionActiva = document.getElementById(idSeccion);
+  if (seccionActiva) {
+    seccionActiva.style.display = 'block';
+  }
+
+  // 4. Actualizar clases del sidebar
+  const links = document.querySelectorAll('.nav-link');
+  links.forEach(link => link.classList.remove('active', 'bg-secondary'));
+
+  if (event && event.currentTarget && event.currentTarget.classList.contains('nav-link')) {
+    event.currentTarget.classList.add('active', 'bg-secondary');
+  }
+
+  // 5. Triggers según la sección
+  if (idSeccion === 'seccion-historial') {
     cargarHistorial();
   }
 
   if (idSeccion === 'seccion-cuenta') {
     cargarPerfil();
+  }
+
+  if (idSeccion === 'seccion-admin') {
+    cargarPanelAdmin();
   }
 }
 
