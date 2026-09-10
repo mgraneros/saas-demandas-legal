@@ -43,8 +43,8 @@
         </li>
         <!-- NUEVO: Pestaña exclusiva para el Administrador (Oculta por defecto) -->
         <li class="nav-item" id="menu-admin" style="display: none;">
-          <a href="#" id="menu-admin" class="nav-link text-warning fw-bold" style="display: none;" onclick="mostrarSeccion('seccion-admin', event)">
-            👑 Administración
+          <a href="#" id="menu-admin" class="nav-link text-warning fw-bold" onclick="mostrarSeccion('seccion-admin', event)">
+          👑 Administración
           </a>
         </li>
       </ul>
@@ -1432,10 +1432,11 @@ async function cargarPerfil() {
     document.getElementById("cuenta-loading").style.display = "none";
     document.getElementById("cuenta-datos").style.display = "block";
 
-    // 3. RENDERIZADO CONDICIONAL DE ADMIN
-    if (data.es_admin === true) {
-      document.getElementById("seccion-admin").style.display = "block";
-    }
+    // 3. RENDERIZADO CONDICIONAL DE ADMIN (Solo botón en el sidebar)
+  const btnMenuAdmin = document.getElementById("menu-admin") || document.getElementById("btn-admin");
+  if (btnMenuAdmin) {
+    btnMenuAdmin.style.display = (data.es_admin === true) ? "block" : "none";
+  }
   } catch (err) {
     document.getElementById("cuenta-loading").textContent = "Error al cargar la información.";
   }
