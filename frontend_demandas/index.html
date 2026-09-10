@@ -143,6 +143,55 @@
     </form>
     <div id="password-feedback" style="display: none; margin-top: 12px; font-size: 0.85rem; font-weight: 600;"></div>
   </div>
+  <!-- GESTIÓN DE EQUIPO (Solo Titulares) -->
+  <div id="bloque-gestion-equipo" style="display: none; margin-top: 2rem; background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+      <div>
+        <h3 style="font-size: 1.2rem; font-weight: 600; color: #f8fafc; margin: 0;">Gestión de Asistentes</h3>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0;">Crea accesos directos para tus empleados vinculados a tu saldo común.</p>
+      </div>
+      <button type="button" onclick="abrirModalAsistente()" style="background: #7c3aed; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+        + Nuevo Asistente
+      </button>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8;">
+            <th style="padding: 10px;">ID</th>
+            <th style="padding: 10px;">EMAIL</th>
+            <th style="padding: 10px; text-align: right;">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-equipo-body">
+          <!-- Render dinámico -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL CREAR ASISTENTE -->
+  <div id="modal-nuevo-asistente" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: #16181f; color: #f8fafc; padding: 24px; border-radius: 12px; width: 100%; max-width: 380px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+      <h4 style="margin: 0 0 1rem; font-size: 1.15rem;">Registrar Nuevo Asistente</h4>
+      <form id="form-nuevo-asistente">
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px;">Email del Asistente:</label>
+          <input type="email" id="asistente-email" required style="width: 100%; background: #0f1117; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 8px 12px; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px;">Contraseña inicial:</label>
+          <input type="password" id="asistente-password" minlength="6" required style="width: 100%; background: #0f1117; border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 8px 12px; border-radius: 6px; box-sizing: border-box;">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" onclick="cerrarModalAsistente()" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #94a3b8; padding: 8px 14px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+          <button type="submit" style="background: #7c3aed; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">Crear Acceso</button>
+        </div>
+      </form>
+      <div id="asistente-feedback" style="display: none; margin-top: 10px; font-size: 0.85rem;"></div>
+    </div>
+  </div>
 </section>
 
 
@@ -1462,18 +1511,29 @@ async function cargarPerfil() {
 
     // Lógica de cuenta madre
     const esTitular = data.cuenta_madre_id === null;
-    document.getElementById("perfil-tipo").textContent = esTitular 
-      ? "Titular / Independiente" 
+    document.getElementById("perfil-tipo").textContent = esTitular
+      ? "Titular / Independiente"
       : `Asistente (Cuenta Madre ID: ${data.cuenta_madre_id})`;
+
+    // Control de visibilidad del módulo de asistentes
+    const bloqueEquipo = document.getElementById("bloque-gestion-equipo");
+    if (bloqueEquipo) {
+      if (esTitular) {
+        bloqueEquipo.style.display = "block";
+        cargarEquipo();
+      } else {
+        bloqueEquipo.style.display = "none";
+      }
+    }
 
     document.getElementById("cuenta-loading").style.display = "none";
     document.getElementById("cuenta-datos").style.display = "block";
 
     // 3. RENDERIZADO CONDICIONAL DE ADMIN (Solo botón en el sidebar)
-  const btnMenuAdmin = document.getElementById("menu-admin") || document.getElementById("btn-admin");
-  if (btnMenuAdmin) {
-    btnMenuAdmin.style.display = (data.es_admin === true) ? "block" : "none";
-  }
+    const btnMenuAdmin = document.getElementById("menu-admin") || document.getElementById("btn-admin");
+    if (btnMenuAdmin) {
+      btnMenuAdmin.style.display = (data.es_admin === true) ? "block" : "none";
+    }
   } catch (err) {
     document.getElementById("cuenta-loading").textContent = "Error al cargar la información.";
   }
@@ -1576,6 +1636,114 @@ formCreditos.addEventListener("submit", async (e) => {
 
 // Inicializar al cargar la página
 document.addEventListener("DOMContentLoaded", cargarPerfil);
+
+// --- GESTIÓN DE EQUIPO (TITULARES) ---
+
+async function cargarEquipo() {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  const tbody = document.getElementById("tabla-equipo-body");
+  if (!tbody || !token) return;
+
+  try {
+    const res = await fetch(`${API_URL}/equipo`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+
+    const miembros = await res.json();
+    if (!Array.isArray(miembros) || miembros.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="padding: 16px; text-align: center; color: #64748b;">No hay asistentes registrados aún.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = miembros.map(m => `
+      <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #cbd5e1;">
+        <td style="padding: 10px; color: #64748b;">#${m.id}</td>
+        <td style="padding: 10px;">${m.email}</td>
+        <td style="padding: 10px; text-align: right;">
+          <button type="button" onclick="eliminarAsistente(${m.id})" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error("Error al cargar equipo:", err);
+  }
+}
+
+// Modal controls
+function abrirModalAsistente() {
+  const modal = document.getElementById("modal-nuevo-asistente");
+  if (modal) modal.style.display = "flex";
+}
+
+function cerrarModalAsistente() {
+  const modal = document.getElementById("modal-nuevo-asistente");
+  if (modal) {
+    modal.style.display = "none";
+    document.getElementById("form-nuevo-asistente")?.reset();
+    const fb = document.getElementById("asistente-feedback");
+    if (fb) fb.style.display = "none";
+  }
+}
+
+// Crear nuevo asistente (POST /equipo)
+document.getElementById("form-nuevo-asistente")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  const email = document.getElementById("asistente-email").value.trim();
+  const password = document.getElementById("asistente-password").value;
+  const fb = document.getElementById("asistente-feedback");
+
+  try {
+    const res = await fetch(`${API_URL}/equipo`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Error al crear asistente");
+    }
+
+    fb.textContent = "Asistente creado exitosamente.";
+    fb.style.color = "#4ade80";
+    fb.style.display = "block";
+
+    setTimeout(() => {
+      cerrarModalAsistente();
+      cargarEquipo();
+    }, 1000);
+
+  } catch (err) {
+    fb.textContent = err.message;
+    fb.style.color = "#f87171";
+    fb.style.display = "block";
+  }
+});
+
+// Eliminar asistente (DELETE /equipo/{id})
+async function eliminarAsistente(id) {
+  if (!confirm("¿Seguro que querés dar de baja a este asistente? Perderá acceso inmediato al sistema.")) return;
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${API_URL}/equipo/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (!res.ok) throw new Error("No se pudo desvincular al asistente");
+    await cargarEquipo();
+  } catch (err) {
+    alert(err.message);
+  }
+}
 </script>
 </body>
 </html>
