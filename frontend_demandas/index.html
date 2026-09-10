@@ -145,20 +145,6 @@
   </div>
 </section>
 
-<!-- PANEL DE ADMINISTRACIÓN (Separado y autónomo) -->
-<section id="seccion-admin" class="panel-card seccion-app" style="display: none; padding: 2rem; max-width: 900px;">
-  <h2 style="font-size: 1.75rem; font-weight: 700; color: #f8fafc; margin-bottom: 1.5rem;">Panel de Administración</h2>
-  
-  <div class="dato-card" style="display: flex; align-items: center; justify-content: space-between;">
-    <div>
-      <h4 style="color: #f8fafc; margin: 0;">Gestión de Saldo B2B</h4>
-      <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 0.85rem;">Inyectá o descontá créditos manualmente a cualquier usuario de la base.</p>
-    </div>
-    <button id="btn-abrir-modal-creditos" type="button" class="btn-warning" style="background: #d97706; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer;">
-      Asignar Créditos
-    </button>
-  </div>
-</section>
 
 <!-- MODAL ASIGNACIÓN DE SALDO -->
 <div id="modal-creditos" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
@@ -538,67 +524,78 @@
       </div>
     </section>
 
-    <!-- ================= SECCIÓN 4: PANEL ADMIN ================= -->
-    <section id="seccion-admin" class="seccion-app" style="display: none;">
-      <div class="container-fluid mb-5">
-        <h2 class="fw-bold mb-4">👑 Panel de Administración</h2>
+    <!-- SECCIÓN 4: PANEL ADMINISTRACIÓN -->
+<section id="seccion-admin" class="panel-card seccion-app" style="display: none;">
+  <div class="container-fluid mb-5">
+    <h2 class="fw-bold mb-4">👑 Panel de Administración</h2>
 
-        <!-- Tarjetas de Métricas -->
-        <div class="row g-3 mb-4">
-          <div class="col-md-3">
-            <div class="card bg-primary text-white p-3 shadow-sm">
-              <h5>Total Usuarios</h5>
-              <h2 id="metric-total-usuarios" class="fw-bold mb-0">0</h2>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="card bg-success text-white p-3 shadow-sm">
-              <h5>Suscripciones Activas</h5>
-              <h2 id="metric-suscripciones-activas" class="fw-bold mb-0">0</h2>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="card bg-dark text-white p-3 shadow-sm">
-              <h5>Demandas Generadas</h5>
-              <h2 id="metric-total-demandas" class="fw-bold mb-0">0</h2>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="card bg-warning text-dark p-3 shadow-sm">
-              <h5>Ingresos Mensuales</h5>
-              <h2 id="metric-ingresos" class="fw-bold mb-0">$0</h2>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de Usuarios con Buscador -->
-        <div class="card shadow-sm">
-          <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-            <span>Gestión de Usuarios y Suscripciones</span>
-            <input type="text" id="buscadorAdmin" class="form-control form-control-sm w-25" placeholder="🔍 Buscar por email..." onkeyup="filtrarUsuarios()">
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>ID</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Estado Suscripción</th>
-                    <th>Créditos</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="tabla-usuarios-body">
-                  <!-- Se llena dinámicamente con JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
+    <!-- Tarjetas de Métricas -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card bg-primary text-white p-3 shadow-sm">
+          <h5>Total Usuarios</h5>
+          <h2 id="metric-total-usuarios" class="fw-bold mb-0">0</h2>
         </div>
       </div>
-    </section>
+      <div class="col-md-3">
+        <div class="card bg-success text-white p-3 shadow-sm">
+          <h5>Suscripciones Activas</h5>
+          <h2 id="metric-suscripciones-activas" class="fw-bold mb-0">0</h2>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-dark text-white p-3 shadow-sm">
+          <h5>Demandas Generadas</h5>
+          <h2 id="metric-total-demandas" class="fw-bold mb-0">0</h2>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-warning text-dark p-3 shadow-sm">
+          <h5>Ingresos Mensuales</h5>
+          <h2 id="metric-ingresos" class="fw-bold mb-0">$0</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gestión de Saldo B2B integrada -->
+    <div class="card shadow-sm p-3 mb-4 bg-dark text-white d-flex flex-row justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1">Gestión de Saldo B2B</h5>
+        <p class="text-secondary mb-0" style="font-size: 0.85rem;">Inyectá o descontá créditos manualmente a cualquier usuario de la base.</p>
+      </div>
+      <button id="btn-abrir-modal-creditos" type="button" class="btn btn-warning fw-bold">
+        Asignar Créditos
+      </button>
+    </div>
+
+    <!-- Tabla de Usuarios con Buscador -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+        <span>Gestión de Usuarios y Suscripciones</span>
+        <input type="text" id="buscadorAdmin" class="form-control form-control-sm w-25" placeholder="🔍 Buscar por email..." onkeyup="filtrarUsuarios()">
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado Suscripción</th>
+                <th>Créditos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-usuarios-body">
+              <!-- Se llena dinámicamente con JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- MODAL PARA AUDITAR DEMANDAS -->
     <div class="modal fade" id="modalAuditoriaUsuario" tabindex="-1" aria-hidden="true">
@@ -1099,52 +1096,66 @@
 }
 
   // --- PANEL DE ADMINISTRACIÓN ---
-  async function cargarPanelAdmin() {
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-    const seccionAdmin = document.getElementById("seccion-admin");
+  // --- PANEL DE ADMINISTRACIÓN ---
+async function cargarPanelAdmin() {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  const seccionAdmin = document.getElementById("seccion-admin");
 
-    if (!seccionAdmin) return;
-    seccionAdmin.style.display = "none";
-    if (!token) return;
+  if (!token) return;
 
-    try {
-      const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+  try {
+    const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
 
-      if (resMetricas.ok) {
-        const metricas = await resMetricas.json();
-        document.getElementById("menu-admin").style.display = "block";
+    if (resMetricas.ok) {
+      const metricas = await resMetricas.json();
 
-        const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
-        const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
-        const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
-        const metricIngresos = document.getElementById("metric-ingresos");
+      // 1. Mostrar el botón en el menú lateral
+      const btnMenu = document.getElementById("menu-admin") || document.getElementById("btn-admin");
+      if (btnMenu) btnMenu.style.display = "flex";
 
-        if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
-        if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
-        if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
-        
-        if (metricIngresos) {
-          const dinero = (metricas.suscripciones_activas || 0) * 500000;
-          metricIngresos.textContent = "$" + dinero.toLocaleString('es-AR');
-        }
-      } else {
-        return;
+      // 2. Si seccionAdmin existe en el DOM, hacerla visible
+      if (seccionAdmin) {
+        seccionAdmin.style.display = "block";
       }
 
+      // 3. Completar tarjetas de métricas
+      const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
+      const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
+      const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
+      const metricIngresos = document.getElementById("metric-ingresos");
+
+      if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
+      if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
+      if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
+
+      if (metricIngresos) {
+        const dinero = (metricas.suscripciones_activas || 0) * 500000;
+        metricIngresos.textContent = "$" + dinero.toLocaleString('es-AR');
+      }
+
+      // 4. Traer y renderizar usuarios
       const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
       if (resUsuarios.ok) {
         const usuarios = await resUsuarios.json();
-        renderizarTablaUsuarios(usuarios);
+        if (typeof renderizarTablaUsuarios === "function") {
+          renderizarTablaUsuarios(usuarios);
+        }
       }
-    } catch (error) {
-      console.error("Error al cargar datos del panel de admin:", error);
+    } else {
+      // Si dio 403 o no es admin, ocultar
+      if (seccionAdmin) seccionAdmin.style.display = "none";
+      const btnMenu = document.getElementById("menu-admin") || document.getElementById("btn-admin");
+      if (btnMenu) btnMenu.style.display = "none";
     }
+  } catch (error) {
+    console.error("Error al cargar datos del panel de admin:", error);
   }
+}
 
 function renderizarTablaUsuarios(usuarios) {
         const tbody = document.getElementById("tabla-usuarios-body");
