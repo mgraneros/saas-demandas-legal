@@ -1096,7 +1096,6 @@
 }
 
   // --- PANEL DE ADMINISTRACIÓN ---
-  // --- PANEL DE ADMINISTRACIÓN ---
 async function cargarPanelAdmin() {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
   const seccionAdmin = document.getElementById("seccion-admin");
@@ -1114,11 +1113,6 @@ async function cargarPanelAdmin() {
       // 1. Mostrar el botón en el menú lateral
       const btnMenu = document.getElementById("menu-admin") || document.getElementById("btn-admin");
       if (btnMenu) btnMenu.style.display = "flex";
-
-      // 2. Si seccionAdmin existe en el DOM, hacerla visible
-      if (seccionAdmin) {
-        seccionAdmin.style.display = "block";
-      }
 
       // 3. Completar tarjetas de métricas
       const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
