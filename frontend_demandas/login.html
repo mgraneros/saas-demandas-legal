@@ -51,6 +51,10 @@
                     <div class="mb-3 text-end">
                         <a href="#" data-bs-toggle="modal" data-bs-target="#modalOlvidePassword" class="small text-decoration-none" style="color: var(--accent-blue-hover);">¿Olvidaste tu contraseña?</a>
                     </div>
+                        <!-- Contenedor para mensajes de error / bloqueo 403 -->
+                        <div id="login-error-msg" class="mb-3 text-center small fw-semibold" style="display: none; color: #ef4444;"></div>
+
+                        <button type="submit" class="btn w-100 fw-semibold py-2" style="background-color: var(--accent-blue); color: #ffffff;">Ingresar</button>
 
                     <button type="submit" class="btn w-100 fw-semibold py-2" style="background-color: var(--accent-blue); color: #ffffff;">Ingresar</button>
                 </form>
@@ -125,36 +129,58 @@
 <script>
     const API_URL = "https://saas-demandas-legal.onrender.com";
 
-    // 1. INICIAR SESIÓN
-    async function iniciarSesion(event) {
-        event.preventDefault();
+// 1. INICIAR SESIÓN
+async function iniciarSesion(event) {
+  event.preventDefault();
 
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const msgError = document.getElementById("login-error-msg");
 
-        const formData = new URLSearchParams();
-        formData.append("username", email);
-        formData.append("password", password);
+  if (msgError) {
+    msgError.style.display = "none";
+    msgError.textContent = "";
+  }
 
-        try {
-            const response = await fetch(`${API_URL}/token`, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: formData
-            });
+  const formData = new URLSearchParams();
+  formData.append("username", email);
+  formData.append("password", password);
 
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem("access_token", data.access_token);
-                window.location.href = "index.html"; 
-            } else {
-                alert("Email o contraseña incorrectos.");
-            }
-        } catch (error) {
-            console.error("Error de red:", error);
-            alert("No se pudo conectar con el servidor.");
-        }
+  try {
+    const response = await fetch(`${API_URL}/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access_token);
+      window.location.href = "index.html";
+    } else {
+      const errData = await response.json().catch(() => ({}));
+      
+      const textoError = response.status === 403
+        ? (errData.detail || "Tu cuenta ha sido inhabilitada. Por favor, contactá a soporte.")
+        : (errData.detail || "Email o contraseña incorrectos.");
+
+      if (msgError) {
+        msgError.textContent = textoError;
+        msgError.style.display = "block";
+      } else {
+        alert(textoError);
+      }
     }
+  } catch (error) {
+    console.error("Error de red:", error);
+    if (msgError) {
+      msgError.textContent = "No se pudo conectar con el servidor.";
+      msgError.style.display = "block";
+    } else {
+      alert("No se pudo conectar con el servidor.");
+    }
+  }
+}
 
     // 2. SOLICITAR ENLACE DE RECUPERACIÓN DE CONTRASEÑA
     document.getElementById("form-olvide-password").addEventListener("submit", async (e) => {
