@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Any
 from pydantic import BaseModel
+from pydantic import EmailStr
 
 # 1. CARGAR LAS VARIABLES DE ENTORNO ANTES DE CUALQUIER OTRA COSA
 from dotenv import load_dotenv
@@ -1455,6 +1456,69 @@ def toggle_activo_usuario(
         "activo": usuario.activo
     }
 
+@app.get("/equipo", summary="Obtener lista de asistentes del titular")
+def ver_mi_equipo(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Buscamos a todos los usuarios cuya "cuenta madre" sea el ID del usuario logueado
+    asistentes = db.query(models.Usuario).filter(
+        models.Usuario.cuenta_madre_id == current_user.id
+    ).all()
+    
+    lista_equipo = []
+    for asistente in asistentes:
+        lista_equipo.append({
+            "id": asistente.id,
+            "email": asistente.email,
+            "activo": asistente.activo,
+            "rol_estudio": getattr(asistente, 'rol_estudio', 'asistente'),
+            "fecha_creacion": asistente.fecha_creacion
+        })
+        
+    return lista_equipo
+
+# 1. Definimos la estructura de datos que enviará el frontend
+class AsistenteCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+# 2. Endpoint para registrar al asistente y enlazarlo automáticamente
+@app.post("/equipo", summary="Crear y agregar un nuevo asistente al equipo")
+def agregar_asistente(
+    datos: AsistenteCreate,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # Verificamos que el correo no exista ya en la base de datos
+    usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == datos.email).first()
+    if usuario_existente:
+        raise HTTPException(status_code=400, detail="Este correo ya está registrado en el sistema.")
+
+    # Hasheamos la contraseña (Asegúrate de que la función de hash se llame así en tu código, 
+    # a veces suele estar en utils.get_password_hash o security.get_password_hash)
+    from security import get_password_hash # Ajustá la importación si la tuya se llama distinto
+    password_hasheada = get_password_hash(datos.password)
+
+    # Creamos el usuario y lo atamos al Titular
+    nuevo_asistente = models.Usuario(
+        email=datos.email,
+        hashed_password=password_hasheada,
+        cuenta_madre_id=current_user.id, # <-- Acá ocurre la magia del enlace B2B
+        rol_estudio="asistente",
+        activo=True,
+        es_admin=False
+    )
+    
+    db.add(nuevo_asistente)
+    db.commit()
+    db.refresh(nuevo_asistente)
+
+    return {
+        "status": "success",
+        "mensaje": f"Asistente {nuevo_asistente.email} agregado exitosamente.",
+        "asistente_id": nuevo_asistente.id
+    }
 
 # ==========================================
 # RUTAS DE CONTACTO (LANDING PAGE)
