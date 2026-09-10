@@ -1099,52 +1099,66 @@
 }
 
   // --- PANEL DE ADMINISTRACIÓN ---
-  async function cargarPanelAdmin() {
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-    const seccionAdmin = document.getElementById("seccion-admin");
+  // --- PANEL DE ADMINISTRACIÓN ---
+async function cargarPanelAdmin() {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  const seccionAdmin = document.getElementById("seccion-admin");
 
-    if (!seccionAdmin) return;
-    seccionAdmin.style.display = "none";
-    if (!token) return;
+  if (!token) return;
 
-    try {
-      const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+  try {
+    const resMetricas = await fetch(`${API_URL}/admin/metricas`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
 
-      if (resMetricas.ok) {
-        const metricas = await resMetricas.json();
-        document.getElementById("menu-admin").style.display = "block";
+    if (resMetricas.ok) {
+      const metricas = await resMetricas.json();
 
-        const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
-        const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
-        const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
-        const metricIngresos = document.getElementById("metric-ingresos");
+      // 1. Mostrar el botón en el menú lateral
+      const btnMenu = document.getElementById("menu-admin") || document.getElementById("btn-admin");
+      if (btnMenu) btnMenu.style.display = "flex";
 
-        if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
-        if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
-        if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
-        
-        if (metricIngresos) {
-          const dinero = (metricas.suscripciones_activas || 0) * 500000;
-          metricIngresos.textContent = "$" + dinero.toLocaleString('es-AR');
-        }
-      } else {
-        return;
+      // 2. Si seccionAdmin existe en el DOM, hacerla visible
+      if (seccionAdmin) {
+        seccionAdmin.style.display = "block";
       }
 
+      // 3. Completar tarjetas de métricas
+      const metricUsers = document.getElementById("metric-total-usuarios") || document.getElementById("cant-total-usuarios");
+      const metricSusc = document.getElementById("metric-suscripciones-activas") || document.getElementById("cant-suscripciones");
+      const metricDemandas = document.getElementById("metric-total-demandas") || document.getElementById("cant-demandas");
+      const metricIngresos = document.getElementById("metric-ingresos");
+
+      if (metricUsers) metricUsers.textContent = metricas.total_usuarios || 0;
+      if (metricSusc) metricSusc.textContent = metricas.suscripciones_activas || 0;
+      if (metricDemandas) metricDemandas.textContent = metricas.total_demandas || metricas.demandas_generadas || 0;
+
+      if (metricIngresos) {
+        const dinero = (metricas.suscripciones_activas || 0) * 500000;
+        metricIngresos.textContent = "$" + dinero.toLocaleString('es-AR');
+      }
+
+      // 4. Traer y renderizar usuarios
       const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
       if (resUsuarios.ok) {
         const usuarios = await resUsuarios.json();
-        renderizarTablaUsuarios(usuarios);
+        if (typeof renderizarTablaUsuarios === "function") {
+          renderizarTablaUsuarios(usuarios);
+        }
       }
-    } catch (error) {
-      console.error("Error al cargar datos del panel de admin:", error);
+    } else {
+      // Si dio 403 o no es admin, ocultar
+      if (seccionAdmin) seccionAdmin.style.display = "none";
+      const btnMenu = document.getElementById("menu-admin") || document.getElementById("btn-admin");
+      if (btnMenu) btnMenu.style.display = "none";
     }
+  } catch (error) {
+    console.error("Error al cargar datos del panel de admin:", error);
   }
+}
 
 function renderizarTablaUsuarios(usuarios) {
         const tbody = document.getElementById("tabla-usuarios-body");
