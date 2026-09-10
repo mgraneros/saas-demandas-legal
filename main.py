@@ -185,6 +185,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 @app.post("/token", response_model=schemas.Token, summary="Iniciar sesión y obtener JWT")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     usuario = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
+    
+    # 1. Verificamos que el usuario exista y la contraseña sea correcta
     if not usuario or not verify_password(form_data.password, usuario.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -192,6 +194,14 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # 2. BLOQUEO DE SEGURIDAD: Verificamos si la cuenta fue deshabilitada por un admin
+    if not usuario.activo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu cuenta ha sido inhabilitada. Por favor, contactá a soporte."
+        )
+    
+    # 3. Si todo está bien, emitimos el token de acceso
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": usuario.email, "id": usuario.id},
@@ -889,23 +899,35 @@ def obtener_estadisticas_admin(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    # Lógica de seguridad intacta
     if not getattr(current_user, "es_admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acceso denegado. Se requieren permisos de administrador."
         )
 
-    # Consultas a la base de datos intactas
     total_usuarios = db.query(models.Usuario).count()
     total_demandas = db.query(models.DemandaGenerada).count()
-    suscripciones_activas = db.query(models.Suscripcion).filter(models.Suscripcion.activa == True).count()
+    
+    # 1. Total para la tarjeta (incluye las pruebas gratuitas)
+    suscripciones_activas = db.query(models.Suscripcion).filter(
+        models.Suscripcion.activa == True
+    ).count()
+
+    # 2. Filtro de pagas para el cálculo (excluimos el plan "Free" o "Prueba")
+    suscripciones_pagas = db.query(models.Suscripcion).filter(
+        models.Suscripcion.activa == True,
+        models.Suscripcion.plan != "Free" 
+    ).count()
+
+    # 3. Cálculo de ingresos (Modifica el 25000 por tu tarifa real)
+    tarifa_mensual = 25000 
+    ingresos_estimados = suscripciones_pagas * tarifa_mensual
 
     return {
         "total_usuarios": total_usuarios,
         "suscripciones_activas": suscripciones_activas,
-        "demandas_generadas": total_demandas, 
-        "ingresos_mensuales": 0  # <- Valor temporal para que la 4ta tarjeta del panel no tire error
+        "demandas_generadas": total_demandas,
+        "ingresos_mensuales": ingresos_estimados
     }
 
 
