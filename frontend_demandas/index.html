@@ -1134,8 +1134,6 @@ async function cargarHistorial() {
         : "N/A";
       const estadoActual = d.estado_operativo || 'Generada';
       const autor = d.creado_por || '-';
-
-      // Sanitiza el texto de notas para insertarlo de forma segura en el atributo onclick
       const notasSeguras = JSON.stringify(d.notas_internas || "");
 
       tbody.innerHTML += `
@@ -1167,6 +1165,12 @@ async function cargarHistorial() {
                       title="Ver / Editar Notas"
                       onclick='abrirModalNotas(${d.id}, ${notasSeguras})'>
                 📝 Notas
+              </button>
+              <button type="button" 
+                      class="btn btn-sm btn-outline-danger" 
+                      title="Archivar expediente"
+                      onclick="archivarDemanda(${d.id})">
+                📦 Archivar
               </button>
             </div>
           </td>
@@ -1932,6 +1936,37 @@ async function guardarNotaDemanda() {
   } finally {
     btnGuardar.disabled = false;
     btnGuardar.innerText = "Guardar Nota";
+  }
+}
+async function archivarDemanda(idDemanda) {
+  const confirmacion = window.confirm(
+    "¿Estás seguro de que deseas ocultar este expediente? No se eliminará tu comprobante de consumo."
+  );
+
+  if (!confirmacion) return;
+
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${API_URL}/demanda/${idDemanda}/archivar`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.detail || "No se pudo archivar el expediente.");
+    }
+
+    alert("Expediente archivado exitosamente.");
+    await cargarHistorial();
+
+  } catch (error) {
+    console.error("Error al archivar demanda:", error);
+    alert(`Error: ${error.message}`);
   }
 }
 </script>
