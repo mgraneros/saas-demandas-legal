@@ -515,10 +515,33 @@ def generar_demanda(
         except (ValueError, TypeError):
             dni_val = None
 
-        # --- INICIO MAGIA GOOGLE CLOUD ---
+# --- INICIO MAGIA GOOGLE CLOUD Y TAREAS EN SEGUNDO PLANO ---
         nombre_unico = f"demandas/{current_user.id}_{uuid.uuid4().hex[:6]}_{nombre_limpio}.docx"
-        upload_to_gcp(ruta_salida, nombre_unico)
-        # --- FIN MAGIA GOOGLE CLOUD ---
+
+        # Definimos la función que correrá "por detrás" sin frenar al usuario
+        def tareas_post_generacion():
+            # 1. Subida a GCP
+            try:
+                upload_to_gcp(ruta_salida, nombre_unico)
+                print(f"🔒 [BACKGROUND] Demanda guardada en GCP como: {nombre_unico}")
+            except Exception as e:
+                print(f"❌ [BACKGROUND] Error en GCP: {e}")
+            
+            # 2. Envío de Correo
+            try:
+                enviar_correo(
+                    destinatario=current_user.email,
+                    asunto="Tu demanda legal ha sido generada",
+                    contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento respaldado en la nube.</p>",
+                    ruta_adjunto=ruta_salida
+                )
+                print("📧 [BACKGROUND] Correo despachado con éxito.")
+            except Exception as mail_err:
+                print(f"❌ [BACKGROUND] Error enviando correo: {mail_err}")
+
+        # Le decimos a FastAPI que ejecute esto después de entregarle el Word al usuario
+        background_tasks.add_task(tareas_post_generacion)
+        # --- FIN TAREAS EN SEGUNDO PLANO ---
 
         # Registramos la demanda a nombre del usuario actual (el asistente) para que pueda verla en "Mis Demandas"
         nueva_demanda = models.DemandaGenerada(
@@ -551,20 +574,6 @@ def generar_demanda(
 
         db.commit()
         db.refresh(nueva_demanda)
-
-        print(f"🔒 [SISTEMA] Demanda #{nueva_demanda.id} guardada en GCP como: {nombre_unico}")
-
-        # ENVÍO DE CORREO
-        try:
-            enviar_correo(
-                destinatario=current_user.email,
-                asunto="Tu demanda legal ha sido generada",
-                contenido_html=f"<h2>¡Éxito {datos.NombreActor}!</h2><p>Adjunto documento respaldado en la nube.</p>",
-                ruta_adjunto=ruta_salida
-            )
-            print("📧 Correo ejecutado síncronamente con éxito.")
-        except Exception as mail_err:
-            print(f"❌ Error al intentar disparar el correo: {mail_err}")
 
     except Exception as e:
         db.rollback()
@@ -615,6 +624,35 @@ def actualizar_estado_demanda(
         "mensaje": f"Estado de la demanda #{demanda_id} actualizado a '{datos.nuevo_estado}' con éxito.",
         "demanda": registro
     }
+    
+class NotasUpdate(BaseModel):
+    notas: str
+
+@app.patch("/demanda/{demanda_id}/notas", summary="Actualizar notas internas de la demanda")
+def actualizar_notas_demanda(
+    demanda_id: int, 
+    datos: NotasUpdate, 
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    registro = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
+    
+    if not registro:
+        raise HTTPException(status_code=404, detail="No se encontró la demanda especificada.")
+
+    # Validación B2B de seguridad
+    cuenta_madre_actual = getattr(current_user, 'cuenta_madre_id', None) or current_user.id
+    creador = db.query(models.Usuario).filter(models.Usuario.id == registro.usuario_id).first()
+    cuenta_madre_creador = getattr(creador, 'cuenta_madre_id', None) or creador.id
+
+    if cuenta_madre_actual != cuenta_madre_creador:
+        raise HTTPException(status_code=403, detail="No tienes permisos para comentar en esta demanda.")
+
+    # Guardar la nota
+    registro.notas_internas = datos.notas
+    db.commit()
+    
+    return {"mensaje": "Notas guardadas con éxito.", "notas_actuales": registro.notas_internas}
 
 
 @app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word seguro desde la nube")
@@ -1358,6 +1396,7 @@ def listar_mis_demandas(
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
             "creado_por": email_creador, # <-- Dato clave para el Titular
+            "notas_internas": getattr(d, "notas_internas", ""),
             "download_url": f"https://saas-demandas-legal.onrender.com/descargar-demanda/{d.id}"
         })
 
