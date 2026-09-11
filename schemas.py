@@ -100,6 +100,7 @@ class DemandaHistorialOut(BaseModel):
     nombre_actor: Optional[str] = None
     dni_actor: Optional[int] = None
     estado_operativo: str
+    notas_internas: Optional[str] = None
     fecha_creacion: datetime
     download_url: str
 

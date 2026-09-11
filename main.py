@@ -654,6 +654,31 @@ def actualizar_notas_demanda(
     
     return {"mensaje": "Notas guardadas con éxito.", "notas_actuales": registro.notas_internas}
 
+@app.patch("/demanda/{demanda_id}/archivar", summary="Archivar una demanda (Soft Delete)")
+def archivar_demanda(
+    demanda_id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    registro = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.id == demanda_id).first()
+    
+    if not registro:
+        raise HTTPException(status_code=404, detail="No se encontró la demanda especificada.")
+
+    # Validación B2B: Solo el equipo propietario puede archivarla
+    cuenta_madre_actual = getattr(current_user, 'cuenta_madre_id', None) or current_user.id
+    creador = db.query(models.Usuario).filter(models.Usuario.id == registro.usuario_id).first()
+    cuenta_madre_creador = getattr(creador, 'cuenta_madre_id', None) or creador.id
+
+    if cuenta_madre_actual != cuenta_madre_creador:
+        raise HTTPException(status_code=403, detail="No tienes permisos para archivar esta demanda.")
+
+    # Ejecutar el borrado lógico
+    registro.archivada = True
+    db.commit()
+    
+    return {"mensaje": f"Demanda #{demanda_id} archivada correctamente."}
+
 
 @app.get("/descargar-demanda/{demanda_id}", summary="Descargar documento Word seguro desde la nube")
 def descargar_demanda_nube(
@@ -1380,11 +1405,12 @@ def listar_mis_demandas(
         # Es Asistente: solo ve las suyas
         ids_permitidos = [current_user.id]
 
-    # 2. Búsqueda con JOIN para traer el email del creador
+    # 2. Búsqueda con JOIN (Excluyendo las archivadas)
     demandas_con_creador = db.query(models.DemandaGenerada, models.Usuario.email).join(
         models.Usuario, models.DemandaGenerada.usuario_id == models.Usuario.id
     ).filter(
-        models.DemandaGenerada.usuario_id.in_(ids_permitidos)
+        models.DemandaGenerada.usuario_id.in_(ids_permitidos),
+        models.DemandaGenerada.archivada == False # <-- NUEVO FILTRO APLICADO
     ).all()
 
     lista_demandas = []
@@ -1404,6 +1430,7 @@ def listar_mis_demandas(
         "cantidad": len(lista_demandas),
         "demandas": lista_demandas
     }
+    
 @app.get("/historial", response_model=List[schemas.DemandaHistorialOut], summary="Obtener historial de demandas jerárquico")
 def obtener_historial(
     limit: int = 10,
@@ -1420,7 +1447,11 @@ def obtener_historial(
     else:
         ids_permitidos = [current_user.id]
 
-    query = db.query(models.DemandaGenerada).filter(models.DemandaGenerada.usuario_id.in_(ids_permitidos))
+    # Búsqueda base excluyendo demandas archivadas
+    query = db.query(models.DemandaGenerada).filter(
+        models.DemandaGenerada.usuario_id.in_(ids_permitidos),
+        models.DemandaGenerada.archivada == False # <-- NUEVO FILTRO APLICADO
+    )
 
     if nombre_actor:
         query = query.filter(models.DemandaGenerada.nombre_actor.ilike(f"%{nombre_actor}%"))
@@ -1429,7 +1460,6 @@ def obtener_historial(
 
     demandas = query.order_by(models.DemandaGenerada.fecha_creacion.desc()).offset(skip).limit(limit).all()
     return demandas
-
 
 @app.get("/registrar-plantillas")
 def registrar_plantillas(db: Session = Depends(get_db)):
