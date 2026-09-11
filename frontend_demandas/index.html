@@ -490,13 +490,14 @@
                     <th>Actor / Cliente</th>
                     <th>DNI</th>
                     <th>Fecha</th>
+                    <th>Creado por</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="tablaHistorialBody">
                   <tr>
-                    <td colspan="6" class="text-center text-muted">Cargando historial...</td>
+                    <td colspan="7" class="text-center text-muted">Cargando historial...</td>
                   </tr>
                 </tbody>
               </table>
@@ -684,9 +685,11 @@
 
 <!-- JS de Bootstrap (NECESARIO PARA QUE EL MODAL ABRA) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="auth-guard.js"></script>
 
 <script>
   const API_URL = "https://saas-demandas-legal.onrender.com";
+
 
   // 1. VALIDACIÓN DE SESIÓN AL CARGAR LA PÁGINA
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1071,60 +1074,81 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = "landing.html";
   }
 
-  // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
-  async function cargarHistorial() {
-    const token = localStorage.getItem("access_token");
-    const tbody = document.getElementById("tablaHistorialBody");
+  
+// --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
+async function cargarHistorial() {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  const tbody = document.getElementById("tablaHistorialBody");
 
-    try {
-      const response = await fetch(`${API_URL}/mis-demandas`, {
-        method: "GET",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+  try {
+    const response = await fetch(`${API_URL}/mis-demandas`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
 
-      if (response.status === 402) {
-        console.warn("Suscripción inactiva detectada. Redirigiendo a pago...");
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-warning">Suscripción requerida. Redirigiendo a Mercado Pago...</td></tr>`;
-        const btnFakeEvent = { target: { innerHTML: '', disabled: false } };
-        await pagarSuscripcionMensual(btnFakeEvent);
-        return;
-      }
-
-      if (!response.ok) throw new Error("No se pudo obtener el historial.");
-
-      const data = await response.json();
-      const demandas = data.demandas;
-      
-      tbody.innerHTML = "";
-
-      if (demandas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay demandas generadas todavía.</td></tr>`;
-        return;
-      }
-
-      demandas.forEach(d => {
-        const fechaFormateada = d.fecha_creacion !== "N/A" ? new Date(d.fecha_creacion).toLocaleString() : "N/A";
-        tbody.innerHTML += `
-          <tr>
-            <td>#${d.id}</td>
-            <td>${d.nombre_actor || 'Sin nombre'}</td>
-            <td>${d.dni_actor || '-'}</td>
-            <td>${fechaFormateada}</td>
-            <td><span class="badge bg-success">${d.estado_operativo || 'Generada'}</span></td>
-            <td>
-              <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank">
-                Descargar .docx
-              </a>
-            </td>
-          </tr>
-        `;
-      });
-
-    } catch (error) {
-      console.error("Error cargando historial:", error);
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
+    if (response.status === 402) {
+      console.warn("Suscripción inactiva detectada. Redirigiendo a pago...");
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-warning">Suscripción requerida. Redirigiendo a Mercado Pago...</td></tr>`;
+      const btnFakeEvent = { target: { innerHTML: '', disabled: false } };
+      await pagarSuscripcionMensual(btnFakeEvent);
+      return;
     }
+
+    if (!response.ok) throw new Error("No se pudo obtener el historial.");
+
+    const data = await response.json();
+    const demandas = data.demandas || [];
+
+    tbody.innerHTML = "";
+
+    if (demandas.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No hay demandas generadas todavía.</td></tr>`;
+      return;
+    }
+
+    demandas.forEach(d => {
+      const fechaFormateada = d.fecha_creacion && d.fecha_creacion !== "N/A" 
+        ? new Date(d.fecha_creacion).toLocaleString() 
+        : "N/A";
+      const estadoActual = d.estado_operativo || 'Generada';
+      const autor = d.creado_por || '-';
+
+      tbody.innerHTML += `
+        <tr>
+          <td>#${d.id}</td>
+          <td>${d.nombre_actor || 'Sin nombre'}</td>
+          <td>${d.dni_actor || '-'}</td>
+          <td>${fechaFormateada}</td>
+          <td><span class="badge bg-dark border text-light">${autor}</span></td>
+          <td>
+            <select class="form-select form-select-sm" 
+                    style="min-width: 150px;"
+                    data-previo="${estadoActual}"
+                    onchange="actualizarEstadoWorkflow(this, ${d.id})">
+              <option value="Generada" ${estadoActual === 'Generada' ? 'selected' : ''}>Generada</option>
+              <option value="En Revisión" ${estadoActual === 'En Revisión' ? 'selected' : ''}>En Revisión</option>
+              <option value="Lista para Presentar" ${estadoActual === 'Lista para Presentar' ? 'selected' : ''}>Lista para Presentar</option>
+              <option value="Presentada" ${estadoActual === 'Presentada' ? 'selected' : ''}>Presentada</option>
+              <option value="En Mediación" ${estadoActual === 'En Mediación' ? 'selected' : ''}>En Mediación</option>
+            </select>
+          </td>
+          <td>
+            <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank">
+              Descargar .docx
+            </a>
+          </td>
+        </tr>
+      `;
+    });
+
+  } catch (error) {
+    console.error("Error cargando historial:", error);
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
   }
+}
+
+
+    
 
   // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
 function mostrarSeccion(idSeccion, event) {
@@ -1750,6 +1774,73 @@ async function eliminarAsistente(id) {
     await cargarEquipo();
   } catch (err) {
     alert(err.message);
+  }
+}
+
+async function cambiarEstadoDemanda(idDemanda, nuevoEstado) {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${API_URL}/demanda/${idDemanda}/estado`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        nuevo_estado: nuevoEstado
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "No se pudo actualizar el estado de la demanda.");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error al cambiar estado:", error);
+    alert(error.message);
+  }
+}
+
+async function actualizarEstadoWorkflow(selectElement, idDemanda) {
+  const nuevoEstado = selectElement.value;
+  const estadoAnterior = selectElement.getAttribute("data-previo") || "Generada";
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
+  // Bloqueo temporal de UI
+  selectElement.disabled = true;
+
+  try {
+    const res = await fetch(`${API_URL}/demanda/${idDemanda}/estado`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ nuevo_estado: nuevoEstado })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.detail || "No se pudo actualizar el estado.");
+    }
+
+    // Éxito: actualizamos la referencia previa
+    selectElement.setAttribute("data-previo", nuevoEstado);
+    
+    // Feedback positivo (alerta o toast según tu implementación)
+    console.log(`Estado de demanda #${idDemanda} actualizado a: ${nuevoEstado}`);
+
+  } catch (error) {
+    // Reversión visual obligatoria ante error (403, 500, etc.)
+    selectElement.value = estadoAnterior;
+    alert(`Error al actualizar estado: ${error.message}`);
+  } finally {
+    selectElement.disabled = false;
   }
 }
 </script>
