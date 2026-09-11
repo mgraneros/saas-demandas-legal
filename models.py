@@ -55,6 +55,8 @@ class DemandaGenerada(Base):
     user_agent = Column(String, nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     archivo_generado = Column(String, nullable=True)
+    
+    notas_internas = Column(String, nullable=True)
 
     # Relaciones
     usuario = relationship("Usuario", back_populates="demandas")
