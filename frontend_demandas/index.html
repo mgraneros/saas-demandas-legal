@@ -1098,6 +1098,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   
 // --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
+// --- LÓGICA DE HISTORIAL DE DEMANDAS Y CONTROL DE SUSCRIPCIÓN ---
 async function cargarHistorial() {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
   const tbody = document.getElementById("tablaHistorialBody");
@@ -1134,7 +1135,9 @@ async function cargarHistorial() {
         : "N/A";
       const estadoActual = d.estado_operativo || 'Generada';
       const autor = d.creado_por || '-';
-      const notasSeguras = JSON.stringify(d.notas_internas || "");
+      
+      // Sanitizamos las notas para pasarlas seguras a la función onclick del botón
+      const notasSeguras = d.notas_internas ? d.notas_internas.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
 
       tbody.innerHTML += `
         <tr>
@@ -1143,6 +1146,8 @@ async function cargarHistorial() {
           <td>${d.dni_actor || '-'}</td>
           <td>${fechaFormateada}</td>
           <td><span class="badge bg-dark border text-light">${autor}</span></td>
+          
+          <!-- COLUMNA DE ESTADO INTERACTIVA -->
           <td>
             <select class="form-select form-select-sm" 
                     style="min-width: 150px;"
@@ -1155,6 +1160,8 @@ async function cargarHistorial() {
               <option value="En Mediación" ${estadoActual === 'En Mediación' ? 'selected' : ''}>En Mediación</option>
             </select>
           </td>
+          
+          <!-- BOTONES DE ACCIÓN (Descargar, Notas y Archivar) -->
           <td>
             <div class="d-flex gap-1 align-items-center">
               <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank" title="Descargar Word">
@@ -1163,7 +1170,7 @@ async function cargarHistorial() {
               <button type="button" 
                       class="btn btn-sm btn-outline-secondary" 
                       title="Ver / Editar Notas"
-                      onclick='abrirModalNotas(${d.id}, ${notasSeguras})'>
+                      onclick="abrirModalNotas(${d.id}, '${notasSeguras}')">
                 📝 Notas
               </button>
               <button type="button" 
@@ -1184,12 +1191,7 @@ async function cargarHistorial() {
   }
 }
 
-  
-
-
-    
-
-  // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
+// --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
 function mostrarSeccion(idSeccion, event) {
   if (event) event.preventDefault();
 
