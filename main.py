@@ -1623,7 +1623,7 @@ def ver_mi_equipo(
 
 # 1. Definimos la estructura de datos que enviará el frontend
 class AsistenteCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 # 2. Endpoint para registrar al asistente y enlazarlo automáticamente
@@ -1638,16 +1638,16 @@ def agregar_asistente(
     if usuario_existente:
         raise HTTPException(status_code=400, detail="Este correo ya está registrado en el sistema.")
 
-    # Hasheamos la contraseña (Asegúrate de que la función de hash se llame así en tu código, 
-    # a veces suele estar en utils.get_password_hash o security.get_password_hash)
-    from security import get_password_hash # Ajustá la importación si la tuya se llama distinto
-    password_hasheada = get_password_hash(datos.password)
+    # <-- CORRECCIÓN 2: Importamos hash_password exactamente como se llama en tu security.py
+    from security import hash_password 
+    password_hasheada = hash_password(datos.password)
 
     # Creamos el usuario y lo atamos al Titular
     nuevo_asistente = models.Usuario(
         email=datos.email,
         hashed_password=password_hasheada,
-        cuenta_madre_id=current_user.id, # <-- Acá ocurre la magia del enlace B2B
+        nombre_estudio=current_user.nombre_estudio,
+        cuenta_madre_id=current_user.id, 
         rol_estudio="asistente",
         activo=True,
         es_admin=False
@@ -1662,6 +1662,7 @@ def agregar_asistente(
         "mensaje": f"Asistente {nuevo_asistente.email} agregado exitosamente.",
         "asistente_id": nuevo_asistente.id
     }
+
 @app.delete("/equipo/{asistente_id}", summary="Desvincular a un asistente del equipo")
 def desvincular_asistente(
     asistente_id: int,
