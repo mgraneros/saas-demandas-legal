@@ -872,7 +872,7 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 15000.0  # Ajustá al precio mensual real deseado
+                    "unit_price": 15000.0  # Ajustá al precio real deseado
                 }
             ],
             "payer": {
@@ -884,7 +884,7 @@ def crear_preferencia_suscripcion(
                 "pending": f"{frontend_url}/index.html?pago=pendiente"
             },
             "auto_return": "approved",
-            "notification_url": f"{backend_url}/webhook-mercadopago",
+            "notification_url": f"{backend_url}/webhook-mercadopago/",
             "external_reference": str(current_user.id)
         }
 
@@ -906,14 +906,6 @@ def crear_preferencia_suscripcion(
         raise
     except Exception as e:
         print(f"Error inesperado al crear preferencia: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno: {str(e)}"
-        )
-
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error interno del servidor: {str(e)}"

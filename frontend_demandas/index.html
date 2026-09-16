@@ -62,8 +62,8 @@
         <span id="badgeSuscripcion" class="fw-semibold text-muted">Verificando...</span>
       </div>
 
-      <button id="btn-mercadopago" class="btn btn-outline-warning btn-sm" style="display: none;">
-        💳 Pagar / Suscribirse
+      <button id="btn-mercadopago" onclick="pagarSuscripcionMensual(event)" class="btn btn-outline-warning btn-sm" style="display: none;">
+          💳 Pagar / Suscribirse
       </button>
 
       <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
@@ -1075,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function pagarSuscripcionMensual(e) {
     const btn = e.target.closest('button') || e.target;
     const textoOriginal = btn.innerHTML;
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
     if (!token) {
       alert("Tu sesión ha expirado. Por favor iniciá sesión nuevamente.");
