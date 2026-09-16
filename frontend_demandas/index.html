@@ -1195,9 +1195,15 @@ async function cargarHistorial() {
           <!-- BOTONES DE ACCIÓN (Descargar, Notas y Archivar) -->
           <td>
             <div class="d-flex gap-1 align-items-center">
-              <a href="${d.download_url}" class="btn btn-sm btn-outline-primary" target="_blank" title="Descargar Word">
+              
+              <!-- AQUÍ ESTÁ EL BOTÓN ACTUALIZADO -->
+              <button type="button" 
+                      class="btn btn-sm btn-outline-primary" 
+                      title="Descargar Word" 
+                      onclick="descargarDocumentoSeguro('${d.download_url}', 'Demanda_${d.id}.docx')">
                 Descargar .docx
-              </a>
+              </button>
+
               <button type="button" 
                       class="btn btn-sm btn-outline-secondary" 
                       title="Ver / Editar Notas"
@@ -1482,51 +1488,52 @@ async function toggleActivoUsuario(id, estadoActual) {
     }
 
     async function auditarUsuario(usuarioId) {
-        const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-        if (!token) return;
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+    if (!token) return;
 
-        document.getElementById("auditoriaUsuarioId").textContent = usuarioId;
-        const tbody = document.getElementById("tabla-auditoria-body");
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Buscando historial...</td></tr>`;
+    document.getElementById("auditoriaUsuarioId").textContent = usuarioId;
+    const tbody = document.getElementById("tabla-auditoria-body");
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Buscando historial...</td></tr>`;
 
-        const modalAuditoria = new bootstrap.Modal(document.getElementById('modalAuditoriaUsuario'));
-        modalAuditoria.show();
+    const modalAuditoria = new bootstrap.Modal(document.getElementById('modalAuditoriaUsuario'));
+    modalAuditoria.show();
 
-        try {
-            const response = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/demandas`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+    try {
+        const response = await fetch(`${API_URL}/admin/usuarios/${usuarioId}/demandas`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
-            if (!response.ok) throw new Error("Error al obtener las demandas.");
+        if (!response.ok) throw new Error("Error al obtener las demandas.");
 
-            const demandas = await response.json();
-            tbody.innerHTML = "";
+        const demandas = await response.json();
+        tbody.innerHTML = "";
 
-            if (demandas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Este usuario no ha generado demandas.</td></tr>`;
-                return;
-            }
-
-            demandas.forEach(d => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${d.id}</td>
-                        <td>${d.nombre_actor}</td>
-                        <td>${d.dni_actor}</td>
-                        <td><span class="badge bg-secondary">${d.estado_operativo}</span></td>
-                        <td>
-                            <a href="${d.download_url}" target="_blank" class="btn btn-sm btn-primary">
-                                ⬇️ Word
-                            </a>
-                        </td>
-                    </tr>
-                `;
-            });
-        } catch (error) {
-            console.error("Error cargando auditoría:", error);
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudo cargar la información.</td></tr>`;
+        if (demandas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Este usuario no ha generado demandas.</td></tr>`;
+            return;
         }
+
+        demandas.forEach(d => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>#${d.id}</td>
+                    <td>${d.nombre_actor}</td>
+                    <td>${d.dni_actor}</td>
+                    <td><span class="badge bg-secondary">${d.estado_operativo}</span></td>
+                    <td>
+                        <!-- AQUÍ ESTÁ EL BOTÓN ACTUALIZADO -->
+                        <button type="button" class="btn btn-sm btn-primary" onclick="descargarDocumentoSeguro('${d.download_url}', 'Auditoria_Demanda_${d.id}.docx')">
+                            ⬇️ Word
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch (error) {
+        console.error("Error cargando auditoría:", error);
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudo cargar la información.</td></tr>`;
     }
+}
 
   async function toggleSuscripcion(usuarioId) {
     const token = localStorage.getItem("token") || localStorage.getItem("access_token");
@@ -1999,6 +2006,36 @@ async function archivarDemanda(idDemanda) {
   } catch (error) {
     console.error("Error al archivar demanda:", error);
     alert(`Error: ${error.message}`);
+  }
+}
+async function descargarDocumentoSeguro(url, nombreArchivo) {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  if (!token) return alert("Sesión expirada.");
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error("No tienes permisos o el archivo ya no existe.");
+    }
+
+    // Convertimos la respuesta en un archivo físico (Blob) y forzamos la descarga
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+
+  } catch (error) {
+    console.error("Error al descargar:", error);
+    alert("Error al descargar: " + error.message);
   }
 }
 </script>
