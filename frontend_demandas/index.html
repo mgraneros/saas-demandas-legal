@@ -1221,7 +1221,7 @@ async function cargarHistorial() {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
   }
 }
-async function descargarDemanda(demandaId) {
+function descargarDemanda(demandaId) {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
   if (!token) {
     Swal.fire({
@@ -1232,36 +1232,15 @@ async function descargarDemanda(demandaId) {
     return;
   }
 
-  try {
-    const res = await fetch(`${API_URL}/descargar-demanda/${demandaId}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Error al descargar el archivo");
-    }
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `demanda_expediente_${demandaId}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-
-  } catch (error) {
-    Swal.fire({
-      icon: "error",
-      title: "No se pudo descargar",
-      text: error.message
-    });
-  }
+  // Descarga directa pasando el token en la URL para evitar bloqueos de CORS
+  const url = `${API_URL}/descargar-demanda/${demandaId}?token=${encodeURIComponent(token)}`;
+  
+  const a = document.createElement("a");
+  a.href = url;
+  a.setAttribute("download", `demanda_${demandaId}.docx`);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
