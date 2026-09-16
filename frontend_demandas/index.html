@@ -685,21 +685,46 @@
 <!-- MODAL DE NOTAS INTERNAS -->
 <div class="modal fade" id="modalNotasDemanda" tabindex="-1" aria-labelledby="modalNotasLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalNotasLabel">Notas Internas - Expediente <span id="modalNotasDemandaId"></span></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    <div class="modal-content" style="background-color: #f7f3eb; border: 1px solid #e2dac9; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+      <div class="modal-header" style="border-bottom: 1px solid #e5dccb; padding: 1.25rem 1.5rem;">
+        <h5 class="modal-title fw-bold" id="modalNotasLabel" style="color: #2b2b2b; font-size: 1.25rem;">
+          Notas Internas - Expediente <span id="modalNotasDemandaId" style="color: #4a453e;"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" style="filter: contrast(0.5);"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="padding: 1.5rem;">
         <input type="hidden" id="inputNotaDemandaId" value="">
         <div class="mb-3">
-          <label for="textareaNotasInternas" class="form-label text-muted">Anotaciones del caso (uso exclusivo del estudio):</label>
-          <textarea class="form-control" id="textareaNotasInternas" rows="5" placeholder="Escribí notas de seguimiento, juzgado, fechas límite..."></textarea>
+          <label for="textareaNotasInternas" class="form-label" style="color: #4f4a43; font-weight: 500; font-size: 0.95rem; margin-bottom: 0.75rem;">
+            Anotaciones del caso (uso exclusivo del estudio):
+          </label>
+          <textarea 
+            class="form-control" 
+            id="textareaNotasInternas" 
+            rows="5" 
+            placeholder="Escribí notas de seguimiento, juzgado, fechas límite... (ej. Juzgado Civil N° 3, fecha límite para contestar traslado: 25/9)."
+            style="background-color: #fffdf9; border: 1.5px solid #ded4bf; border-radius: 8px; color: #2d2a26; font-size: 0.95rem; resize: vertical; box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);"
+          ></textarea>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="btnGuardarNota" onclick="guardarNotaDemanda()">Guardar Nota</button>
+      <div class="modal-footer" style="border-top: 1px solid #e5dccb; padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button 
+          type="button" 
+          class="btn" 
+          data-bs-dismiss="modal" 
+          style="background-color: #f7f3eb; border: 1.5px solid #c8beab; color: #403b35; font-weight: 500; border-radius: 8px; padding: 0.45rem 1.25rem;"
+        >
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn" 
+          id="btnGuardarNota" 
+          onclick="guardarNotaDemanda()" 
+          style="background-color: #2c3e66; border: none; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.45rem 1.35rem; box-shadow: 0 2px 5px rgba(44,62,102,0.25);"
+        >
+          Guardar Nota
+        </button>
       </div>
     </div>
   </div>
