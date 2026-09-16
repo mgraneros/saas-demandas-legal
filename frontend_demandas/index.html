@@ -1550,8 +1550,8 @@ async function toggleActivoUsuario(id, estadoActual) {
                     <td><span class="badge bg-secondary">${d.estado_operativo}</span></td>
                     <td>
                         <!-- AQUÍ ESTÁ EL BOTÓN ACTUALIZADO -->
-                        <button type="button" class="btn btn-sm btn-primary" onclick="descargarDocumentoSeguro('${d.download_url}', 'Auditoria_Demanda_${d.id}.docx')">
-                            ⬇️ Word
+                        <button type="button" class="btn btn-sm btn-primary" onclick="descargarDocumentoSeguro('https://saas-demandas-legal.onrender.com/descargar-demanda/${d.id}', 'Demanda_${d.id}.docx')">
+                          ⬇️ Word
                         </button>
                     </td>
                 </tr>
@@ -2038,34 +2038,52 @@ async function archivarDemanda(idDemanda) {
 }
 async function descargarDocumentoSeguro(url, nombreArchivo) {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-  if (!token) return alert("Sesión expirada.");
+  
+  if (!token) {
+    alert("Sesión expirada. Por favor iniciá sesión nuevamente.");
+    return;
+  }
 
   try {
-    const response = await fetch(url, {
+    const res = await fetch(url, {
       method: "GET",
-      headers: { "Authorization": `Bearer ${token}` }
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
     });
 
-    if (!response.ok) {
-      throw new Error("No tienes permisos o el archivo ya no existe.");
+    // Si el backend devolvió el JSON con la URL firmada de GCP
+    if (res.ok) {
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.download_url) {
+          window.location.href = data.download_url;
+          return;
+        }
+      }
+      
+      // Si el backend devolvió el archivo directamente (FileResponse)
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = nombreArchivo || "demanda.docx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert("Error: " + (err.detail || "No se pudo descargar el archivo."));
     }
-
-    // Convertimos la respuesta en un archivo físico (Blob) y forzamos la descarga -
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = nombreArchivo;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(blobUrl);
-
   } catch (error) {
-    console.error("Error al descargar:", error);
-    alert("Error al descargar: " + error.message);
+    console.error("Error en descarga:", error);
+    // Fallback: abrir la URL directa pasando el token en query param para evitar el corte de CORS en preflight
+    window.open(`${url}?token=${encodeURIComponent(token)}`, "_blank");
   }
 }
+
 </script>
 </body>
 </html>
