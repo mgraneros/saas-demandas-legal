@@ -1297,7 +1297,9 @@ def listar_usuarios_admin(
             "activo": u.activo,
             "suscripcion_activa": suscripcion.activa if suscripcion else False,
             "plan": suscripcion.plan if suscripcion else "Sin Plan",
-            "demandas_restantes": suscripcion.demandas_restantes if suscripcion else 0
+            "demandas_restantes": suscripcion.demandas_restantes if suscripcion else 0,
+            # <-- NUEVA LÍNEA: Agregamos el rol para que el frontend lo dibuje
+            "rol_estudio": getattr(u, "rol_estudio", "Titular" if getattr(u, "cuenta_madre_id", None) is None else "Asistente")
         })
 
     return resultado
