@@ -900,19 +900,18 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 15000.0
+                    "unit_price": 200.0
                 }
             ],
             "payer": {
                 "email": current_user.email
             },
             "back_urls": {
-                "success": f"{frontend_url}/index.html?pago=exitoso",
-                "failure": f"{frontend_url}/index.html?pago=fallido",
-                "pending": f"{frontend_url}/index.html?pago=pendiente"
+                "success": "https://www.autodemandas.com.ar/index.html?pago=exitoso",
+                "failure": "https://www.autodemandas.com.ar/index.html?pago=fallido",
+                "pending": "https://www.autodemandas.com.ar/index.html?pago=pendiente"
             },
-            "auto_return": "approved",
-            "notification_url": f"{backend_url}/webhook-mercadopago/",
+            "notification_url": "https://saas-demandas-legal.onrender.com/webhook-mercadopago/",
             "external_reference": str(current_user.id)
         }
 
