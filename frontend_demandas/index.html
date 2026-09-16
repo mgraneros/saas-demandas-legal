@@ -2038,7 +2038,7 @@ async function archivarDemanda(idDemanda) {
 }
 async function descargarDocumentoSeguro(url, nombreArchivo) {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-  
+
   if (!token) {
     alert("Sesión expirada. Por favor iniciá sesión nuevamente.");
     return;
@@ -2052,35 +2052,24 @@ async function descargarDocumentoSeguro(url, nombreArchivo) {
       }
     });
 
-    // Si el backend devolvió el JSON con la URL firmada de GCP
     if (res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.download_url) {
-          window.location.href = data.download_url;
-          return;
-        }
+      const data = await res.json();
+      const targetUrl = data.url || data.download_url;
+
+      if (targetUrl) {
+        window.location.href = targetUrl;
+        return;
+      } else {
+        alert("No se recibió la URL de descarga.");
       }
-      
-      // Si el backend devolvió el archivo directamente (FileResponse)
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = nombreArchivo || "demanda.docx";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
     } else {
       const err = await res.json().catch(() => ({}));
       alert("Error: " + (err.detail || "No se pudo descargar el archivo."));
     }
   } catch (error) {
     console.error("Error en descarga:", error);
-    // Fallback: abrir la URL directa pasando el token en query param para evitar el corte de CORS en preflight
-    window.open(`${url}?token=${encodeURIComponent(token)}`, "_blank");
+    // Si falla el fetch por conectividad, usa la URL directa con token query
+    window.location.href = `${url}?token=${encodeURIComponent(token)}`;
   }
 }
 
