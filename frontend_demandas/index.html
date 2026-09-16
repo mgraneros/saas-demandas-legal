@@ -1233,6 +1233,7 @@ async function cargarHistorial() {
     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
   }
 }
+//cambio
 function descargarDemanda(demandaId) {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
   if (!token) {
