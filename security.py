@@ -7,6 +7,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from itsdangerous import URLSafeTimedSerializer
 from fastapi_mail import ConnectionConfig
+from typing import Optional
+from fastapi import Query, Depends, HTTPException, status
 
 import models
 from database import get_db
@@ -51,13 +53,31 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-# --- DEPENDENCIAS DE AUTENTICACIÓN Y ROLES ---
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+# Modificamos la firma para aceptar el token desde Header (oauth2_scheme) O desde Query Param (?token=...)
+def get_current_user(
+    token_header: Optional[str] = Depends(OAuth2PasswordBearer(tokenUrl="login", auto_error=False)),
+    token_query: Optional[str] = Query(None, alias="token"),
+    db: Session = Depends(get_db)
+):
+    token = token_header or token_query
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudieron validar las credenciales de autenticación.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Si por casualidad viene como 'Bearer <token>' en query o header, dejamos solo el hash
+    if token.startswith("Bearer "):
+        token = token.split(" ")[1]
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
@@ -71,7 +91,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if usuario is None:
         raise credentials_exception
     return usuario
-
 
 def get_current_admin_user(current_user: models.Usuario = Depends(get_current_user)):
     """
