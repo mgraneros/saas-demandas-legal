@@ -712,10 +712,10 @@ def descargar_demanda_nube(
         else:
             raise HTTPException(status_code=404, detail="El archivo antiguo no se encuentra en el servidor local.")
 
-    # --- MAGIA DE GOOGLE CLOUD PARA NUEVAS DEMANDAS ---
+    # MAGIA DE GOOGLE CLOUD PARA NUEVAS DEMANDAS
     try:
         url_segura = generate_signed_url(referencia_archivo, expiration_minutes=5)
-        return RedirectResponse(url=url_segura)
+        return {"url": url_segura}
     except Exception as e:
         print(f"Error de GCP: {e}")
         raise HTTPException(status_code=500, detail="Error al conectar con la bóveda de seguridad en la nube.")
