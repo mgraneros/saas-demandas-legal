@@ -682,20 +682,24 @@
 
   </main>
 </div>
-<!-- MODAL DE NOTAS INTERNAS -->
+<!-- MODAL DE NOTAS INTERNAS (DARK THEME + VIOLETA) -->
 <div class="modal fade" id="modalNotasDemanda" tabindex="-1" aria-labelledby="modalNotasLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="background-color: #f7f3eb; border: 1px solid #e2dac9; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
-      <div class="modal-header" style="border-bottom: 1px solid #e5dccb; padding: 1.25rem 1.5rem;">
-        <h5 class="modal-title fw-bold" id="modalNotasLabel" style="color: #2b2b2b; font-size: 1.25rem;">
-          Notas Internas - Expediente <span id="modalNotasDemandaId" style="color: #4a453e;"></span>
+    <div class="modal-content" style="background-color: #17171f; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);">
+      
+      <!-- Encabezado -->
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 1.25rem 1.5rem;">
+        <h5 class="modal-title fw-bold" id="modalNotasLabel" style="color: #f1f1f5; font-size: 1.15rem; letter-spacing: -0.2px;">
+          Notas Internas — Expediente #<span id="modalNotasDemandaId" style="color: #a78bfa;"></span>
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" style="filter: contrast(0.5);"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar" style="opacity: 0.7;"></button>
       </div>
+
+      <!-- Cuerpo -->
       <div class="modal-body" style="padding: 1.5rem;">
         <input type="hidden" id="inputNotaDemandaId" value="">
-        <div class="mb-3">
-          <label for="textareaNotasInternas" class="form-label" style="color: #4f4a43; font-weight: 500; font-size: 0.95rem; margin-bottom: 0.75rem;">
+        <div class="mb-2">
+          <label for="textareaNotasInternas" class="form-label" style="color: #a1a1aa; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.6rem;">
             Anotaciones del caso (uso exclusivo del estudio):
           </label>
           <textarea 
@@ -703,16 +707,18 @@
             id="textareaNotasInternas" 
             rows="5" 
             placeholder="Escribí notas de seguimiento, juzgado, fechas límite... (ej. Juzgado Civil N° 3, fecha límite para contestar traslado: 25/9)."
-            style="background-color: #fffdf9; border: 1.5px solid #ded4bf; border-radius: 8px; color: #2d2a26; font-size: 0.95rem; resize: vertical; box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);"
+            style="background-color: #0f0f14; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #ececf1; font-size: 0.92rem; resize: vertical; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);"
           ></textarea>
         </div>
       </div>
-      <div class="modal-footer" style="border-top: 1px solid #e5dccb; padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+
+      <!-- Pie -->
+      <div class="modal-footer" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
         <button 
           type="button" 
           class="btn" 
           data-bs-dismiss="modal" 
-          style="background-color: #f7f3eb; border: 1.5px solid #c8beab; color: #403b35; font-weight: 500; border-radius: 8px; padding: 0.45rem 1.25rem;"
+          style="background-color: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #d4d4d8; font-weight: 500; border-radius: 8px; padding: 0.45rem 1.25rem;"
         >
           Cancelar
         </button>
@@ -721,11 +727,12 @@
           class="btn" 
           id="btnGuardarNota" 
           onclick="guardarNotaDemanda()" 
-          style="background-color: #2c3e66; border: none; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.45rem 1.35rem; box-shadow: 0 2px 5px rgba(44,62,102,0.25);"
+          style="background-color: #6f42c1; border: none; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.45rem 1.35rem; box-shadow: 0 2px 8px rgba(111, 66, 193, 0.35);"
         >
           Guardar Nota
         </button>
       </div>
+
     </div>
   </div>
 </div>
