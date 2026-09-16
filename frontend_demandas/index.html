@@ -1195,6 +1195,11 @@ async function cargarHistorial() {
           <!-- BOTONES DE ACCIÓN (Descargar, Notas y Archivar) -->
           <td>
             <div class="d-flex gap-1 align-items-center">
+
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="descargarDemanda(${d.id})" title="Descargar Word">
+                Descargar .docx
+              </button>
+
               
               <!-- AQUÍ ESTÁ EL BOTÓN ACTUALIZADO -->
               <button type="button" 
@@ -1203,6 +1208,7 @@ async function cargarHistorial() {
                       onclick="descargarDocumentoSeguro('${d.download_url}', 'Demanda_${d.id}.docx')">
                 Descargar .docx
               </button>
+
 
               <button type="button" 
                       class="btn btn-sm btn-outline-secondary" 
@@ -1226,6 +1232,27 @@ async function cargarHistorial() {
     console.error("Error cargando historial:", error);
     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error al cargar el historial de demandas.</td></tr>`;
   }
+}
+function descargarDemanda(demandaId) {
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  if (!token) {
+    Swal.fire({
+      icon: "warning",
+      title: "Sesión expirada",
+      text: "Iniciá sesión nuevamente para descargar el documento."
+    });
+    return;
+  }
+
+  // Descarga directa pasando el token en la URL para evitar bloqueos de CORS
+  const url = `${API_URL}/descargar-demanda/${demandaId}?token=${encodeURIComponent(token)}`;
+  
+  const a = document.createElement("a");
+  a.href = url;
+  a.setAttribute("download", `demanda_${demandaId}.docx`);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 // --- FUNCIÓN LIMPIA PARA NAVEGACIÓN ---
