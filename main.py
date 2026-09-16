@@ -1543,7 +1543,7 @@ def ver_demandas_usuario_admin(
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "download_url": f"[https://saas-demandas-legal.onrender.com/descargar-demanda/](https://saas-demandas-legal.onrender.com/descargar-demanda/){d.id}"
+            "download_url": f"https://saas-demandas-legal.onrender.com/descargar-demanda/{d.id}"
         })
 
     return lista_demandas
