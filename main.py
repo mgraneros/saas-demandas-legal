@@ -146,6 +146,38 @@ PARRAFOS_COMPETENCIA = {
     )
 }
 
+PLANES_CREDITOS = {
+    "plan_10": {
+        "title": "Pack 10 Demandas - AutoDemandas",
+        "price": 145000.0,
+        "creditos": 10,
+        "es_vip": False
+    },
+    "plan_20": {
+        "title": "Pack 20 Demandas - AutoDemandas",
+        "price": 250000.0,
+        "creditos": 20,
+        "es_vip": False
+    },
+    "plan_30": {
+        "title": "Pack 30 Demandas - AutoDemandas",
+        "price": 350000.0,
+        "creditos": 30,
+        "es_vip": False
+    },
+    "plan_45": {
+        "title": "Pack 45 Demandas - AutoDemandas",
+        "price": 500000.0,
+        "creditos": 45,
+        "es_vip": False
+    },
+    "plan_vip": {
+        "title": "Plan VIP Demandas Ilimitadas - AutoDemandas",
+        "price": 750000.0,
+        "creditos": -1,
+        "es_vip": True
+    }
+}
 
 # ==========================================
 # RUTAS DE USUARIOS Y AUTENTICACIÓN
