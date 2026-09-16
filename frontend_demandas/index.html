@@ -449,7 +449,7 @@
 
                   <!-- Botones de Acción -->
                   <div class="d-grid gap-2 mt-4">
-                    <button type="button" class="btn btn-primary" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
+                    <button type="button" class="btn btn-primary" id="btnAuditar" onclick="ejecutarPreview()">1. Auditar Datos (Preview)</button>
                     <button type="button" class="btn btn-success" id="btnGenerarWord" onclick="descargarWord()" disabled>2. Generar Word Definitivo</button>
                   </div>
                 </form>
@@ -915,53 +915,78 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
-  async function ejecutarPreview() {
-    const payload = obtenerPayloadFormulario();
-    const resultadoBox = document.getElementById("resultadoAuditoria");
-    const token = localStorage.getItem("access_token");
-    
-    resultadoBox.textContent = "Validando datos con el servidor...";
+async function ejecutarPreview() {
+  const payload = obtenerPayloadFormulario();
+  const resultadoBox = document.getElementById("resultadoAuditoria");
+  const token = localStorage.getItem("access_token");
+  const btnAuditar = document.getElementById("btnAuditar"); // Capturamos el botón
+  
+  // 1. Cambiamos el botón a estado "Cargando" y lo deshabilitamos
+  if (btnAuditar) {
+    btnAuditar.disabled = true;
+    btnAuditar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>En proceso...';
+  }
+  
+  resultadoBox.textContent = "Validando datos con el servidor...";
 
-    try {
-      const response = await fetch(`${API_URL}/preview-demanda/`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+  // 2. Mostramos un popup de carga que bloquea la pantalla
+  Swal.fire({
+    title: 'Auditando datos',
+    html: 'Por favor espere unos segundos...',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(JSON.stringify(errorData, null, 2));
-      }
+  try {
+    const response = await fetch(`${API_URL}/preview-demanda/`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
 
-      const data = await response.json();
-      resultadoBox.textContent = JSON.stringify(data.datos_para_revision, null, 4);
-      document.getElementById("btnGenerarWord").disabled = false;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(JSON.stringify(errorData, null, 2));
+    }
 
-      Swal.fire({
-        title: '¡Validación Exitosa!',
-        text: 'Los datos están correctos. Ya puede generar la demanda.',
-        icon: 'success',
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#0d6efd'
-      });
+    const data = await response.json();
+    resultadoBox.textContent = JSON.stringify(data.datos_para_revision, null, 4);
+    document.getElementById("btnGenerarWord").disabled = false;
 
-    } catch (error) {
-      resultadoBox.textContent = `Error de validación:\n${error.message}`;
-      document.getElementById("btnGenerarWord").disabled = true;
+    // El popup de éxito pisa automáticamente al de carga
+    Swal.fire({
+      title: '¡Validación Exitosa!',
+      text: 'Los datos están correctos. Ya puede generar la demanda.',
+      icon: 'success',
+      confirmButtonText: 'Aceptar',
+      confirmButtonColor: '#0d6efd'
+    });
 
-      Swal.fire({
-        title: 'Error de Validación',
-        text: 'Verifique que los campos ingresados sean correctos.',
-        icon: 'error',
-        confirmButtonText: 'Revisar',
-        confirmButtonColor: '#dc3545'
-      });
+  } catch (error) {
+    resultadoBox.textContent = `Error de validación:\n${error.message}`;
+    document.getElementById("btnGenerarWord").disabled = true;
+
+    // El popup de error pisa automáticamente al de carga
+    Swal.fire({
+      title: 'Error de Validación',
+      text: 'Verifique que los campos ingresados sean correctos.',
+      icon: 'error',
+      confirmButtonText: 'Revisar',
+      confirmButtonColor: '#dc3545'
+    });
+  } finally {
+    // 3. Restauramos el botón a la normalidad pase lo que pase
+    if (btnAuditar) {
+      btnAuditar.disabled = false;
+      btnAuditar.innerHTML = '1. Auditar Datos (Preview)';
     }
   }
+}
 
   async function descargarWord() {
     const payload = obtenerPayloadFormulario();
