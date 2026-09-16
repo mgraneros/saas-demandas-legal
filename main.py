@@ -1394,7 +1394,7 @@ def resetear_password(
 @app.get("/mis-demandas", summary="Listar todas las demandas del equipo (Titular) o propias (Asistente)")
 def listar_mis_demandas(
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
+    current_user: models.Usuario = Depends(get_current_user) # <-- CORRECCIÓN: Permite entrar a los asistentes
 ):
     # 1. Lógica Jerárquica: Determinar qué demandas puede ver
     if getattr(current_user, 'cuenta_madre_id', None) is None:
@@ -1410,7 +1410,7 @@ def listar_mis_demandas(
         models.Usuario, models.DemandaGenerada.usuario_id == models.Usuario.id
     ).filter(
         models.DemandaGenerada.usuario_id.in_(ids_permitidos),
-        models.DemandaGenerada.archivada == False # <-- NUEVO FILTRO APLICADO
+        models.DemandaGenerada.archivada == False 
     ).all()
 
     lista_demandas = []
@@ -1421,7 +1421,7 @@ def listar_mis_demandas(
             "dni_actor": getattr(d, "dni_actor", "-"),
             "estado_operativo": getattr(d, "estado_operativo", "Generada"),
             "fecha_creacion": d.fecha_creacion if hasattr(d, "fecha_creacion") else "N/A",
-            "creado_por": email_creador, # <-- Dato clave para el Titular
+            "creado_por": email_creador, 
             "notas_internas": getattr(d, "notas_internas", ""),
             "download_url": f"https://saas-demandas-legal.onrender.com/descargar-demanda/{d.id}"
         })
@@ -1438,7 +1438,7 @@ def obtener_historial(
     nombre_actor: Optional[str] = None,
     dni_actor: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(verificar_suscripcion_activa)
+    current_user: models.Usuario = Depends(get_current_user) # <-- CORRECCIÓN: Permite entrar a los asistentes
 ):
     # Lógica Jerárquica B2B
     if getattr(current_user, 'cuenta_madre_id', None) is None:
@@ -1450,7 +1450,7 @@ def obtener_historial(
     # Búsqueda base excluyendo demandas archivadas
     query = db.query(models.DemandaGenerada).filter(
         models.DemandaGenerada.usuario_id.in_(ids_permitidos),
-        models.DemandaGenerada.archivada == False # <-- NUEVO FILTRO APLICADO
+        models.DemandaGenerada.archivada == False 
     )
 
     if nombre_actor:
