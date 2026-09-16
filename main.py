@@ -152,7 +152,11 @@ PARRAFOS_COMPETENCIA = {
 # ==========================================
 
 @app.post("/register", response_model=schemas.UsuarioResponse, summary="Registrar nuevo usuario")
-def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
+def registrar_usuario(
+    usuario: schemas.UsuarioCreate, 
+    background_tasks: BackgroundTasks, # <-- Agregamos BackgroundTasks aquí
+    db: Session = Depends(get_db)
+):
     db_usuario = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
     if db_usuario:
         raise HTTPException(status_code=400, detail="El email ya se encuentra registrado.")
@@ -166,6 +170,30 @@ def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_
     db.add(nuevo_usuario)
     db.commit()
     db.refresh(nuevo_usuario)
+
+    # --- NUEVA LÓGICA: CORREO DE BIENVENIDA ---
+    def enviar_bienvenida_resend():
+        try:
+            resend.Emails.send({
+                "from": "SaaS Legal <soporte@autodemandas.com.ar>",
+                "to": [nuevo_usuario.email],
+                "subject": "¡Bienvenido a SaaS Demandas Legal! ⚖️",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2>¡Hola! Tu cuenta ha sido creada exitosamente.</h2>
+                    <p>Ya podés ingresar a la plataforma con tu correo <strong>{nuevo_usuario.email}</strong> y comenzar a automatizar tus expedientes.</p>
+                    <br>
+                    <p>Saludos,<br><strong>El equipo de SaaS Legal</strong></p>
+                </div>
+                """
+            })
+            print(f"✅ [API HTTP] Correo de bienvenida enviado a {nuevo_usuario.email}")
+        except Exception as e:
+            print(f"⚠️ [ERROR RESEND]: {e}")
+
+    background_tasks.add_task(enviar_bienvenida_resend)
+    # ---------------------------------------------
+
     return nuevo_usuario
 
 
