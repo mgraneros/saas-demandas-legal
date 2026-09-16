@@ -2036,7 +2036,7 @@ async function archivarDemanda(idDemanda) {
     alert(`Error: ${error.message}`);
   }
 }
-async function descargarDocumentoSeguro(url, nombreArchivo) {
+function descargarDocumentoSeguro(url, nombreArchivo) {
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
   if (!token) {
@@ -2044,32 +2044,8 @@ async function descargarDocumentoSeguro(url, nombreArchivo) {
     return;
   }
 
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const targetUrl = data.url || data.download_url;
-
-      if (targetUrl) {
-        window.location.href = targetUrl;
-        return;
-      } else {
-        alert("No se recibió la URL de descarga.");
-      }
-    } else {
-      const err = await res.json().catch(() => ({}));
-      alert("Error: " + (err.detail || "No se pudo descargar el archivo."));
-    }
-  } catch (error) {
-    console.error("Error en descarga:", error);
-    alert("No se pudo conectar con el servidor para descargar el archivo.");
-  }
+  // Descarga nativa directa: Render autentica el token y redirige al archivo en Google Cloud
+  window.location.href = `${url}?token=${encodeURIComponent(token)}`;
 }
 
 </script>
