@@ -1205,7 +1205,7 @@ async function cargarHistorial() {
               <button type="button" 
                       class="btn btn-sm btn-outline-primary" 
                       title="Descargar Word" 
-                      onclick="descargarDocumentoSeguro('${d.download_url}', 'Demanda_${d.id}.docx')">
+                      onclick="descargarDocumentoSeguro('https://saas-demandas-legal.onrender.com/descargar-demanda/${d.id}', 'Demanda_${d.id}.docx')"
                 Descargar .docx
               </button>
 
