@@ -872,7 +872,7 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 15000.0
+                    "unit_price": 200.0
                 }
             ],
             "payer": {
