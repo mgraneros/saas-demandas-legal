@@ -22,6 +22,7 @@ from num2words import num2words
 from jose import JWTError, jwt
 from itsdangerous import SignatureExpired, BadSignature
 import google.generativeai as genai
+from security import create_access_token
 
 # FastAPI y utilidades de Web/API
 from fastapi import (
@@ -860,7 +861,10 @@ def crear_preferencia_suscripcion(
             )
 
         sdk = mercadopago.SDK(access_token)
-        base_url = os.getenv("BASE_URL", "https://snide-uranium-hungrily.ngrok-free.dev")
+        
+        # URLs fijas de producción
+        frontend_url = os.getenv("FRONTEND_URL", "https://www.autodemandas.com.ar")
+        backend_url = os.getenv("BACKEND_URL", "https://saas-demandas-legal.onrender.com")
 
         preference_data = {
             "items": [
@@ -868,19 +872,19 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 500000.0  # Ajustar este monto al precio real final
+                    "unit_price": 15000.0  # Ajustá al precio mensual real deseado
                 }
             ],
             "payer": {
                 "email": current_user.email
             },
             "back_urls": {
-                "success": f"{base_url}/pago-exitoso",
-                "failure": f"{base_url}/pago-fallido",
-                "pending": f"{base_url}/pago-pendiente"
+                "success": f"{frontend_url}/index.html?pago=exitoso",
+                "failure": f"{frontend_url}/index.html?pago=fallido",
+                "pending": f"{frontend_url}/index.html?pago=pendiente"
             },
             "auto_return": "approved",
-            "notification_url": f"{base_url}/webhook-mercadopago/",
+            "notification_url": f"{backend_url}/webhook-mercadopago",
             "external_reference": str(current_user.id)
         }
 
@@ -895,9 +899,17 @@ def crear_preferencia_suscripcion(
 
         return {
             "init_point": preference["init_point"],
-            "sandbox_init_point": preference.get("sandbox_init_point"),
             "preference_id": preference.get("id")
         }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error inesperado al crear preferencia: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )
 
     except HTTPException as http_ex:
         raise http_ex
