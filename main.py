@@ -715,7 +715,7 @@ def descargar_demanda_nube(
     # MAGIA DE GOOGLE CLOUD PARA NUEVAS DEMANDAS
     try:
         url_segura = generate_signed_url(referencia_archivo, expiration_minutes=5)
-        return {"url": url_segura}
+        return RedirectResponse(url=url_segura)
     except Exception as e:
         print(f"Error de GCP: {e}")
         raise HTTPException(status_code=500, detail="Error al conectar con la bóveda de seguridad en la nube.")
