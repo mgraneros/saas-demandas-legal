@@ -23,6 +23,7 @@ from jose import JWTError, jwt
 from itsdangerous import SignatureExpired, BadSignature
 import google.generativeai as genai
 from security import create_access_token
+from schemas import PLANES_CREDITOS
 
 # FastAPI y utilidades de Web/API
 from fastapi import (
@@ -849,9 +850,17 @@ def simular_pago(
 
 @app.post("/crear-preferencia-suscripcion/", summary="Crear preferencia de pago en Mercado Pago")
 def crear_preferencia_suscripcion(
+    body: schemas.PreferenciaPagoRequest,
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
+    plan = PLANES_CREDITOS.get(body.plan_id)
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Plan '{body.plan_id}' inválido. Opciones disponibles: {list(PLANES_CREDITOS.keys())}"
+        )
+
     try:
         access_token = os.getenv("MP_ACCESS_TOKEN")
         if not access_token:
@@ -862,29 +871,28 @@ def crear_preferencia_suscripcion(
 
         sdk = mercadopago.SDK(access_token)
         
-        # Definir dominios absolutos directos para evitar variables nulas
         frontend_url = os.getenv("FRONTEND_URL", "https://www.autodemandas.com.ar").rstrip("/")
         backend_url = os.getenv("BACKEND_URL", "https://saas-demandas-legal.onrender.com").rstrip("/")
 
         preference_data = {
             "items": [
                 {
-                    "title": "Suscripción Mensual - SaaS Demandas Legales",
+                    "title": plan["title"],
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 200.0
+                    "unit_price": plan["price"]
                 }
             ],
             "payer": {
                 "email": current_user.email
             },
             "back_urls": {
-                "success": "https://www.autodemandas.com.ar/index.html?pago=exitoso",
-                "failure": "https://www.autodemandas.com.ar/index.html?pago=fallido",
-                "pending": "https://www.autodemandas.com.ar/index.html?pago=pendiente"
+                "success": f"{frontend_url}/index.html?pago=exitoso",
+                "failure": f"{frontend_url}/index.html?pago=fallido",
+                "pending": f"{frontend_url}/index.html?pago=pendiente"
             },
-            "notification_url": "https://saas-demandas-legal.onrender.com/webhook-mercadopago/",
-            "external_reference": str(current_user.id)
+            "notification_url": f"{backend_url}/webhook-mercadopago/",
+            "external_reference": f"{current_user.id}:{body.plan_id}"
         }
 
         preference_response = sdk.preference().create(preference_data)
