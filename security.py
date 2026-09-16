@@ -41,7 +41,7 @@ mail_config = ConnectionConfig(
 )
 
 # --- OAUTH2 SCHEME ---
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
 # --- FUNCIONES DE HASHEO DE CONTRASEÑA ---
@@ -55,7 +55,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # Modificamos la firma para aceptar el token desde Header (oauth2_scheme) O desde Query Param (?token=...)
 def get_current_user(
-    token_header: Optional[str] = Depends(OAuth2PasswordBearer(tokenUrl="login", auto_error=False)),
+    token_header: Optional[str] = Depends(oauth2_scheme),
     token_query: Optional[str] = Query(None, alias="token"),
     db: Session = Depends(get_db)
 ):
