@@ -2068,8 +2068,7 @@ async function descargarDocumentoSeguro(url, nombreArchivo) {
     }
   } catch (error) {
     console.error("Error en descarga:", error);
-    // Si falla el fetch por conectividad, usa la URL directa con token query
-    window.location.href = `${url}?token=${encodeURIComponent(token)}`;
+    alert("No se pudo conectar con el servidor para descargar el archivo.");
   }
 }
 
