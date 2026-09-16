@@ -862,9 +862,9 @@ def crear_preferencia_suscripcion(
 
         sdk = mercadopago.SDK(access_token)
         
-        # URLs fijas de producción
-        frontend_url = os.getenv("FRONTEND_URL", "https://www.autodemandas.com.ar")
-        backend_url = os.getenv("BACKEND_URL", "https://saas-demandas-legal.onrender.com")
+        # Definir dominios absolutos directos para evitar variables nulas
+        frontend_url = os.getenv("FRONTEND_URL", "https://www.autodemandas.com.ar").rstrip("/")
+        backend_url = os.getenv("BACKEND_URL", "https://saas-demandas-legal.onrender.com").rstrip("/")
 
         preference_data = {
             "items": [
@@ -872,7 +872,7 @@ def crear_preferencia_suscripcion(
                     "title": "Suscripción Mensual - SaaS Demandas Legales",
                     "quantity": 1,
                     "currency_id": "ARS",
-                    "unit_price": 15000.0  # Ajustá al precio real deseado
+                    "unit_price": 15000.0
                 }
             ],
             "payer": {
