@@ -39,9 +39,13 @@
     <script>
         const API_URL = "https://saas-demandas-legal.onrender.com";
 
+        function obtenerToken() {
+            return localStorage.getItem("access_token") || localStorage.getItem("token");
+        }
+
         // Verificación de seguridad al cargar
         document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem("access_token");
+            const token = obtenerToken();
             if (!token) {
                 window.location.href = "login.html";
             }
@@ -49,11 +53,23 @@
 
         // Lógica de Pago
         document.getElementById('btn-mercadopago').addEventListener('click', async () => {
-            const token = localStorage.getItem("access_token");
+            const token = obtenerToken();
             
+            if (!token) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión expirada',
+                    text: 'Por favor, iniciá sesión nuevamente.',
+                    confirmButtonText: 'Ir al login'
+                }).then(() => {
+                    window.location.href = "login.html";
+                });
+                return;
+            }
+
             Swal.fire({
                 title: 'Preparando pago...',
-                text: 'Redirigiendo a Mercado Pago',
+                text: 'Redirigiendo a Mercado Pago...',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
@@ -67,15 +83,21 @@
                     }
                 });
                 
-                const data = await response.json();
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "No se pudo conectar con el procesador de pagos.");
+                }
                 
                 if (data.init_point) {
+                    // Redirige al checkout de producción de Mercado Pago
                     window.location.href = data.init_point;
                 } else {
-                    Swal.fire('Error', 'No se pudo iniciar la preferencia de pago.', 'error');
+                    throw new Error("No se recibió el enlace de pago desde Mercado Pago.");
                 }
             } catch (err) {
-                Swal.fire('Error', 'Problema de conexión con el servidor.', 'error');
+                console.error("Error al generar checkout:", err);
+                Swal.fire('Error', err.message || 'Problema de conexión con el servidor.', 'error');
             }
         });
     </script>
