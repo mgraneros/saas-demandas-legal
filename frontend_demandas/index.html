@@ -2022,7 +2022,7 @@ async function descargarDocumentoSeguro(url, nombreArchivo) {
       throw new Error("No tienes permisos o el archivo ya no existe.");
     }
 
-    // Convertimos la respuesta en un archivo físico (Blob) y forzamos la descarga
+    // Convertimos la respuesta en un archivo físico (Blob) y forzamos la descarga -
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
