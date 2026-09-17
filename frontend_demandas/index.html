@@ -320,7 +320,7 @@
                     </div>
                   </div>
 
-                  <!-- 3. Hechos y Lesiones -->
+<!-- 3. Hechos y Lesiones -->
                   <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
                   <div class="row mb-3">
                     <div class="col-md-6 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="date" class="form-control form-control-sm" id="FechaHecho" required></div>
@@ -360,13 +360,57 @@
                         </div>
                       </div>
                     </div>
+
                     <div class="col-md-12 mb-2">
                       <label class="form-label small">Detalle / Comentarios de las Lesiones</label>
                       <input type="text" class="form-control form-control-sm" id="LesionesDetalles">
                     </div>
+
+                    <!-- NUEVO BLOQUE: Listado de Secuelas (Checkboxes) -->
                     <div class="col-md-12 mb-3">
-                      <label class="form-label small">Listado de Secuelas</label>
-                      <textarea class="form-control form-control-sm" id="ListadoSecuelas" rows="2" placeholder="Ej: Dolores de cabeza, mareos..."></textarea>
+                      <label class="form-label fw-bold small text-secondary">Listado de Secuelas</label>
+                      <div class="border p-2 rounded" style="max-height: 250px; overflow-y: auto; background-color: var(--bs-body-bg);">
+                        
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Cervicalgia" id="sec_1"><label class="form-check-label small" for="sec_1">CERVICALGIA</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Lumbalgia" id="sec_2"><label class="form-check-label small" for="sec_2">LUMBALGIA</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Politraumatismos" id="sec_3"><label class="form-check-label small" for="sec_3">POLITRAUMATISMOS</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Lesión en rodilla derecha" id="sec_4"><label class="form-check-label small" for="sec_4">LESIÓN EN RODILLA DERECHA</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Injuria meniscal rodilla derecha" id="sec_5"><label class="form-check-label small" for="sec_5">INJURIA MENISCAL RODILLA DERECHA</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Lesión en rodilla izquierda" id="sec_6"><label class="form-check-label small" for="sec_6">LESIÓN EN RODILLA IZQUIERDA</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Injuria meniscal en rodilla izquierda" id="sec_7"><label class="form-check-label small" for="sec_7">INJURIA MENISCAL EN RODILLA IZQUIERDA</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Traumatismo de hombro derecho" id="sec_8"><label class="form-check-label small" for="sec_8">TRAUMATISMO DE HOMBRO DERECHO</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Traumatismo de hombro izquierdo" id="sec_9"><label class="form-check-label small" for="sec_9">TRAUMATISMO DE HOMBRO IZQUIERDO</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Quemaduras" id="sec_10"><label class="form-check-label small" for="sec_10">QUEMADURAS</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Escoriaciones" id="sec_11"><label class="form-check-label small" for="sec_11">ESCORIACIONES</label></div>
+                        <div class="form-check mb-1"><input class="form-check-input secuela-cb" type="checkbox" value="Hemorragia" id="sec_12"><label class="form-check-label small" for="sec_12">HEMORRAGIA</label></div>
+
+                        <div class="form-check mb-1">
+                          <input class="form-check-input secuela-cb" type="checkbox" value="Lesiones cortopunzantes en" id="sec_13" onchange="document.getElementById('input_sec_13').classList.toggle('d-none', !this.checked)">
+                          <label class="form-check-label small" for="sec_13">LESIONES CORTOPUNZANTES</label>
+                          <input type="text" class="form-control form-control-sm mt-1 d-none extra-input" id="input_sec_13" placeholder="Indicar en qué parte...">
+                        </div>
+
+                        <div class="form-check mb-1">
+                          <input class="form-check-input secuela-cb" type="checkbox" value="Esguince de" id="sec_14" onchange="document.getElementById('input_sec_14').classList.toggle('d-none', !this.checked)">
+                          <label class="form-check-label small" for="sec_14">ESGUINCE</label>
+                          <input type="text" class="form-control form-control-sm mt-1 d-none extra-input" id="input_sec_14" placeholder="Indicar parte del cuerpo...">
+                        </div>
+
+                        <div class="form-check mb-1">
+                          <input class="form-check-input secuela-cb" type="checkbox" value="Fractura de" id="sec_15" onchange="document.getElementById('input_sec_15').classList.toggle('d-none', !this.checked)">
+                          <label class="form-check-label small" for="sec_15">FRACTURA</label>
+                          <input type="text" class="form-control form-control-sm mt-1 d-none extra-input" id="input_sec_15" placeholder="Indicar parte del cuerpo...">
+                        </div>
+
+                        <div class="form-check mb-2 border-top pt-2 mt-2">
+                          <input class="form-check-input secuela-cb" type="checkbox" value="Otras lesiones:" id="sec_16" onchange="document.getElementById('input_sec_16').classList.toggle('d-none', !this.checked)">
+                          <label class="form-check-label fst-italic small" for="sec_16">+ SUMAR ESPACIO PARA COMPLETAR LIBREMENTE</label>
+                          <textarea class="form-control form-control-sm mt-1 d-none extra-input" id="input_sec_16" rows="2" placeholder="Describa otras lesiones varias..."></textarea>
+                        </div>
+                      </div>
+                      
+                      <!-- Input oculto clave para mandar la info agrupada a tu backend -->
+                      <input type="hidden" id="ListadoSecuelas" value="">
                     </div>
                   </div>
 
@@ -2038,6 +2082,38 @@ function descargarDocumentoSeguro(url, nombreArchivo) {
   window.location.href = `${url}?token=${encodeURIComponent(token)}`;
 }
 <!-- deploy vercel planes v2 -->
+
+// --- LÓGICA PARA RECOLECTAR EL LISTADO DE SECUELAS ---
+function actualizarListadoSecuelas() {
+    let secuelasSeleccionadas = [];
+    
+    // 1. Buscamos todos los checkboxes que el usuario haya tildado
+    document.querySelectorAll('.secuela-cb:checked').forEach(function(checkbox) {
+        let textoSecuela = checkbox.value;
+        
+        // 2. Verificamos si este checkbox tiene un input de texto extra asociado
+        let inputExtra = document.getElementById('input_' + checkbox.id);
+        
+        // Si tiene input extra y el usuario escribió algo, lo unimos al texto
+        if (inputExtra && inputExtra.value.trim() !== '') {
+            textoSecuela += " " + inputExtra.value.trim();
+        }
+        
+        secuelasSeleccionadas.push(textoSecuela);
+    });
+    
+    // 3. Unimos todo con comas y lo guardamos en el input oculto que lee tu backend
+    document.getElementById('ListadoSecuelas').value = secuelasSeleccionadas.join(', ');
+}
+
+// 4. Le decimos al navegador que ejecute esta función cada vez que el usuario haga clic o escriba algo
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.secuela-cb, .extra-input').forEach(function(elemento) {
+        elemento.addEventListener('change', actualizarListadoSecuelas);
+        elemento.addEventListener('input', actualizarListadoSecuelas);
+    });
+});
+
 </script>
 </body>
 </html>
