@@ -3,36 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suscripción - Generador de Demandas</title>
-    <!-- Bootstrap 5 -->
+    <title>Planes y Créditos - AutoDemandas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="auth-guard.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #f4f7f6; }
-        .pricing-card { max-width: 450px; margin: 80px auto; }
-        .card-header { padding: 20px; }
+        body { 
+            background-color: #0f111a; 
+            color: #f1f5f9; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .pricing-card {
+            background: #181b2a;
+            border: 1px solid #2d334d;
+            border-radius: 12px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            border-color: #4f46e5;
+        }
+        .pricing-card.vip {
+            border: 2px solid #f59e0b;
+            background: linear-gradient(180deg, #1f1b2e 0%, #181b2a 100%);
+        }
+        .badge-ahorro {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
     </style>
 </head>
-<body>
-    <div class="container text-center">
-        <div class="pricing-card card shadow-lg border-0">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">¡Casi listo para empezar!</h4>
+<body class="py-5">
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="text-center mb-5">
+            <a href="index.html" class="btn btn-outline-secondary btn-sm mb-3">← Volver al Panel</a>
+            <h2 class="fw-bold text-white">Elegí el plan adecuado para tu estudio</h2>
+            <p class="text-muted">Cargá créditos para generar demandas o accedé a demandas ilimitadas con el plan VIP.</p>
+        </div>
+
+        <!-- Grilla de Planes -->
+        <div class="row g-4 justify-content-center">
+            
+            <!-- Plan 10 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card pricing-card h-100 p-4 d-flex flex-column text-center">
+                    <h4 class="fw-bold">Pack Inicial</h4>
+                    <p class="text-muted small">Para uso ocasional</p>
+                    <div class="my-3">
+                        <span class="display-6 fw-bold text-white">$145.000</span>
+                        <span class="text-muted small">ARS</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="badge-ahorro">$14.500 por demanda</span>
+                    </div>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
+                        <li class="mb-2">✅ <strong>10 Créditos</strong> para demandas</li>
+                        <li class="mb-2">✅ Acceso a todas las plantillas</li>
+                        <li class="mb-2">✅ Descarga en formato Word (.docx)</li>
+                    </ul>
+                    <button onclick="comprarPlan('plan_10')" class="btn btn-outline-primary w-100 fw-semibold">
+                        Comprar Pack 10
+                    </button>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <h5 class="card-title mt-2 mb-3">Suscríbete al Plan Premium</h5>
-                <ul class="list-unstyled text-start mb-4">
-                    <li>✅ Generación ilimitada de demandas.</li>
-                    <li>✅ Acceso a herramientas de auditoría.</li>
-                    <li>✅ Soporte técnico prioritario.</li>
-                </ul>
-                <button id="btn-mercadopago" class="btn btn-success btn-lg w-100 shadow-sm">
-                    Pagar con Mercado Pago
-                </button>
-                <p class="text-muted mt-3 small">Acceso seguro a través de Mercado Pago.</p>
+
+            <!-- Plan 20 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card pricing-card h-100 p-4 d-flex flex-column text-center">
+                    <h4 class="fw-bold">Pack Profesional</h4>
+                    <p class="text-muted small">Para estudios activos</p>
+                    <div class="my-3">
+                        <span class="display-6 fw-bold text-white">$250.000</span>
+                        <span class="text-muted small">ARS</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="badge-ahorro">$12.500 por demanda</span>
+                    </div>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
+                        <li class="mb-2">✅ <strong>20 Créditos</strong> para demandas</li>
+                        <li class="mb-2">✅ Acceso a todas las plantillas</li>
+                        <li class="mb-2">✅ Descarga en formato Word (.docx)</li>
+                    </ul>
+                    <button onclick="comprarPlan('plan_20')" class="btn btn-outline-primary w-100 fw-semibold">
+                        Comprar Pack 20
+                    </button>
+                </div>
             </div>
+
+            <!-- Plan 30 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card pricing-card h-100 p-4 d-flex flex-column text-center">
+                    <h4 class="fw-bold">Pack Estudio</h4>
+                    <p class="text-muted small">Mayor volumen de trabajo</p>
+                    <div class="my-3">
+                        <span class="display-6 fw-bold text-white">$350.000</span>
+                        <span class="text-muted small">ARS</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="badge-ahorro">~$11.666 por demanda</span>
+                    </div>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
+                        <li class="mb-2">✅ <strong>30 Créditos</strong> para demandas</li>
+                        <li class="mb-2">✅ Acceso a todas las plantillas</li>
+                        <li class="mb-2">✅ Soporte prioritario</li>
+                    </ul>
+                    <button onclick="comprarPlan('plan_30')" class="btn btn-outline-primary w-100 fw-semibold">
+                        Comprar Pack 30
+                    </button>
+                </div>
+            </div>
+
+            <!-- Plan 45 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card pricing-card h-100 p-4 d-flex flex-column text-center">
+                    <h4 class="fw-bold">Pack Corporativo</h4>
+                    <p class="text-muted small">Alto rendimiento mensual</p>
+                    <div class="my-3">
+                        <span class="display-6 fw-bold text-white">$500.000</span>
+                        <span class="text-muted small">ARS</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="badge-ahorro">~$11.111 por demanda</span>
+                    </div>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
+                        <li class="mb-2">✅ <strong>45 Créditos</strong> para demandas</li>
+                        <li class="mb-2">✅ Acceso a todas las plantillas</li>
+                        <li class="mb-2">✅ Soporte prioritario</li>
+                    </ul>
+                    <button onclick="comprarPlan('plan_45')" class="btn btn-outline-primary w-100 fw-semibold">
+                        Comprar Pack 45
+                    </button>
+                </div>
+            </div>
+
+            <!-- Plan VIP -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card pricing-card vip h-100 p-4 d-flex flex-column text-center position-relative">
+                    <span class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle px-3 py-1 fw-bold">
+                        PLAN ILIMITADO
+                    </span>
+                    <h4 class="fw-bold text-warning mt-2">Plan VIP</h4>
+                    <p class="text-muted small">Sin límites de generación</p>
+                    <div class="my-3">
+                        <span class="display-6 fw-bold text-white">$750.000</span>
+                        <span class="text-muted small">ARS</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="badge bg-warning-subtle text-warning">Demandas Infinitas</span>
+                    </div>
+                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
+                        <li class="mb-2">⭐ <strong>Demandas Ilimitadas</strong></li>
+                        <li class="mb-2">⭐ Sin descuento de créditos</li>
+                        <li class="mb-2">⭐ Acceso total a nuevas funcionalidades</li>
+                        <li class="mb-2">⭐ Atención directa prioritaria</li>
+                    </ul>
+                    <button onclick="comprarPlan('plan_vip')" class="btn btn-warning w-100 fw-bold">
+                        Suscribirse al VIP
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -43,24 +177,14 @@
             return localStorage.getItem("access_token") || localStorage.getItem("token");
         }
 
-        // Verificación de seguridad al cargar
-        document.addEventListener('DOMContentLoaded', () => {
+        async function comprarPlan(planId) {
             const token = obtenerToken();
-            if (!token) {
-                window.location.href = "login.html";
-            }
-        });
-
-        // Lógica de Pago
-        document.getElementById('btn-mercadopago').addEventListener('click', async () => {
-            const token = obtenerToken();
-            
             if (!token) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Sesión expirada',
-                    text: 'Por favor, iniciá sesión nuevamente.',
-                    confirmButtonText: 'Ir al login'
+                    title: 'Iniciá sesión',
+                    text: 'Debes iniciar sesión para contratar un plan.',
+                    confirmButtonText: 'Ir al Login'
                 }).then(() => {
                     window.location.href = "login.html";
                 });
@@ -68,38 +192,35 @@
             }
 
             Swal.fire({
-                title: 'Preparando pago...',
-                text: 'Redirigiendo a Mercado Pago...',
+                title: 'Conectando con Mercado Pago...',
+                text: 'Generando tu orden de pago segura',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
-            
-            try {
-                const response = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` 
-                    }
-                });
-                
-                const data = await response.json().catch(() => ({}));
 
-                if (!response.ok) {
-                    throw new Error(data.detail || "No se pudo conectar con el procesador de pagos.");
-                }
-                
-                if (data.init_point) {
-                    // Redirige al checkout de producción de Mercado Pago
+            try {
+                const res = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ plan_id: planId })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.init_point) {
                     window.location.href = data.init_point;
                 } else {
-                    throw new Error("No se recibió el enlace de pago desde Mercado Pago.");
+                    const msg = typeof data.detail === 'string' ? data.detail : 'No se pudo generar el checkout.';
+                    Swal.fire('Error', msg, 'error');
                 }
             } catch (err) {
-                console.error("Error al generar checkout:", err);
-                Swal.fire('Error', err.message || 'Problema de conexión con el servidor.', 'error');
+                console.error(err);
+                Swal.fire('Error', 'No se pudo contactar con el servidor de pagos.', 'error');
             }
-        });
+        }
     </script>
 </body>
 </html>
