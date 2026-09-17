@@ -7,66 +7,157 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        :root {
+            --bg-main: #0c0a14;
+            --card-bg: #151124;
+            --card-border: #28203f;
+            --card-hover-border: #8b5cf6;
+            --purple-primary: #7c3aed;
+            --purple-hover: #6d28d9;
+            --purple-light: #c4b5fd;
+            --text-title: #f8fafc;
+            --text-subtitle: #cbd5e1;
+            --text-body: #e2e8f0;
+        }
+
         body { 
-            background-color: #0d1117; 
-            color: #c9d1d9; 
+            background-color: var(--bg-main); 
+            color: var(--text-body); 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             min-height: 100vh;
         }
+
         .card-plan {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            transition: all 0.2s ease-in-out;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease-in-out;
         }
+
         .card-plan:hover {
-            border-color: #58a6ff;
-            transform: translateY(-4px);
+            border-color: var(--card-hover-border);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.2);
         }
+
         .card-vip {
-            border: 2px solid #f1e05a !important;
-            background: linear-gradient(180deg, #1c1f26 0%, #161b22 100%);
+            border: 2px solid #eab308 !important;
+            background: linear-gradient(180deg, #1e152f 0%, #151124 100%);
+            box-shadow: 0 6px 25px rgba(234, 179, 8, 0.15);
         }
-        .badge-precio {
-            background-color: rgba(56, 139, 253, 0.15);
-            color: #58a6ff;
-            font-size: 0.8rem;
-            padding: 4px 8px;
-            border-radius: 6px;
+
+        .card-vip:hover {
+            border-color: #facc15 !important;
+            box-shadow: 0 10px 35px rgba(234, 179, 8, 0.3);
+        }
+
+        .badge-precio-lila {
+            background-color: rgba(139, 92, 246, 0.18);
+            color: #d8b4fe;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            display: inline-block;
+        }
+
+        .badge-precio-vip {
+            background-color: rgba(234, 179, 8, 0.15);
+            color: #fde047;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            display: inline-block;
+        }
+
+        .btn-purple {
+            background-color: var(--purple-primary);
+            color: #ffffff;
+            font-weight: 600;
+            border: 1px solid #8b5cf6;
+            border-radius: 8px;
+            padding: 10px 16px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-purple:hover {
+            background-color: var(--purple-hover);
+            color: #ffffff;
+            border-color: #a78bfa;
+        }
+
+        .plan-feature {
+            color: #f1f5f9;
+            font-size: 0.92rem;
+            margin-bottom: 0.65rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .check-icon {
+            color: #a78bfa;
+            font-weight: bold;
+            margin-right: 8px;
+            font-size: 1.05rem;
+        }
+
+        .check-icon-vip {
+            color: #facc15;
+            margin-right: 8px;
+        }
+
+        .currency-tag {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle-desc {
+            color: #94a3b8;
+            font-size: 0.88rem;
         }
     </style>
 </head>
 <body class="py-5">
     <div class="container">
+        <!-- Barra de navegación superior -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <a href="index.html" class="btn btn-outline-secondary btn-sm">← Volver al Panel</a>
-            <span class="text-muted small">AutoDemandas - Créditos de Generación</span>
+            <a href="index.html" class="btn btn-outline-secondary btn-sm text-light border-secondary">← Volver al Panel</a>
+            <span class="text-secondary small fw-medium">AutoDemandas - Créditos de Generación</span>
         </div>
 
+        <!-- Título y descripción principal -->
         <div class="text-center mb-5">
-            <h2 class="fw-bold text-white">Elegí tu Plan de Demandas</h2>
-            <p class="text-muted">Cada demanda generada descuenta 1 crédito. Con el Plan VIP generás sin límite.</p>
+            <h2 class="fw-bold" style="color: var(--text-title);">Elegí tu Plan de Demandas</h2>
+            <p class="fs-6 mt-2" style="color: var(--text-subtitle);">
+                Cada demanda generada descuenta 1 crédito. Con el Plan VIP generás sin límite.
+            </p>
         </div>
 
         <div class="row g-4 justify-content-center">
             <!-- 10 Demandas -->
             <div class="col-md-6 col-lg-4">
                 <div class="card card-plan h-100 p-4 d-flex flex-column text-center">
-                    <h4 class="fw-bold text-white">Pack 10</h4>
-                    <p class="text-muted small">Ideal para probar la herramienta</p>
-                    <div class="my-3">
-                        <span class="display-6 fw-bold text-white">$145.000</span>
-                        <span class="text-muted small">ARS</span>
+                    <h4 class="fw-bold" style="color: var(--text-title);">Pack 10</h4>
+                    <p class="subtitle-desc">Ideal para probar la herramienta</p>
+                    <div class="my-2">
+                        <span class="display-6 fw-bold" style="color: var(--text-title);">$145.000</span>
+                        <span class="currency-tag">ARS</span>
                     </div>
-                    <div class="mb-3">
-                        <span class="badge-precio">$14.500 c/u</span>
+                    <div class="mb-4">
+                        <span class="badge-precio-lila">$14.500 c/u</span>
                     </div>
-                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
-                        <li class="mb-2">✔️ 10 demandas en Word (.docx)</li>
-                        <li class="mb-2">✔️ Acceso a todas las plantillas</li>
-                        <li class="mb-2">✔️ Auditoría de datos con IA</li>
+                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
+                        <li class="plan-feature"><span class="check-icon">✓</span> 10 demandas en Word (.docx)</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Acceso a todas las plantillas</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Auditoría de datos con IA</li>
                     </ul>
-                    <button class="btn btn-primary w-100 fw-semibold" onclick="comprarPlan(this, 'plan_10')">
+                    <button class="btn btn-purple w-100" onclick="comprarPlan(this, 'plan_10')">
                         Adquirir Pack 10
                     </button>
                 </div>
@@ -75,21 +166,21 @@
             <!-- 20 Demandas -->
             <div class="col-md-6 col-lg-4">
                 <div class="card card-plan h-100 p-4 d-flex flex-column text-center">
-                    <h4 class="fw-bold text-white">Pack 20</h4>
-                    <p class="text-muted small">Para estudios con flujo constante</p>
-                    <div class="my-3">
-                        <span class="display-6 fw-bold text-white">$250.000</span>
-                        <span class="text-muted small">ARS</span>
+                    <h4 class="fw-bold" style="color: var(--text-title);">Pack 20</h4>
+                    <p class="subtitle-desc">Para estudios con flujo constante</p>
+                    <div class="my-2">
+                        <span class="display-6 fw-bold" style="color: var(--text-title);">$250.000</span>
+                        <span class="currency-tag">ARS</span>
                     </div>
-                    <div class="mb-3">
-                        <span class="badge-precio">$12.500 c/u</span>
+                    <div class="mb-4">
+                        <span class="badge-precio-lila">$12.500 c/u</span>
                     </div>
-                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
-                        <li class="mb-2">✔️ 20 demandas en Word (.docx)</li>
-                        <li class="mb-2">✔️ Acceso a todas las plantillas</li>
-                        <li class="mb-2">✔️ Auditoría de datos con IA</li>
+                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
+                        <li class="plan-feature"><span class="check-icon">✓</span> 20 demandas en Word (.docx)</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Acceso a todas las plantillas</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Auditoría de datos con IA</li>
                     </ul>
-                    <button class="btn btn-primary w-100 fw-semibold" onclick="comprarPlan(this, 'plan_20')">
+                    <button class="btn btn-purple w-100" onclick="comprarPlan(this, 'plan_20')">
                         Adquirir Pack 20
                     </button>
                 </div>
@@ -98,21 +189,21 @@
             <!-- 30 Demandas -->
             <div class="col-md-6 col-lg-4">
                 <div class="card card-plan h-100 p-4 d-flex flex-column text-center">
-                    <h4 class="fw-bold text-white">Pack 30</h4>
-                    <p class="text-muted small">Ahorro y capacidad ampliada</p>
-                    <div class="my-3">
-                        <span class="display-6 fw-bold text-white">$350.000</span>
-                        <span class="text-muted small">ARS</span>
+                    <h4 class="fw-bold" style="color: var(--text-title);">Pack 30</h4>
+                    <p class="subtitle-desc">Ahorro y capacidad ampliada</p>
+                    <div class="my-2">
+                        <span class="display-6 fw-bold" style="color: var(--text-title);">$350.000</span>
+                        <span class="currency-tag">ARS</span>
                     </div>
-                    <div class="mb-3">
-                        <span class="badge-precio">~$11.666 c/u</span>
+                    <div class="mb-4">
+                        <span class="badge-precio-lila">~$11.666 c/u</span>
                     </div>
-                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
-                        <li class="mb-2">✔️ 30 demandas en Word (.docx)</li>
-                        <li class="mb-2">✔️ Soporte prioritario</li>
-                        <li class="mb-2">✔️ Acceso completo a plantillas</li>
+                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
+                        <li class="plan-feature"><span class="check-icon">✓</span> 30 demandas en Word (.docx)</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Soporte prioritario</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Acceso completo a plantillas</li>
                     </ul>
-                    <button class="btn btn-primary w-100 fw-semibold" onclick="comprarPlan(this, 'plan_30')">
+                    <button class="btn btn-purple w-100" onclick="comprarPlan(this, 'plan_30')">
                         Adquirir Pack 30
                     </button>
                 </div>
@@ -121,21 +212,21 @@
             <!-- 45 Demandas -->
             <div class="col-md-6 col-lg-4">
                 <div class="card card-plan h-100 p-4 d-flex flex-column text-center">
-                    <h4 class="fw-bold text-white">Pack 45</h4>
-                    <p class="text-muted small">Máximo volumen por demanda</p>
-                    <div class="my-3">
-                        <span class="display-6 fw-bold text-white">$500.000</span>
-                        <span class="text-muted small">ARS</span>
+                    <h4 class="fw-bold" style="color: var(--text-title);">Pack 45</h4>
+                    <p class="subtitle-desc">Máximo volumen por demanda</p>
+                    <div class="my-2">
+                        <span class="display-6 fw-bold" style="color: var(--text-title);">$500.000</span>
+                        <span class="currency-tag">ARS</span>
                     </div>
-                    <div class="mb-3">
-                        <span class="badge-precio">~$11.111 c/u</span>
+                    <div class="mb-4">
+                        <span class="badge-precio-lila">~$11.111 c/u</span>
                     </div>
-                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
-                        <li class="mb-2">✔️ 45 demandas en Word (.docx)</li>
-                        <li class="mb-2">✔️ Mayor margen de ahorro</li>
-                        <li class="mb-2">✔️ Soporte prioritario</li>
+                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
+                        <li class="plan-feature"><span class="check-icon">✓</span> 45 demandas en Word (.docx)</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Mayor margen de ahorro</li>
+                        <li class="plan-feature"><span class="check-icon">✓</span> Soporte prioritario</li>
                     </ul>
-                    <button class="btn btn-primary w-100 fw-semibold" onclick="comprarPlan(this, 'plan_45')">
+                    <button class="btn btn-purple w-100" onclick="comprarPlan(this, 'plan_45')">
                         Adquirir Pack 45
                     </button>
                 </div>
@@ -144,24 +235,24 @@
             <!-- Plan VIP -->
             <div class="col-md-6 col-lg-4">
                 <div class="card card-plan card-vip h-100 p-4 d-flex flex-column text-center position-relative">
-                    <span class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle px-3 py-1 fw-bold">
+                    <span class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle px-3 py-1 fw-bold shadow-sm">
                         ILIMITADO
                     </span>
                     <h4 class="fw-bold text-warning mt-2">Plan VIP</h4>
-                    <p class="text-muted small">Uso profesional sin restricciones</p>
-                    <div class="my-3">
+                    <p class="text-warning-subtle small opacity-75">Uso profesional sin restricciones</p>
+                    <div class="my-2">
                         <span class="display-6 fw-bold text-white">$750.000</span>
-                        <span class="text-muted small">ARS</span>
+                        <span class="currency-tag">ARS</span>
                     </div>
-                    <div class="mb-3">
-                        <span class="badge bg-warning-subtle text-warning">Demandas Infinitas</span>
+                    <div class="mb-4">
+                        <span class="badge-precio-vip">Demandas Infinitas</span>
                     </div>
-                    <ul class="list-unstyled text-start small mb-4 flex-grow-1">
-                        <li class="mb-2">⭐ Generación ilimitada sin créditos</li>
-                        <li class="mb-2">⭐ Acceso total e inmediato a nuevas plantillas</li>
-                        <li class="mb-2">⭐ Soporte VIP directo</li>
+                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
+                        <li class="plan-feature"><span class="check-icon-vip">★</span> Generación ilimitada sin créditos</li>
+                        <li class="plan-feature"><span class="check-icon-vip">★</span> Acceso prioritario a nuevas plantillas</li>
+                        <li class="plan-feature"><span class="check-icon-vip">★</span> Soporte VIP exclusivo</li>
                     </ul>
-                    <button class="btn btn-warning w-100 fw-bold" onclick="comprarPlan(this, 'plan_vip')">
+                    <button class="btn btn-warning w-100 fw-bold py-2 text-dark shadow" onclick="comprarPlan(this, 'plan_vip')">
                         Contratar Plan VIP
                     </button>
                 </div>
@@ -180,7 +271,10 @@
                     icon: 'warning',
                     title: 'Sesión requerida',
                     text: 'Debes iniciar sesión para contratar un plan.',
-                    confirmButtonText: 'Ir al Login'
+                    confirmButtonText: 'Ir al Login',
+                    background: '#151124',
+                    color: '#f8fafc',
+                    confirmButtonColor: '#7c3aed'
                 }).then(() => {
                     window.location.href = "login.html";
                 });
@@ -209,13 +303,27 @@
                     const errorMsg = typeof data.detail === "string" 
                         ? data.detail 
                         : JSON.stringify(data.detail || "Error en la pasarela de pagos");
-                    Swal.fire('Error', errorMsg, 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: errorMsg,
+                        background: '#151124',
+                        color: '#f8fafc',
+                        confirmButtonColor: '#7c3aed'
+                    });
                     boton.disabled = false;
                     boton.innerHTML = textoOriginal;
                 }
             } catch (err) {
                 console.error("Error al conectar con la API:", err);
-                Swal.fire('Error de Conexión', 'No se pudo contactar con el servidor de pagos.', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo contactar con el servidor de pagos.',
+                    background: '#151124',
+                    color: '#f8fafc',
+                    confirmButtonColor: '#7c3aed'
+                });
                 boton.disabled = false;
                 boton.innerHTML = textoOriginal;
             }
