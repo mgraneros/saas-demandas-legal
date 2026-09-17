@@ -1039,6 +1039,15 @@ async function ejecutarPreview() {
     const token = localStorage.getItem("access_token");
     
     resultadoBox.textContent += "\n\nGenerando documento Word...";
+    // Muestra el cartel de carga y bloquea la pantalla
+    Swal.fire({
+        title: 'Procesando...',
+        text: 'Generando la demanda, por favor aguardá un instante.',
+        allowOutsideClick: false, // Evita que se cierre si hacen clic afuera
+        didOpen: () => {
+            Swal.showLoading(); // Activa la animación de carga
+        }
+    });
 
     try {
       const response = await fetch(`${API_URL}/generar-demanda/`, {
