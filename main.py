@@ -1272,10 +1272,21 @@ async def extraer_datos_acta(
     except json.JSONDecodeError:
         print("❌ [DEBUG IA] Error: La respuesta de la IA no era un JSON válido.")
         raise HTTPException(status_code=500, detail="La IA no devolvió un formato JSON válido. Intenta nuevamente.")
+    
     except Exception as e:
-        print(f"❌ [DEBUG IA] Error crítico: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error interno al procesar el acta con IA: {str(e)}")
+        error_msg = str(e)
+        print(f"❌ [DEBUG IA] Error crítico: {error_msg}")
         
+        # --- NUEVA LÓGICA: Escudo contra el límite de cuota (429) ---
+        if "429" in error_msg or "quota" in error_msg.lower():
+            raise HTTPException(
+                status_code=429, 
+                detail="Nuestros servidores de IA están procesando un alto volumen de actas. Por favor, aguardá 1 minuto y volvé a intentar."
+            )
+        # ------------------------------------------------------------
+        
+        # Si es otro error raro, sigue mostrándolo como antes
+        raise HTTPException(status_code=500, detail=f"Error interno al procesar el acta con IA: {error_msg}")
 
 @app.get("/modelos-ia", summary="Listar modelos permitidos por mi API Key")
 def listar_modelos():
