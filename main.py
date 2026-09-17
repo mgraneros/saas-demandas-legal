@@ -80,6 +80,7 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://saas-demandas-legal.vercel.app",
+    "https://saas-demandas-legal-iota.vercel.app",
     "https://autodemandas.com.ar",            # Tu nuevo dominio raíz
     "https://www.autodemandas.com.ar",
     FRONTEND_URL,
