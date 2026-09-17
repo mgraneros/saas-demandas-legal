@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planes de Créditos - AutoDemandas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { 
             background-color: #0d1117; 
             color: #c9d1d9; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
         }
         .card-plan {
             background-color: #161b22;
@@ -103,11 +105,11 @@
                         <span class="text-muted small">ARS</span>
                     </div>
                     <div class="mb-3">
-                        <span class="badge-precio">$11.666 c/u</span>
+                        <span class="badge-precio">~$11.666 c/u</span>
                     </div>
                     <ul class="list-unstyled text-start small mb-4 flex-grow-1">
                         <li class="mb-2">✔️ 30 demandas en Word (.docx)</li>
-                        <li class="mb-2">✔️ Soporte técnico prioritario</li>
+                        <li class="mb-2">✔️ Soporte prioritario</li>
                         <li class="mb-2">✔️ Acceso completo a plantillas</li>
                     </ul>
                     <button class="btn btn-primary w-100 fw-semibold" onclick="comprarPlan(this, 'plan_30')">
@@ -126,11 +128,11 @@
                         <span class="text-muted small">ARS</span>
                     </div>
                     <div class="mb-3">
-                        <span class="badge-precio">$11.111 c/u</span>
+                        <span class="badge-precio">~$11.111 c/u</span>
                     </div>
                     <ul class="list-unstyled text-start small mb-4 flex-grow-1">
                         <li class="mb-2">✔️ 45 demandas en Word (.docx)</li>
-                        <li class="mb-2">✔️ Mayor margen de ahorro unitario</li>
+                        <li class="mb-2">✔️ Mayor margen de ahorro</li>
                         <li class="mb-2">✔️ Soporte prioritario</li>
                     </ul>
                     <button class="btn btn-primary w-100 fw-semibold" onclick="comprarPlan(this, 'plan_45')">
@@ -146,7 +148,7 @@
                         ILIMITADO
                     </span>
                     <h4 class="fw-bold text-warning mt-2">Plan VIP</h4>
-                    <p class="text-muted small">Uso profesional ilimitado</p>
+                    <p class="text-muted small">Uso profesional sin restricciones</p>
                     <div class="my-3">
                         <span class="display-6 fw-bold text-white">$750.000</span>
                         <span class="text-muted small">ARS</span>
@@ -174,14 +176,20 @@
             const token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
             if (!token) {
-                alert("Debes iniciar sesión para comprar un plan.");
-                window.location.href = "login.html";
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sesión requerida',
+                    text: 'Debes iniciar sesión para contratar un plan.',
+                    confirmButtonText: 'Ir al Login'
+                }).then(() => {
+                    window.location.href = "login.html";
+                });
                 return;
             }
 
             const textoOriginal = boton.innerHTML;
             boton.disabled = true;
-            boton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Conectando...';
+            boton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Conectando con Mercado Pago...';
 
             try {
                 const response = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
@@ -200,14 +208,14 @@
                 } else {
                     const errorMsg = typeof data.detail === "string" 
                         ? data.detail 
-                        : JSON.stringify(data.detail || "Error en la pasarela");
-                    alert("No se pudo iniciar el pago: " + errorMsg);
+                        : JSON.stringify(data.detail || "Error en la pasarela de pagos");
+                    Swal.fire('Error', errorMsg, 'error');
                     boton.disabled = false;
                     boton.innerHTML = textoOriginal;
                 }
             } catch (err) {
-                console.error("Error al contactar con la API:", err);
-                alert("Error de conexión con el servidor de pagos.");
+                console.error("Error al conectar con la API:", err);
+                Swal.fire('Error de Conexión', 'No se pudo contactar con el servidor de pagos.', 'error');
                 boton.disabled = false;
                 boton.innerHTML = textoOriginal;
             }
