@@ -479,6 +479,11 @@ def generar_demanda(
         lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
     else:
         lista_doc_limpia = []
+    if datos.ListadoSecuelas:
+        # Separamos por coma y limpiamos espacios vacíos
+        lista_secuelas_limpia = [secuela.strip() for secuela in datos.ListadoSecuelas.split(",") if secuela.strip()]
+    else:
+        lista_secuelas_limpia = []
 
     datos_procesados = {
         "NombreActor": datos.NombreActor,
@@ -513,7 +518,7 @@ def generar_demanda(
         "DomicilioAseguradora": datos.DomicilioAseguradora,
         "DescripcionHechos": datos.DescripcionHechos,
         "LesionesDetalles": datos.LesionesDetalles,
-        "ListadoSecuelas": datos.ListadoSecuelas,
+        "ListadoSecuelas": lista_secuelas_limpia,
         "VehiculoActor": datos.VehiculoActor,
         "TallerNombre": datos.TallerNombre,
         "DirecciónTaller": datos.DirecciónTaller,
