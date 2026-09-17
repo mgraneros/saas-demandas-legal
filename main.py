@@ -802,6 +802,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
             },
             "2_DATOS_DEMANDADO_Y_SEGURO": {
                 "NombreDemandado": datos.NombreDemandado,
+                "DniDemandado": datos.DniDemandado,
                 "DomicilioDemandado": datos.DomicilioDemandado,
                 "AutoDemandado": datos.AutoDemandado,
                 "NombreAseguradora": datos.NombreAseguradora,
@@ -812,7 +813,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
                 "FechaHecho": datos.FechaHecho,
                 "LugarHecho": datos.LugarHecho,
                 "DescripcionHechos": datos.DescripcionHechos,
-                "LesionesDetalles": datos.ListadoSecuelas,
+                "LesionesDetalles": datos.LesionesDetalles,
                 "ListadoSecuelas": datos.ListadoSecuelas
             },
             "4_PRUEBA_Y_ATENCION": {
