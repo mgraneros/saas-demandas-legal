@@ -1061,6 +1061,10 @@ async function ejecutarPreview() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+    // 1. Vaciamos el formulario (Reemplazá 'form-demanda' por el ID real de tu <form>)
+      document.getElementById('formularioDemanda').reset();
+    // 2. Volvemos a ocultar los campos condicionales (Esguince, Fractura, etc)
+      document.querySelectorAll('.extra-input').forEach(input => input.classList.add('d-none'));
 
       resultadoBox.textContent += "\n¡Documento generado y descargado con éxito!";
 
