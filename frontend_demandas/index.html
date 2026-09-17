@@ -63,9 +63,9 @@
       </div>
 
       <!-- En el menú lateral de index.html -->
-        <button id="btn-mercadopago" onclick="window.location.href='suscripcion.html'" class="btn btn-outline-warning btn-sm">
-        💳 Ver Planes y Precios
-        </button>
+        <a href="suscripcion.html" class="btn btn-outline-warning btn-sm w-100 text-decoration-none">
+            💳 Ver Planes y Precios
+        </a>
 
       <button onclick="cerrarSesion()" class="btn btn-outline-danger btn-sm">
         Cerrar Sesión
@@ -1098,56 +1098,9 @@ async function ejecutarPreview() {
     }
   }
 
-  async function pagarSuscripcionMensual(e, planId = "plan_10") {
-    const btn = (e && e.target) ? (e.target.closest('button') || e.target) : null;
-    const textoOriginal = btn ? btn.innerHTML : "";
-    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
-    if (!token) {
-        alert("Tu sesión ha expirado. Por favor iniciá sesión nuevamente.");
-        window.location.href = "login.html";
-        return;
-    }
-
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Conectando con Mercado Pago...';
-    }
-
-    try {
-        const response = await fetch(`${API_URL}/crear-preferencia-suscripcion/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                plan_id: planId
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.init_point) {
-            window.location.href = data.init_point;
-        } else {
-            const errorMsg = typeof data.detail === 'string' 
-                ? data.detail 
-                : JSON.stringify(data.detail || data.error || 'Error del servidor');
-            alert('No se pudo iniciar la suscripción: ' + errorMsg);
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = textoOriginal;
-            }
-        }
-    } catch (error) {
-        console.error('Error al procesar el pago:', error);
-        alert('Error de conexión con el servidor de pagos.');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = textoOriginal;
-        }
-    }
+  function pagarSuscripcionMensual(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    window.location.href = "suscripcion.html";
 }
   function evaluarRetornoPago() {
     const urlParams = new URLSearchParams(window.location.search);
