@@ -87,90 +87,92 @@
     </div>
     <!-- TABLERO MI CUENTA -->
 <section id="seccion-cuenta" class="panel-card seccion-app" style="display: none; padding: 2rem; max-width: 900px;">
-  <h2 style="font-size: 1.75rem; font-weight: 700; color: #f8fafc; margin-bottom: 1.5rem;">Mi Cuenta</h2>
+  <h2 style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.5rem;">Mi Cuenta</h2>
 
-  <div id="cuenta-loading" style="color: #94a3b8;">Cargando perfil...</div>
+  <div id="cuenta-loading" style="color: var(--text-muted);">Cargando perfil...</div>
 
   <div id="cuenta-datos" style="display: none;">
     <!-- Grid de métricas / datos -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-      <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.2rem;">
-        <span style="display: block; font-size: 0.8rem; color: #a78bfa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Email</span>
-        <span id="perfil-email" style="display: block; color: #f1f5f9; font-size: 0.95rem; margin-top: 4px; word-break: break-all;">-</span>
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;">
+        <span style="display: block; font-size: 0.8rem; color: var(--accent-blue); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Email</span>
+        <span id="perfil-email" style="display: block; color: var(--text-main); font-size: 0.95rem; margin-top: 4px; word-break: break-all;">-</span>
       </div>
 
-      <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.2rem;">
-        <span style="display: block; font-size: 0.8rem; color: #a78bfa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Estudio Jurídico</span>
-        <span id="perfil-estudio" style="display: block; color: #f1f5f9; font-size: 1rem; font-weight: 600; margin-top: 4px;">-</span>
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;">
+        <span style="display: block; font-size: 0.8rem; color: var(--accent-blue); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Estudio Jurídico</span>
+        <span id="perfil-estudio" style="display: block; color: var(--text-main); font-size: 1rem; font-weight: 600; margin-top: 4px;">-</span>
       </div>
 
-      <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.2rem;">
-        <span style="display: block; font-size: 0.8rem; color: #a78bfa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Créditos Disponibles</span>
-        <span id="perfil-creditos" style="display: block; color: #38bdf8; font-size: 1.6rem; font-weight: 700; margin-top: 2px;">-</span>
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;">
+        <span style="display: block; font-size: 0.8rem; color: var(--accent-blue); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Créditos Disponibles</span>
+        <span id="perfil-creditos" style="display: block; color: var(--accent-blue); font-size: 1.6rem; font-weight: 700; margin-top: 2px;">-</span>
       </div>
 
-      <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.2rem;">
-        <span style="display: block; font-size: 0.8rem; color: #a78bfa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Plan Actual</span>
-        <span id="perfil-plan" style="display: inline-block; background: rgba(167, 139, 250, 0.15); color: #c4b5fd; padding: 3px 10px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-top: 6px;">-</span>
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;">
+        <span style="display: block; font-size: 0.8rem; color: var(--accent-blue); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Plan Actual</span>
+        <span id="perfil-plan" style="display: inline-block; background: var(--border-color); color: var(--text-main); padding: 3px 10px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; margin-top: 6px;">-</span>
       </div>
 
-      <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.2rem;">
-        <span style="display: block; font-size: 0.8rem; color: #a78bfa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Rol en el Estudio</span>
-        <span id="perfil-rol" style="display: block; color: #f1f5f9; font-size: 0.95rem; text-transform: capitalize; margin-top: 4px;">-</span>
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;">
+        <span style="display: block; font-size: 0.8rem; color: var(--accent-blue); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Rol en el Estudio</span>
+        <span id="perfil-rol" style="display: block; color: var(--text-main); font-size: 0.95rem; text-transform: capitalize; margin-top: 4px;">-</span>
       </div>
 
-      <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.2rem;">
-        <span style="display: block; font-size: 0.8rem; color: #a78bfa; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Tipo de Cuenta</span>
-        <span id="perfil-tipo" style="display: block; color: #cbd5e1; font-size: 0.95rem; margin-top: 4px;">-</span>
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem;">
+        <span style="display: block; font-size: 0.8rem; color: var(--accent-blue); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Tipo de Cuenta</span>
+        <span id="perfil-tipo" style="display: block; color: var(--text-main); font-size: 0.95rem; margin-top: 4px;">-</span>
       </div>
     </div>
-  </div>
 
   <!-- Tarjeta de Seguridad -->
-  <div style="background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.8rem; max-width: 460px;">
-    <h3 style="font-size: 1.2rem; font-weight: 600; color: #f8fafc; margin-bottom: 1.2rem;">Seguridad</h3>
-    <form id="form-cambio-password" style="display: flex; flex-direction: column; gap: 1rem;">
-      <div>
-        <label for="password_actual" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Contraseña Actual</label>
-        <input type="password" id="password_actual" required style="width: 100%; padding: 10px 12px; background: #0b0914; border: 1px solid #332b4a; border-radius: 8px; color: #f8fafc; font-size: 0.9rem; outline: none;">
-      </div>
-      <div>
-        <label for="password_nueva" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Nueva Contraseña</label>
-        <input type="password" id="password_nueva" minlength="6" required style="width: 100%; padding: 10px 12px; background: #0b0914; border: 1px solid #332b4a; border-radius: 8px; color: #f8fafc; font-size: 0.9rem; outline: none;">
-      </div>
-      <button type="submit" id="btn-guardar-password" style="margin-top: 6px; padding: 11px; background: #7c3aed; color: #fff; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;">
-        Actualizar Contraseña
-      </button>
-    </form>
-    <div id="password-feedback" style="display: none; margin-top: 12px; font-size: 0.85rem; font-weight: 600;"></div>
-  </div>
-  <!-- GESTIÓN DE EQUIPO (Solo Titulares) -->
-  <div id="bloque-gestion-equipo" style="display: none; margin-top: 2rem; background: #13111c; border: 1px solid #27203b; border-radius: 12px; padding: 1.5rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
-      <div>
-        <h3 style="font-size: 1.2rem; font-weight: 600; color: #f8fafc; margin: 0;">Gestión de Asistentes</h3>
-        <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0;">Crea accesos directos para tus empleados vinculados a tu saldo común.</p>
-      </div>
-      <button type="button" onclick="abrirModalAsistente()" style="background: #7c3aed; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
-        + Nuevo Asistente
-      </button>
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.8rem; max-width: 460px;">
+      <h3 style="font-size: 1.2rem; font-weight: 600; color: var(--text-main); margin-bottom: 1.2rem;">Seguridad</h3>
+      <form id="form-cambio-password" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div>
+          <label for="password_actual" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Contraseña Actual</label>
+          <input type="password" id="password_actual" required style="width: 100%; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; outline: none;">
+        </div>
+        <div>
+          <label for="password_nueva" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Nueva Contraseña</label>
+          <input type="password" id="password_nueva" minlength="6" required style="width: 100%; padding: 10px 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; outline: none;">
+        </div>
+        <button type="submit" id="btn-guardar-password" style="margin-top: 6px; padding: 11px; background: var(--accent-blue); color: #fff; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;">
+          Actualizar Contraseña
+        </button>
+      </form>
+      <div id="password-feedback" style="display: none; margin-top: 12px; font-size: 0.85rem; font-weight: 600;"></div>
     </div>
 
-    <div style="overflow-x: auto;">
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left;">
-        <thead>
-          <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8;">
-            <th style="padding: 10px;">ID</th>
-            <th style="padding: 10px;">EMAIL</th>
-            <th style="padding: 10px; text-align: right;">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-equipo-body">
-          <!-- Render dinámico -->
-        </tbody>
-      </table>
+    <!-- GESTIÓN DE EQUIPO (Solo Titulares) -->
+    <div id="bloque-gestion-equipo" style="display: none; margin-top: 2rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+        <div>
+          <h3 style="font-size: 1.2rem; font-weight: 600; color: var(--text-main); margin: 0;">Gestión de Asistentes</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0;">Crea accesos directos para tus empleados vinculados a tu saldo común.</p>
+        </div>
+        <button type="button" onclick="abrirModalAsistente()" style="background: var(--accent-blue); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          + Nuevo Asistente
+        </button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+              <th style="padding: 10px;">ID</th>
+              <th style="padding: 10px;">EMAIL</th>
+              <th style="padding: 10px; text-align: right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-equipo-body">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
+</section>
 
   <!-- MODAL CREAR ASISTENTE -->
   <div id="modal-nuevo-asistente" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">

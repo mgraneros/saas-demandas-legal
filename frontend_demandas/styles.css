@@ -434,3 +434,64 @@ div[style*="overflow-y"]::-webkit-scrollbar-thumb {
 div[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
   background: var(--accent-blue);
 }
+
+/* ===================================
+   ADAPTACIÓN SECCIÓN: MI CUENTA (LIGHT / DARK)
+   =================================== */
+
+/* Tarjetas y paneles de Mi Cuenta */
+#seccion-cuenta .card,
+#seccion-cuenta [class*="card"],
+.account-card,
+.stat-card,
+.security-card {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Encabezados y títulos de las tarjetas (Seguridad, Gestión, etc.) */
+#seccion-cuenta h4,
+#seccion-cuenta h5,
+#seccion-cuenta h6,
+#seccion-cuenta .card-title,
+#seccion-cuenta strong {
+  color: var(--text-main) !important;
+}
+
+/* Subtítulos pequeños de las tarjetas de datos (EMAIL, ESTUDIO JURÍDICO, etc.) */
+#seccion-cuenta small,
+#seccion-cuenta span.text-muted,
+#seccion-cuenta .text-secondary {
+  color: var(--text-muted) !important;
+}
+
+/* Textos informativos de valor (ej: nombres, roles, créditos) */
+#seccion-cuenta p,
+#seccion-cuenta .lead {
+  color: var(--text-main) !important;
+}
+
+/* Tablas dentro de Mi Cuenta (Gestión de asistentes) */
+#seccion-cuenta .table {
+  color: var(--text-main) !important;
+}
+
+#seccion-cuenta .table th,
+#seccion-cuenta .table td {
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+
+[data-theme="light"] #seccion-cuenta .table th {
+  background-color: #F1F5F9 !important;
+  color: var(--text-muted) !important;
+}
+
+/* Badges informativos (como el badge 'Free') */
+[data-theme="light"] #seccion-cuenta .badge.bg-dark,
+[data-theme="light"] #seccion-cuenta .badge {
+  background-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
