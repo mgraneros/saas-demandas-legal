@@ -437,3 +437,28 @@ div[style*="overflow-y"]::-webkit-scrollbar-thumb,
 div[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
   background: #7c3aed;
 }
+
+/* --- TEMA CLARO (Default) --- */
+.box-scroll-dinamico {
+  background-color: #ffffff;
+  border-color: #dee2e6;
+  color: #212529;
+}
+.box-scroll-dinamico label.form-check-label {
+  color: #212529 !important;
+}
+
+/* --- TEMA OSCURO --- */
+[data-bs-theme="dark"] .box-scroll-dinamico,
+body.dark-mode .box-scroll-dinamico,
+body.dark-theme .box-scroll-dinamico {
+  background-color: #0b0a12 !important;
+  border-color: #211c2e !important;
+  color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .box-scroll-dinamico label.form-check-label,
+body.dark-mode .box-scroll-dinamico label.form-check-label,
+body.dark-theme .box-scroll-dinamico label.form-check-label {
+  color: #f1f5f9 !important;
+}
