@@ -388,77 +388,49 @@ p.text-muted {
   color: #64748B !important; /* Gris sobrio para fondo claro */
 }
 
-/* Contenedores con scroll para secuelas y prueba documental */
-#contenedor-secuelas,
-#contenedor-prueba-documental,
-.listado-secuelas-box,
-.prueba-documental-box,
-div[style*="overflow-y"] {
-  background-color: #161224 !important;
-  border: 1px solid #2e2640 !important;
-  color: #f1f5f9 !important;
-  border-radius: 8px;
+/* ===================================
+   CONTENEDORES SCROLL (Secuelas & Documental)
+   =================================== */
+
+.box-scroll-dinamico,
+.border.rounded.p-2.overflow-y-auto,
+[data-theme="light"] .box-scroll-dinamico,
+[data-theme="light"] .border.rounded.p-2.overflow-y-auto {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
 }
 
-/* Textos de los labels de checkboxes en modo oscuro */
-#contenedor-secuelas label,
-#contenedor-prueba-documental label,
-.form-check-label {
-  color: #e2e8f0 !important;
+[data-theme="dark"] .box-scroll-dinamico,
+[data-theme="dark"] .border.rounded.p-2.overflow-y-auto {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+
+/* Textos de los labels de checkboxes en modo claro y oscuro */
+.box-scroll-dinamico label,
+.box-scroll-dinamico .form-check-label {
+  color: var(--text-main) !important;
   font-size: 0.9rem;
   font-weight: 500;
 }
 
-/* Estilo para los checkboxes en modo oscuro */
-.form-check-input {
-  background-color: #1f1a30 !important;
-  border: 1px solid #4c3b70 !important;
-}
-
-.form-check-input:checked {
-  background-color: #7c3aed !important;
-  border-color: #a78bfa !important;
-}
-
-/* Scrollbar personalizada para que no quede blanca */
-div[style*="overflow-y"]::-webkit-scrollbar,
-#contenedor-secuelas::-webkit-scrollbar {
+/* Scrollbar personalizada */
+.box-scroll-dinamico::-webkit-scrollbar,
+div[style*="overflow-y"]::-webkit-scrollbar {
   width: 8px;
 }
-div[style*="overflow-y"]::-webkit-scrollbar-track,
-#contenedor-secuelas::-webkit-scrollbar-track {
-  background: #0f0c1b;
+.box-scroll-dinamico::-webkit-scrollbar-track,
+div[style*="overflow-y"]::-webkit-scrollbar-track {
+  background: transparent;
 }
-div[style*="overflow-y"]::-webkit-scrollbar-thumb,
-#contenedor-secuelas::-webkit-scrollbar-thumb {
-  background: #3b2d54;
+.box-scroll-dinamico::-webkit-scrollbar-thumb,
+div[style*="overflow-y"]::-webkit-scrollbar-thumb {
+  background: var(--border-color);
   border-radius: 4px;
 }
+.box-scroll-dinamico::-webkit-scrollbar-thumb:hover,
 div[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
-  background: #7c3aed;
-}
-
-/* --- TEMA CLARO (Default) --- */
-.box-scroll-dinamico {
-  background-color: #ffffff;
-  border-color: #dee2e6;
-  color: #212529;
-}
-.box-scroll-dinamico label.form-check-label {
-  color: #212529 !important;
-}
-
-/* --- TEMA OSCURO --- */
-[data-bs-theme="dark"] .box-scroll-dinamico,
-body.dark-mode .box-scroll-dinamico,
-body.dark-theme .box-scroll-dinamico {
-  background-color: #0b0a12 !important;
-  border-color: #211c2e !important;
-  color: #f1f5f9 !important;
-}
-
-[data-bs-theme="dark"] .box-scroll-dinamico label.form-check-label,
-body.dark-mode .box-scroll-dinamico label.form-check-label,
-body.dark-theme .box-scroll-dinamico label.form-check-label {
-  color: #f1f5f9 !important;
+  background: var(--accent-blue);
 }
