@@ -1243,12 +1243,11 @@ async function cargarHistorial() {
         <td>
             <div class="d-flex gap-1 align-items-center">
 
+                <!-- AQUÍ ESTÁ EL BOTÓN ACTUALIZADO -->
                 <button type="button"
-                    class="btn btn-sm btn-outline-primary"
-                      title="Descargar Word"
-                      onclick="descargarDocumentoSeguro('https://saas-demandas-legal.onrender.com/descargar-demanda/${d.id}', 'Demanda_${d.id}.docx')">
-                      Descargar .docx
-                </button>
+                  class="btn btn-sm btn-outline-primary"
+                  title="Descargar Word"
+                  onclick="descargarDocumentoSeguro('https://saas-demandas-legal.onrender.com/descargar-demanda/${d.id}', 'Demanda_${d.id}.docx')">Descargar .docx</button>
 
                 <button type="button"
                   class="btn btn-sm btn-outline-secondary"
