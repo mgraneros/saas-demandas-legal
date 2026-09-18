@@ -1240,30 +1240,30 @@ async function cargarHistorial() {
           </td>
           
           <!-- BOTONES DE ACCIÓN (Descargar, Notas y Archivar) -->
-          <td>
+        <td>
             <div class="d-flex gap-1 align-items-center">
-              
-              <!-- AQUÍ ESTÁ EL BOTÓN ACTUALIZADO -->
-              <button type="button" 
-                      class="btn btn-sm btn-outline-primary" 
-                      title="Descargar Word" 
-                      onclick="descargarDocumentoSeguro('https://saas-demandas-legal.onrender.com/descargar-demanda/${d.id}', 'Demanda_${d.id}.docx')"
-                Descargar .docx
-              </button>
 
+                <button type="button"
+                    class="btn btn-sm btn-outline-primary"
+                      title="Descargar Word"
+                      onclick="descargarDocumentoSeguro('https://saas-demandas-legal.onrender.com/descargar-demanda/${d.id}', 'Demanda_${d.id}.docx')">
+                      Descargar .docx
+                </button>
 
-              <button type="button" 
-                      class="btn btn-sm btn-outline-secondary" 
-                      title="Ver / Editar Notas"
-                      onclick="abrirModalNotas(${d.id}, '${notasSeguras}')">
-                📝 Notas
-              </button>
-              <button type="button" 
-                      class="btn btn-sm btn-outline-danger" 
-                      title="Archivar expediente"
-                      onclick="archivarDemanda(${d.id})">
-                📦 Archivar
-              </button>
+                <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Ver / Editar Notas"
+                    onclick="abrirModalNotas(${d.id}, '${notasSeguras}')">
+                  📝 Notas
+                </button>
+
+                <button type="button"
+                  class="btn btn-sm btn-outline-danger"
+                    title="Archivar expediente"
+                    onclick="archivarDemanda(${d.id})">
+                   📦 Archivar
+                </button>
+
             </div>
           </td>
         </tr>
