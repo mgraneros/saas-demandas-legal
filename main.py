@@ -523,7 +523,7 @@ def generar_demanda(
         "VehiculoActor": datos.VehiculoActor,
         "TallerNombre": datos.TallerNombre,
         "DirecciónTaller": datos.DirecciónTaller,
-        
+        "Intervencion": datos.Intervencion,
         "ListaDocumental": lista_doc_limpia,
         
         "CentroMedico": datos.CentroMedico,
