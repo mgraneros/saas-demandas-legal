@@ -27,8 +27,8 @@ window.fetch = async (...args) => {
   return response;
 };
 
-// 3. DETECTOR DE INACTIVIDAD (30 MINUTOS)
-const TIEMPO_MAXIMO_INACTIVIDAD = 30 * 60 * 1000; // 30 minutos
+// 3. DETECTOR DE INACTIVIDAD (60 MINUTOS)
+const TIEMPO_MAXIMO_INACTIVIDAD = 60 * 60 * 1000; // 60 minutos
 let timeoutInactividad;
 
 function reiniciarContadorInactividad() {
@@ -39,7 +39,7 @@ function reiniciarContadorInactividad() {
   if (!token) return;
 
   timeoutInactividad = setTimeout(() => {
-    forzarCierreSesion("Tu sesión se cerró por 30 minutos de inactividad.");
+    forzarCierreSesion("Tu sesión se cerró por 60 minutos de inactividad.");
   }, TIEMPO_MAXIMO_INACTIVIDAD);
 }
 
