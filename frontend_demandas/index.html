@@ -417,44 +417,75 @@
                   </div>
 
 <!-- 4. Prueba y Atención -->
-<h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
-<div class="row mb-3">
-  
-  <div class="col-md-12 mb-3">
-    <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
-    <div class="d-flex gap-3">
-      <!-- OPCIÓN 1: Sin Datos -->
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="intervencion" id="int_sindatos" value="Sin Datos" onchange="toggleComisaria()" checked>
-        <label class="form-check-label small" for="int_sindatos">Sin Datos</label>
-      </div>
-      <!-- OPCIÓN 2: Solo SAME -->
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME" onchange="toggleComisaria()">
-        <label class="form-check-label small" for="int_same">Solo SAME</label>
-      </div>
-      <!-- OPCIÓN 3: Solo Policía -->
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="intervencion" id="int_policia" value="Solo Policía" onchange="toggleComisaria()">
-        <label class="form-check-label small" for="int_policia">Solo Policía</label>
-      </div>
-      <!-- OPCIÓN 4: SAME y Policía -->
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía" onchange="toggleComisaria()">
-        <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
-      </div>
-    </div>
-    <!-- CAMPO OCULTO: Comisaría (Se muestra solo si hay Policía) -->
-    <input type="text" class="form-control form-control-sm mt-2 d-none" id="Comisaria" placeholder="Ej: Comisaría 14A o Unidad Fiscal Sur..." style="background-color: var(--input-bg); color: var(--text-main);">
-  </div>
+                  <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
+                  <div class="row mb-3">
+                    
+                    <div class="col-md-12 mb-3">
+                      <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
+                      <div class="d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_sindatos" value="Sin Datos" onchange="toggleComisaria()" checked>
+                          <label class="form-check-label small" for="int_sindatos">Sin Datos</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME" onchange="toggleComisaria()">
+                          <label class="form-check-label small" for="int_same">Solo SAME</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_policia" value="Solo Policía" onchange="toggleComisaria()">
+                          <label class="form-check-label small" for="int_policia">Solo Policía</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía" onchange="toggleComisaria()">
+                          <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
+                        </div>
+                      </div>
+                      <!-- CAMPO OCULTO: Comisaría -->
+                      <input type="text" class="form-control form-control-sm mt-2 d-none" id="Comisaria" placeholder="Ej: Comisaría 14A o Unidad Fiscal Sur..." style="background-color: var(--input-bg); color: var(--text-main);">
+                    </div>
 
-  <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
-  <div class="col-md-6 mb-2 campo-auto-auto" style="display: none;"><label class="form-label fw-bold small text-info">Fecha de Atención Médica (Auto vs Auto)</label><input type="date" class="form-control form-control-sm" id="FechaMedica"></div>
-  <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
-  <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
-  <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
-  <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="date" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
-
+                    <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
+                    <div class="col-md-6 mb-2 campo-auto-auto" style="display: none;"><label class="form-label fw-bold small text-info">Fecha de Atención Médica (Auto vs Auto)</label><input type="date" class="form-control form-control-sm" id="FechaMedica"></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Dir. Centros Médicos</label><input type="text" class="form-control form-control-sm" id="CentroMedicoDireccion" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Taller Mecánico</label><input type="text" class="form-control form-control-sm" id="TallerNombre" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label small">Dir. Taller</label><input type="text" class="form-control form-control-sm" id="DirecciónTaller" required></div>
+                    <div class="col-md-12 mb-2"><label class="form-label small">Fecha Presupuesto</label><input type="date" class="form-control form-control-sm" id="FechaPresupuesto" required></div>
+                    
+                    <div class="col-md-12 mb-2 mt-2">
+                      <label class="form-label fw-bold small text-muted">Prueba Documental</label>
+                      <div class="border rounded p-2 overflow-y-auto" style="max-height: 200px; background-color: #121217; border-color: var(--border-color) !important;">
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Acta de Mediación" id="doc1"><label class="form-check-label small text-white" for="doc1">Acta de Mediación</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Actor" id="doc2"><label class="form-check-label small text-white" for="doc2">DNI Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia de Conducir Actor" id="doc3"><label class="form-check-label small text-white" for="doc3">Licencia de Conducir Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula de Identificación Vehicular Actor" id="doc4"><label class="form-check-label small text-white" for="doc4">Cédula de Identificación Vehicular Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Denuncia Administrativa Actor" id="doc5"><label class="form-check-label small text-white" for="doc5">Denuncia Administrativa Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Certificado de Cobertura Actor" id="doc6"><label class="form-check-label small text-white" for="doc6">Certificado de Cobertura Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="DNI Demandado" id="doc7"><label class="form-check-label small text-white" for="doc7">DNI Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Licencia Nacional de Conducir Demandado" id="doc8"><label class="form-check-label small text-white" for="doc8">Licencia Nacional de Conducir Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Cédula Identificación Vehicular Demandado" id="doc9"><label class="form-check-label small text-white" for="doc9">Cédula Identificación Vehicular Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Póliza de Seguro Demandado" id="doc10"><label class="form-check-label small text-white" for="doc10">Póliza de Seguro Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Croquis del lugar del siniestro" id="doc11"><label class="form-check-label small text-white" for="doc11">Croquis del lugar del siniestro</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Actor" id="doc12"><label class="form-check-label small text-white" for="doc12">Imágenes Daños Vehículo Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Daños Vehículo Demandado" id="doc13"><label class="form-check-label small text-white" for="doc13">Imágenes Daños Vehículo Demandado</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Lesiones Actor" id="doc14"><label class="form-check-label small text-white" for="doc14">Imágenes Lesiones Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Imágenes Momento del Siniestro" id="doc15"><label class="form-check-label small text-white" for="doc15">Imágenes Momento del Siniestro</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Actuaciones Sumariales" id="doc16"><label class="form-check-label small text-white" for="doc16">Actuaciones Sumariales</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Constancias de Atención Médica Actor" id="doc17"><label class="form-check-label small text-white" for="doc17">Constancias de Atención Médica Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Estudios Médicos Actor" id="doc18"><label class="form-check-label small text-white" for="doc18">Estudios Médicos Actor</label></div>
+                        <div class="form-check"><input class="form-check-input doc-checkbox" type="checkbox" value="Video del momento del siniestro" id="doc19"><label class="form-check-label small text-white" for="doc19">Video del momento del siniestro</label></div>
+                        
+                        <!-- NUEVO: Espacio para completar libremente -->
+                        <hr class="border-secondary my-2" style="opacity: 0.3;">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="check_doc_libre" onchange="document.getElementById('DocLibre').classList.toggle('d-none', !this.checked)">
+                          <label class="form-check-label small fw-bold fst-italic" for="check_doc_libre" style="color: var(--text-muted);">
+                            + SUMAR ESPACIO PARA COMPLETAR LIBREMENTE
+                          </label>
+                        </div>
+                        <input type="text" class="form-control form-control-sm mt-2 d-none" id="DocLibre" placeholder="Ej: Denuncia penal, Acta de secuestro..." style="background-color: var(--input-bg); color: var(--text-main);">
+                      </div>
+                    </div>
+                  </div> 
                   <!-- 5. Competencia y Liquidación -->
                   <h6 class="text-primary border-bottom pb-2 mt-3">5. Competencia y Liquidación</h6>
                   <div class="row mb-3">
