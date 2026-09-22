@@ -475,6 +475,10 @@ def generar_demanda(
         anio_h, mes_h, dia_h = datos.FechaHecho.split("-")
         fecha_hecho_formateada = f"{dia_h}/{mes_h}/{anio_h}"
 
+    # --- NUEVA LÓGICA PARA "SIN DATOS" ---
+    intervencion_limpia = "" if datos.Intervencion == "Sin Datos" else datos.Intervencion
+    # -------------------------------------
+
     # 5. MAPEO DE VARIABLES E INYECCIÓN
     if datos.ListaDocumental:
         lista_doc_limpia = [doc.strip() for doc in datos.ListaDocumental.split(",")]
@@ -523,7 +527,11 @@ def generar_demanda(
         "VehiculoActor": datos.VehiculoActor,
         "TallerNombre": datos.TallerNombre,
         "DirecciónTaller": datos.DirecciónTaller,
-        "Intervencion": datos.Intervencion,
+        
+        # --- APLICAMOS EL FILTRO AQUÍ ---
+        "Intervencion": intervencion_limpia,
+        # --------------------------------
+        
         "ListaDocumental": lista_doc_limpia,
         
         "CentroMedico": datos.CentroMedico,
@@ -794,7 +802,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
         datos.OpcionCompetencia, 
         PARRAFOS_COMPETENCIA[1]
     )
-
+    intervencion_limpia = "" if datos.Intervencion == "Sin Datos" else datos.Intervencion
     # 3. Retorno del 100% de los datos mapeados
     return {
         "estado": "Éxito",
@@ -823,7 +831,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
                 "ListadoSecuelas": datos.ListadoSecuelas
             },
             "4_PRUEBA_Y_ATENCION": {
-                "Intervencion": datos.Intervencion,
+                "Intervencion": intervencion_limpia,
                 "CentroMedico": datos.CentroMedico,
                 "CentroMedicoDireccion": datos.CentroMedicoDireccion,
                 "FechaMedica": datos.FechaMedica,

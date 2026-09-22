@@ -929,11 +929,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function obtenerPayloadFormulario() {
+function obtenerPayloadFormulario() {
     const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
     const danoPsico = document.querySelector('input[name="dano_psicologico"]:checked')?.value || "";
     const intervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "";
-    const documentosSeleccionados = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value).join(', ');
+    
+    // --- NUEVO BLOQUE DE PRUEBA DOCUMENTAL ---
+    let listaDocumentalArray = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value);
+    const checkDocLibre = document.getElementById("check_doc_libre");
+    const docLibreValor = document.getElementById("DocLibre") ? document.getElementById("DocLibre").value.trim() : "";
+    if (checkDocLibre && checkDocLibre.checked && docLibreValor !== "") {
+        listaDocumentalArray.push(docLibreValor);
+    }
+    const documentosSeleccionados = listaDocumentalArray.join(', ');
+    // -----------------------------------------
 
     return {
       "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
