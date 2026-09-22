@@ -432,11 +432,22 @@ def generar_demanda(
     nombre_limpio = datos.NombreActor.replace(' ', '_')
     ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
 
-    # 4. CÁLCULOS MATEMÁTICOS (Sin alterar tu lógica)
-    valor_punto = 2000000.0
-    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
+    # 4. CÁLCULOS MATEMÁTICOS
+    valor_punto_fisico = 3000000.0
+    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto_fisico
+    
+    try:
+        if datos.PorcentajeDanoPsicologico:
+            puntos_psico = float(str(datos.PorcentajeDanoPsicologico).replace('%', '').strip())
+        else:
+            puntos_psico = 0.0
+    except ValueError:
+        puntos_psico = 0.0
+        
+    valor_punto_psicologico = 2000000.0
+    dano_psicologico = puntos_psico * valor_punto_psicologico
+    
     dano_moral = incapacidad_fisica * 0.33
-    dano_psicologico = incapacidad_fisica * 0.15
     gastos_farmacia = 1500000.0
     gastos_medicos = 2000000.0
     
@@ -458,6 +469,8 @@ def generar_demanda(
         opcion_comp_int, 
         PARRAFOS_COMPETENCIA[1]
     )
+    
+    # Formatear Fechas
     
     # Formatear Fechas
     fecha_medica_formateada = datos.FechaMedica
@@ -780,11 +793,22 @@ def obtener_plantillas(
 
 @app.post("/preview-demanda/")
 def preview_demanda(datos: schemas.DatosDemanda):
-    # 1. Cálculos matemáticos idénticos al generador final
-    valor_punto = 2000000.0
-    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto
+    # 1. Cálculos matemáticos
+    valor_punto_fisico = 3000000.0
+    incapacidad_fisica = datos.PuntosdeIncapacidad * valor_punto_fisico
+    
+    try:
+        if datos.PorcentajeDanoPsicologico:
+            puntos_psico = float(str(datos.PorcentajeDanoPsicologico).replace('%', '').strip())
+        else:
+            puntos_psico = 0.0
+    except ValueError:
+        puntos_psico = 0.0
+        
+    valor_punto_psicologico = 2000000.0
+    dano_psicologico = puntos_psico * valor_punto_psicologico
+    
     dano_moral = incapacidad_fisica * 0.33
-    dano_psicologico = incapacidad_fisica * 0.15
     gastos_farmacia = 1500000.0
     gastos_medicos = 2000000.0
     
@@ -802,7 +826,11 @@ def preview_demanda(datos: schemas.DatosDemanda):
         datos.OpcionCompetencia, 
         PARRAFOS_COMPETENCIA[1]
     )
+
+    # --- NUEVA LÓGICA PARA "SIN DATOS" ---
     intervencion_limpia = "" if datos.Intervencion == "Sin Datos" else datos.Intervencion
+    # -------------------------------------
+
     # 3. Retorno del 100% de los datos mapeados
     return {
         "estado": "Éxito",
@@ -827,8 +855,8 @@ def preview_demanda(datos: schemas.DatosDemanda):
                 "FechaHecho": datos.FechaHecho,
                 "LugarHecho": datos.LugarHecho,
                 "DescripcionHechos": datos.DescripcionHechos,
-                "LesionesDetalles": datos.LesionesDetalles,
-                "ListadoSecuelas": datos.ListadoSecuelas
+                "ListadoSecuelas": datos.ListadoSecuelas,
+                "LesionesDetalles": datos.LesionesDetalles
             },
             "4_PRUEBA_Y_ATENCION": {
                 "Intervencion": intervencion_limpia,
