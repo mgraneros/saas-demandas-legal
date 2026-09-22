@@ -495,3 +495,27 @@ div[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
   background-color: #E2E8F0 !important;
   color: #0F172A !important;
 }
+
+/* ===================================
+   ADAPTACIÓN SWEETALERT2
+   =================================== */
+[data-theme="dark"] .swal2-popup {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .swal2-title,
+[data-theme="dark"] .swal2-html-container {
+    color: var(--text-main) !important;
+}
+
+/* Opcional: Integrar el botón azul de confirmación con tu color 'accent-blue' */
+.swal2-styled.swal2-confirm {
+    background-color: var(--accent-blue) !important;
+    border-radius: 8px !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+    background-color: var(--accent-blue-hover) !important;
+}
