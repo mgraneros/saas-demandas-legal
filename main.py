@@ -823,6 +823,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
                 "ListadoSecuelas": datos.ListadoSecuelas
             },
             "4_PRUEBA_Y_ATENCION": {
+                "Intervencion": datos.Intervencion,
                 "CentroMedico": datos.CentroMedico,
                 "CentroMedicoDireccion": datos.CentroMedicoDireccion,
                 "FechaMedica": datos.FechaMedica,
