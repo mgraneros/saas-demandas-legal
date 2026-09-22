@@ -438,6 +438,9 @@
                           <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
                         </div>
                       </div>
+                      <!-- CAMPO OCULTO: Comisaría (Se muestra solo si hay Policía) -->
+                    <input type="text" class="form-control form-control-sm mt-2 d-none" id="Comisaria" placeholder="Ej: Comisaría 14A o Unidad Fiscal Sur..." style="background-color: var(--bg-main); color: var(--text-main);">
+                  </div>
                     </div>
                     <div class="col-md-6 mb-2"><label class="form-label small">Centro Médico (separar por coma)</label><input type="text" class="form-control form-control-sm" id="CentroMedico" required></div>
                     <div class="col-md-6 mb-2 campo-auto-auto" style="display: none;"><label class="form-label fw-bold small text-info">Fecha de Atención Médica (Auto vs Auto)</label><input type="date" class="form-control form-control-sm" id="FechaMedica"></div>
@@ -2138,6 +2141,20 @@ document.addEventListener('DOMContentLoaded', function() {
         elemento.addEventListener('change', actualizarListadoSecuelas);
         elemento.addEventListener('input', actualizarListadoSecuelas);
     });
+
+// Mostrar/Ocultar campo Comisaría
+function toggleComisaria() {
+    const checkPolicia = document.getElementById('int_policia').checked;
+    const checkAmbos = document.getElementById('int_ambos').checked;
+    const inputComisaria = document.getElementById('Comisaria');
+    
+    if (checkPolicia || checkAmbos) {
+        inputComisaria.classList.remove('d-none');
+    } else {
+        inputComisaria.classList.add('d-none');
+        inputComisaria.value = ''; // Limpiamos el valor si deciden ocultarlo
+    }
+}  
 });
 
 </script>
