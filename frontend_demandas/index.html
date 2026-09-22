@@ -416,16 +416,23 @@
                     </div>
                   </div>
 
-                  <!-- 4. Prueba y Atención -->
+<!-- 4. Prueba y Atención -->
                   <h6 class="text-primary border-bottom pb-2 mt-3">4. Prueba y Atención</h6>
                   <div class="row mb-3">
                     <div class="col-md-12 mb-3">
                       <label class="form-label fw-bold small text-secondary">Intervención en el lugar</label>
                       <div class="d-flex gap-3">
+                        <!-- OPCIÓN 1: Sin Datos (Seleccionada por defecto) -->
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="intervencion" id="int_sindatos" value="Sin Datos" checked>
+                          <label class="form-check-label small" for="int_sindatos">Sin Datos</label>
+                        </div>
+                        <!-- OPCIÓN 2: Solo SAME -->
                         <div class="form-check">
                           <input class="form-check-input" type="radio" name="intervencion" id="int_same" value="Solo SAME">
                           <label class="form-check-label small" for="int_same">Solo SAME</label>
                         </div>
+                        <!-- OPCIÓN 3: SAME y Policía -->
                         <div class="form-check">
                           <input class="form-check-input" type="radio" name="intervencion" id="int_ambos" value="SAME y Policía">
                           <label class="form-check-label small" for="int_ambos">SAME y Policía</label>
