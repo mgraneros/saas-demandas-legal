@@ -97,7 +97,7 @@ app.add_middleware(
 # 2. Configuración JWT
 SECRET_KEY = "4ut0D3m4nd452027#"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10  # La sesión expira 10 minutos después del login
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # La sesión expira 30 minutos después del login
 
 # 3. Esquema OAuth2 para Swagger UI
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -117,7 +117,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=60))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
