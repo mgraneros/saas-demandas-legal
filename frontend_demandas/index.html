@@ -915,9 +915,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 function obtenerPayloadFormulario() {
     const tipoLesion = Array.from(document.querySelectorAll('.lesion-checkbox:checked')).map(cb => cb.value).join(' | ');
     const danoPsico = document.querySelector('input[name="dano_psicologico"]:checked')?.value || "";
-    const intervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "";
     
-    // --- NUEVO BLOQUE DE PRUEBA DOCUMENTAL ---
+    // --- PASO 2: LÓGICA DE REDACCIÓN DE INTERVENCIÓN ---
+    const opcionIntervencion = document.querySelector('input[name="intervencion"]:checked')?.value || "Sin Datos";
+    const valorComisaria = document.getElementById("Comisaria") ? document.getElementById("Comisaria").value.trim() : "";
+    let parrafoIntervencion = "";
+    
+    // Armamos el texto exacto que solicitó el estudio jurídico
+    if (opcionIntervencion === "SAME y Policía") {
+        parrafoIntervencion = `En virtud del siniestro, se apersonó rápidamente personal de la Policía de la Ciudad, de la ${valorComisaria}, seguido de personal del SAME quienes me asistieron en el lugar.`;
+    } else if (opcionIntervencion === "Solo SAME") {
+        parrafoIntervencion = "En virtud de las lesiones ocasionadas a mi persona, se apersonó personal del SAME, quienes me asistieron en el lugar.";
+    } else if (opcionIntervencion === "Solo Policía") {
+        parrafoIntervencion = `En virtud del siniestro, se apersonó rápidamente personal de la Policía de la Ciudad, de la ${valorComisaria}, quienes labraron las actuaciones correspondientes.`;
+    } else {
+        parrafoIntervencion = "Sin Datos";
+    }
+    // ---------------------------------------------------
+
+    // Lógica de Prueba Documental (Checkboxes + Texto Libre)
     let listaDocumentalArray = Array.from(document.querySelectorAll('.doc-checkbox:checked')).map(cb => cb.value);
     const checkDocLibre = document.getElementById("check_doc_libre");
     const docLibreValor = document.getElementById("DocLibre") ? document.getElementById("DocLibre").value.trim() : "";
@@ -925,7 +941,6 @@ function obtenerPayloadFormulario() {
         listaDocumentalArray.push(docLibreValor);
     }
     const documentosSeleccionados = listaDocumentalArray.join(', ');
-    // -----------------------------------------
 
     return {
       "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
@@ -947,7 +962,10 @@ function obtenerPayloadFormulario() {
       "PorcentajeDanoPsicologico": danoPsico,
       "ListadoSecuelas": document.getElementById("ListadoSecuelas").value,
       "LesionesDetalles": document.getElementById('LesionesDetalles').value,
-      "Intervencion": intervencion,
+      
+      // Acá enviamos el párrafo completo ya redactado al backend
+      "Intervencion": parrafoIntervencion, 
+      
       "CentroMedico": document.getElementById("CentroMedico").value,
       "CentroMedicoDireccion": document.getElementById("CentroMedicoDireccion").value,
       "FechaMedica": document.getElementById("FechaMedica") ? document.getElementById("FechaMedica").value : "",
@@ -959,7 +977,7 @@ function obtenerPayloadFormulario() {
       "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
       "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
     };
-  }
+}
 
 async function ejecutarPreview() {
   const payload = obtenerPayloadFormulario();
