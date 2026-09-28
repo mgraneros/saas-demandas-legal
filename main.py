@@ -1417,7 +1417,8 @@ def listar_usuarios_admin(
             "suscripcion_activa": suscripcion.activa if suscripcion else False,
             "plan": suscripcion.plan if suscripcion else "Sin Plan",
             "demandas_restantes": suscripcion.demandas_restantes if suscripcion else 0,
-            "rol_estudio": getattr(u, "rol_estudio", "Titular" if getattr(u, "cuenta_madre_id", None) is None else "Asistente")
+            "rol_estudio": getattr(u, "rol_estudio", "Titular" if getattr(u, "cuenta_madre_id", None) is None else "Asistente"),
+            "cuenta_madre_id": getattr(u, "cuenta_madre_id", None)
         })
 
     return resultado

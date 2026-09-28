@@ -1454,30 +1454,39 @@ function renderizarTablaUsuarios(usuarios) {
     return;
   }
 
-  usuarios.forEach(u => {
+  // 1. Separar Titulares/Admins (los que NO tienen cuenta madre) de los Asistentes
+  const principales = usuarios.filter(u => !u.cuenta_madre_id);
+  const asistentes = usuarios.filter(u => u.cuenta_madre_id);
+
+  // 2. Renderizar cada Titular y luego anidar sus Asistentes
+  principales.forEach(u => {
+    // Buscamos si este titular tiene asistentes
+    const misAsistentes = asistentes.filter(a => a.cuenta_madre_id === u.id);
+    
     const tr = document.createElement("tr");
+    tr.style.backgroundColor = "rgba(255, 255, 255, 0.02)"; // Le da un leve resalte al Titular
 
-    // 1. Badge de Jerarquía (rol_estudio)
-    const esTitular = (u.rol_estudio || "").toLowerCase() === "titular";
-    const badgeJerarquia = u.rol_estudio 
-      ? `<span class="badge" style="background: ${esTitular ? 'rgba(167, 139, 250, 0.2)' : 'rgba(148, 163, 184, 0.2)'}; color: ${esTitular ? '#c4b5fd' : '#94a3b8'}; border: 1px solid ${esTitular ? '#a78bfa' : '#475569'}; text-transform: capitalize;">${u.rol_estudio}</span>`
-      : `<span class="badge bg-secondary">-</span>`;
+    const badgeJerarquia = u.es_admin ? 
+      `<span class="badge" style="background: rgba(167, 139, 250, 0.2); color: #c4b5fd; border: 1px solid #a78bfa;">Administrador</span>` : 
+      `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid #475569;">Titular</span>`;
 
-    // 2. Matriz de Estado cruzando activo y demandas_restantes
     const creditos = u.demandas_restantes !== undefined ? u.demandas_restantes : (u.creditos || 0);
     let badgeEstado = '';
+    if (!u.activo) badgeEstado = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;">Bloqueado</span>`;
+    else if (creditos === 0) badgeEstado = `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid #eab308;">Sin Créditos</span>`;
+    else badgeEstado = `<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e;">Activo</span>`;
 
-    if (!u.activo) {
-      badgeEstado = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;">Bloqueado</span>`;
-    } else if (creditos === 0) {
-      badgeEstado = `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid #eab308;">Sin Créditos</span>`;
-    } else {
-      badgeEstado = `<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e;">Activo</span>`;
+    // Si tiene asistentes, le ponemos un botón para desplegarlos
+    let btnDesplegar = "";
+    if (misAsistentes.length > 0) {
+      btnDesplegar = `<button class="btn btn-sm btn-outline-secondary ms-2 mt-1" onclick="toggleAsistentes(${u.id})" style="font-size: 0.75rem; padding: 2px 6px;">
+                        👥 Ver Asistentes (${misAsistentes.length})
+                      </button>`;
     }
 
     tr.innerHTML = `
       <td><strong>#${u.id}</strong></td>
-      <td>${u.email}</td>
+      <td>${u.email} <br> ${btnDesplegar}</td>
       <td>${badgeJerarquia}</td>
       <td>
         <button class="btn btn-sm ${u.es_admin ? 'btn-dark' : 'btn-secondary'}" onclick="confirmarToggleRol(${u.id}, ${u.es_admin})">
@@ -1496,6 +1505,43 @@ function renderizarTablaUsuarios(usuarios) {
       </td>
     `;
     tbody.appendChild(tr);
+
+    // 3. Renderizar Asistentes anidados (Ocultos por defecto)
+    misAsistentes.forEach(a => {
+      const trAsistente = document.createElement("tr");
+      trAsistente.className = `asistentes-de-${u.id} d-none fila-usuario`; // El d-none los oculta
+      trAsistente.style.backgroundColor = "rgba(0, 0, 0, 0.2)"; // Fondo oscurito para dar sensación de hijo
+      
+      let badgeEstadoA = !a.activo ? 
+        `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;">Bloqueado</span>` : 
+        `<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e;">Activo</span>`;
+
+      trAsistente.innerHTML = `
+        <td class="text-muted" style="padding-left: 2rem;">↳ #${a.id}</td>
+        <td class="text-muted">${a.email}</td>
+        <td><span class="badge" style="background: rgba(255, 255, 255, 0.1); color: #94a3b8; border: 1px solid #334155;">Asistente</span></td>
+        <td>-</td>
+        <td>${badgeEstadoA}</td>
+        <td class="text-muted" style="font-size: 0.85rem;">Comparte saldo</td>
+        <td>
+          <button class="btn btn-sm ${a.activo ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="toggleActivoUsuario(${a.id}, ${a.activo})">
+            ${a.activo ? 'Desactivar' : 'Activar'}
+          </button>
+          <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${a.id})">
+            🔍 Auditar
+          </button>
+        </td>
+      `;
+      tbody.appendChild(trAsistente);
+    });
+  });
+}
+
+// Función cortita para mostrar/ocultar los asistentes al hacer clic en el botón
+function toggleAsistentes(titularId) {
+  const filas = document.querySelectorAll('.asistentes-de-' + titularId);
+  filas.forEach(fila => {
+    fila.classList.toggle('d-none');
   });
 }
 
@@ -1669,19 +1715,20 @@ async function toggleActivoUsuario(id, estadoActual) {
     }
   }
 
-  function filtrarUsuarios() {
-    const textoBusqueda = document.getElementById("buscadorAdmin").value.toLowerCase();
-    const filas = document.querySelectorAll("#tabla-usuarios-body tr");
+// Actualizamos levemente el buscador para que funcione bien con las clases d-none
+function filtrarUsuarios() {
+  const textoBusqueda = document.getElementById("buscadorAdmin").value.toLowerCase();
+  const filas = document.querySelectorAll("#tabla-usuarios-body tr");
 
-    filas.forEach(fila => {
-      const email = fila.cells[1].textContent.toLowerCase();
-      if (email.includes(textoBusqueda)) {
-        fila.style.display = "";
-      } else {
-        fila.style.display = "none";
-      }
-    });
-  }
+  filas.forEach(fila => {
+    const email = fila.cells[1].textContent.toLowerCase();
+    if (email.includes(textoBusqueda)) {
+      fila.classList.remove("d-none"); // Lo muestra si coincide
+    } else {
+      fila.classList.add("d-none"); // Lo oculta si no coincide
+    }
+  });
+}
 
   document.addEventListener("DOMContentLoaded", () => {
     const toggleBtn = document.getElementById("themeToggleBtn");
