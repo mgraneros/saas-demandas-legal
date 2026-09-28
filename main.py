@@ -155,7 +155,7 @@ PARRAFOS_COMPETENCIA = {
 @app.post("/register", response_model=schemas.UsuarioResponse, summary="Registrar nuevo usuario")
 def registrar_usuario(
     usuario: schemas.UsuarioCreate, 
-    background_tasks: BackgroundTasks, # <-- Agregamos BackgroundTasks aquí
+    background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db)
 ):
     db_usuario = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
@@ -172,8 +172,9 @@ def registrar_usuario(
     db.commit()
     db.refresh(nuevo_usuario)
 
-    # --- NUEVA LÓGICA: CORREO DE BIENVENIDA ---
-    def enviar_bienvenida_resend():
+    # --- NUEVA LÓGICA: CORREO DE BIENVENIDA Y AVISO A ADMIN ---
+    def enviar_correos_registro():
+        # 1. Correo de Bienvenida al Nuevo Usuario
         try:
             resend.Emails.send({
                 "from": "SaaS Legal <soporte@autodemandas.com.ar>",
@@ -190,10 +191,34 @@ def registrar_usuario(
             })
             print(f"✅ [API HTTP] Correo de bienvenida enviado a {nuevo_usuario.email}")
         except Exception as e:
-            print(f"⚠️ [ERROR RESEND]: {e}")
+            print(f"⚠️ [ERROR RESEND USUARIO]: {e}")
 
-    background_tasks.add_task(enviar_bienvenida_resend)
-    # ---------------------------------------------
+        # 2. Correo de Notificación Interna para los Administradores
+        try:
+            resend.Emails.send({
+                "from": "SaaS Legal <onboarding@resend.dev>",
+                "to": ["martin_graneros@hotmail.com", "pablodgargiulo.laboral@gmail.com"], # <-- Correo de los administradores
+                "subject": "🚨 NUEVO REGISTRO - SaaS Legal",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #0d6efd;">¡Tenemos un nuevo usuario en la plataforma!</h2>
+                    <p>Se acaba de registrar una nueva cuenta. Estos son los datos:</p>
+                    <ul>
+                        <li><strong>📧 Email:</strong> {nuevo_usuario.email}</li>
+                        <li><strong>🏢 Estudio Jurídico:</strong> {nuevo_usuario.nombre_estudio or 'No especificado'}</li>
+                        <li><strong>📅 Fecha y Hora:</strong> {datetime.now().strftime("%d/%m/%Y %H:%M")}</li>
+                    </ul>
+                    <br>
+                    <p>Podés ver más detalles asignándole créditos o modificando sus accesos desde el Panel de Administración.</p>
+                </div>
+                """
+            })
+            print("✅ [API HTTP] Aviso de nuevo registro enviado al administrador.")
+        except Exception as e:
+            print(f"⚠️ [ERROR RESEND ADMIN]: {e}")
+
+    background_tasks.add_task(enviar_correos_registro)
+    # ---------------------------------------------------------
 
     return nuevo_usuario
 
@@ -1725,6 +1750,7 @@ class AsistenteCreate(BaseModel):
 @app.post("/equipo", summary="Crear y agregar un nuevo asistente al equipo")
 def agregar_asistente(
     datos: AsistenteCreate,
+    background_tasks: BackgroundTasks, # <-- Sumamos esto para enviar el mail de fondo
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
@@ -1733,7 +1759,6 @@ def agregar_asistente(
     if usuario_existente:
         raise HTTPException(status_code=400, detail="Este correo ya está registrado en el sistema.")
 
-    # <-- CORRECCIÓN 2: Importamos hash_password exactamente como se llama en tu security.py
     from security import hash_password 
     password_hasheada = hash_password(datos.password)
 
@@ -1751,6 +1776,33 @@ def agregar_asistente(
     db.add(nuevo_asistente)
     db.commit()
     db.refresh(nuevo_asistente)
+
+    # --- NUEVA LÓGICA: AVISO A ADMINISTRADORES DE NUEVO ASISTENTE ---
+    def enviar_aviso_nuevo_asistente():
+        try:
+            resend.Emails.send({
+                "from": "SaaS Legal <onboarding@resend.dev>",
+                "to": ["martin_graneros@hotmail.com", "pablogargiulo@gmail.com"], # <-- Reemplazar por el correo real
+                "subject": "🚨 NUEVO ASISTENTE CREADO - SaaS Legal",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #6f42c1;">¡Un titular ha sumado un asistente a su equipo!</h2>
+                    <p>Estos son los datos del nuevo acceso secundario:</p>
+                    <ul>
+                        <li><strong>📧 Email Asistente:</strong> {nuevo_asistente.email}</li>
+                        <li><strong>🏢 Estudio Jurídico:</strong> {nuevo_asistente.nombre_estudio}</li>
+                        <li><strong>👨‍⚖️ Titular (Cuenta Madre):</strong> {current_user.email} (ID: {current_user.id})</li>
+                        <li><strong>📅 Fecha y Hora:</strong> {datetime.now().strftime("%d/%m/%Y %H:%M")}</li>
+                    </ul>
+                </div>
+                """
+            })
+            print("✅ [API HTTP] Aviso de nuevo ASISTENTE enviado a los administradores.")
+        except Exception as e:
+            print(f"⚠️ [ERROR RESEND ADMIN]: {e}")
+
+    background_tasks.add_task(enviar_aviso_nuevo_asistente)
+    # ----------------------------------------------------------------
 
     return {
         "status": "success",
