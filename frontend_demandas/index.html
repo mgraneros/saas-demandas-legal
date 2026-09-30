@@ -267,6 +267,14 @@
                       </select>
                     </div>
                   </div>
+
+                  <!-- NUEVO CAMPO: Mediador (Solo Peatón) -->
+                  <div class="row mb-4 campo-solo-peaton" style="display: none;">
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold small text-info">Nombre del Mediador (Acta de Mediación)</label>
+                      <input type="text" class="form-control form-control-sm border-info" id="NombreMediador" placeholder="Ej: Dr. Juan Pérez">
+                    </div>
+                  </div>
                                     
                   <!-- 1. Datos del Actor -->
                   <h6 class="text-primary border-bottom pb-2">1. Datos del Actor</h6>
@@ -859,6 +867,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selector = document.getElementById("TipoDemandaSelector").value;
     const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
     const camposSoloVehiculo = document.querySelectorAll('.campo-solo-vehiculo');
+    const camposSoloPeaton = document.querySelectorAll('.campo-solo-peaton'); // <-- NUEVO GRUPO
     
     // 1. Lógica para Auto vs Auto
     if (selector === "auto_auto") {
@@ -871,8 +880,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // 2. Lógica para Peatón (Ocultamos campos innecesarios y quitamos el 'required')
+    // 2. Lógica para Peatón
     if (selector === "vehiculo_peaton") {
+      // Ocultamos vehículos
       camposSoloVehiculo.forEach(campo => {
         campo.style.display = 'none';
         const input = campo.querySelector('input');
@@ -881,14 +891,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (input.type === "number") input.value = "0";
         }
       });
+      // Mostramos mediador (exclusivo peatón)
+      camposSoloPeaton.forEach(campo => campo.style.display = 'flex');
     } else {
+      // Mostramos vehículos
       camposSoloVehiculo.forEach(campo => {
         campo.style.display = 'block';
         const input = campo.querySelector('input');
-        // Restauramos los requeridos excepto para el monto que arranca en 0
         if(input && input.id !== "LiquiDanoMaterialNum") {
            input.setAttribute('required', 'required');
         }
+      });
+      // Ocultamos mediador
+      camposSoloPeaton.forEach(campo => {
+        campo.style.display = 'none';
+        const input = campo.querySelector('input');
+        if(input) input.value = ''; 
       });
     }
   }
@@ -940,6 +958,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (info.NombreAseguradora) document.getElementById('NombreAseguradora').value = info.NombreAseguradora;
         if (info.CuitAseguradora) document.getElementById('CuitAseguradora').value = info.CuitAseguradora;
         if (info.DomicilioAseguradora) document.getElementById('DomicilioAseguradora').value = info.DomicilioAseguradora;
+        // Cargar mediador si la IA lo encontró
+        if (info.NombreMediador && document.getElementById('NombreMediador')) {
+            document.getElementById('NombreMediador').value = info.NombreMediador;
 
         Swal.fire({
           title: '¡Datos Extraídos!',
@@ -996,6 +1017,7 @@ function obtenerPayloadFormulario() {
     const documentosSeleccionados = listaDocumentalArray.join(', ');
 
     return {
+      "NombreMediador": document.getElementById("NombreMediador") ? document.getElementById("NombreMediador").value.trim() : "",
       "TipoDemanda": document.getElementById("TipoDemandaSelector").value,
       "NombreActor": document.getElementById("NombreActor").value,
       "DniActor": parseInt(document.getElementById("DniActor").value) || 0,
