@@ -862,6 +862,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
         "mensaje": "Auditoría generada. Verifique todos los campos ingresados.",
         "datos_para_revision": {
             "1_DATOS_ACTOR": {
+                "NombreMediador": datos.NombreMediador,
                 "NombreActor": datos.NombreActor,
                 "DniActor": datos.DniActor,
                 "DomicilioActor": datos.DomicilioActor,
@@ -1305,6 +1306,7 @@ async def extraer_datos_acta(
         
         Utiliza exactamente estas claves:
         {
+            "NombreMediador": "",
             "DniActor": "",
             "NombreActor": "",
             "DomicilioActor": "",
@@ -1318,6 +1320,7 @@ async def extraer_datos_acta(
         
         Si no encuentras un dato específico en el documento, deja el valor como un string vacío "".
         Asegúrate de limpiar los números de DNI y CUIT quitando puntos si los tuvieran.
+        Para el NombreMediador, extrae el nombre completo del mediador interviniente (generalmente precedido por Dr./Dra.).
         """
 
         respuesta = await modelo.generate_content_async([

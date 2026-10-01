@@ -54,7 +54,7 @@ class TokenData(BaseModel):
 class DatosDemanda(BaseModel):
     plantilla_id: int = 1
     TipoDemanda: Optional[str] = "auto_moto"  # <-- NUEVO CAMPO
-    
+    NombreMediador: Optional[str] = ""
     # 1. Datos del Actor
     NombreActor: str
     DniActor: int
