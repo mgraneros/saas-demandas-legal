@@ -436,7 +436,8 @@ def generar_demanda(
     # 3. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO
     diccionario_plantillas = {
         "auto_moto": 1,
-        "auto_auto": 2
+        "auto_auto": 2,
+        "vehiculo_peaton": 3
     }
     plantilla_seleccionada = diccionario_plantillas.get(datos.TipoDemanda, 1)
 
@@ -529,6 +530,7 @@ def generar_demanda(
         lista_secuelas_limpia = []
 
     datos_procesados = {
+        "NombreMediador": datos.NombreMediador,
         "NombreActor": datos.NombreActor,
         "DniActor": f"{datos.DniActor:,}".replace(",", "."),
         "ParrafoCompetencia": texto_competencia,
@@ -1615,8 +1617,23 @@ def registrar_plantillas(db: Session = Depends(get_db)):
     else:
         p2.ruta_archivo = "templates/Borrador_Demanda_Auto_Auto.docx"
     
+    p3 = db.query(models.Plantilla).filter(models.Plantilla.id == 3).first()
+    if not p3:
+        nueva_p3 = models.Plantilla(
+            id=3, 
+            nombre="Vehículo vs Peatón", 
+            categoria="Accidentes de Tránsito", 
+            descripcion="Demanda por accidente entre vehículo y peatón",
+            ruta_archivo="templates/Borrador_Demanda_Vehiculo_Peaton.docx", 
+            activa=True
+        )
+        db.add(nueva_p3)
+    else:
+        p3.ruta_archivo = "templates/Borrador_Demanda_Vehiculo_Peaton.docx"
+    
     db.commit()
     return {"mensaje": "¡Las plantillas se registraron y actualizaron correctamente en la base de datos con la ruta 'templates/'!"}
+    
 
 
 @app.get("/activar-prueba/{email}")
