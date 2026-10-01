@@ -911,7 +911,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   // --- FUNCIÓN: PROCESAR ACTA CON IA ---
-  async function procesarActaIA() {
+async function procesarActaIA() {
     const fileInput = document.getElementById('actaFile');
     const file = fileInput.files[0];
     
@@ -958,9 +958,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (info.NombreAseguradora) document.getElementById('NombreAseguradora').value = info.NombreAseguradora;
         if (info.CuitAseguradora) document.getElementById('CuitAseguradora').value = info.CuitAseguradora;
         if (info.DomicilioAseguradora) document.getElementById('DomicilioAseguradora').value = info.DomicilioAseguradora;
+        
         // Cargar mediador si la IA lo encontró
         if (info.NombreMediador && document.getElementById('NombreMediador')) {
             document.getElementById('NombreMediador').value = info.NombreMediador;
+        } // <-- ESTA ERA LA LLAVE QUE FALTABA
 
         Swal.fire({
           title: '¡Datos Extraídos!',
