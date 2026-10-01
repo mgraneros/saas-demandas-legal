@@ -402,28 +402,38 @@ def generar_demanda(
                 detail="Error de jerarquía: La cuenta principal (estudio jurídico) asociada no existe."
             )
 
-    # 2. VERIFICAR LA SUSCRIPCIÓN DE LA CUENTA TITULAR (En vez del current_user directo)
+# 2. VERIFICAR LA SUSCRIPCIÓN DE LA CUENTA TITULAR (En vez del current_user directo)
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == cuenta_titular.id).first()
 
-    if not suscripcion:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="La cuenta principal no posee una suscripción activa. Este servicio requiere un plan mensual pago."
-        )
+    # --- NUEVA REGLA: Si NO es administrador, verificamos fechas y créditos ---
+    if not current_user.es_admin:
+        if not suscripcion:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="La cuenta principal no posee una suscripción activa. Este servicio requiere un plan mensual pago."
+            )
 
-    if not suscripcion.activa:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="La suscripción de la cuenta principal se encuentra inactiva."
-        )
+        if not suscripcion.activa:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="La suscripción de la cuenta principal se encuentra inactiva."
+            )
 
-    if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
-        suscripcion.activa = False
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="La suscripción de la cuenta principal ha expirado."
-        )
+        if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
+            suscripcion.activa = False
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="La suscripción de la cuenta principal ha expirado."
+            )
+            
+        # Verificar si le quedan demandas a la cuenta titular
+        if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
+            if suscripcion.demandas_restantes < 1:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="La cuenta principal ya no tiene demandas disponibles en su plan actual."
+                )
         
     # Verificar si le quedan demandas a la cuenta titular
     if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
