@@ -72,6 +72,7 @@ class DatosDemanda(BaseModel):
     
     # 3. Hechos y Lesiones
     FechaHecho: str
+    HoraHecho: Optional[str] = None
     LugarHecho: str
     DescripcionHechos: str
     LesionesDetalles: str  
