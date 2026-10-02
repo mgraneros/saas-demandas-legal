@@ -568,6 +568,7 @@ def generar_demanda(
         "DomicilioDemandado": datos.DomicilioDemandado,
         "AutoDemandado": datos.AutoDemandado,
         "FechaHecho": fecha_hecho_formateada,
+        "HoraHecho": datos.HoraHecho,
         "NombreAseguradora": datos.NombreAseguradora,
         "CuitAseguradora": datos.CuitAseguradora,
         "DomicilioAseguradora": datos.DomicilioAseguradora,
@@ -891,6 +892,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
             },
             "3_HECHOS_Y_LESIONES": {
                 "FechaHecho": datos.FechaHecho,
+                "HoraHecho": datos.HoraHecho,
                 "LugarHecho": datos.LugarHecho,
                 "DescripcionHechos": datos.DescripcionHechos,
                 "ListadoSecuelas": datos.ListadoSecuelas,
