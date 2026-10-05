@@ -55,6 +55,8 @@ class DatosDemanda(BaseModel):
     plantilla_id: int = 1
     TipoDemanda: Optional[str] = "auto_moto"  # <-- NUEVO CAMPO
     NombreMediador: Optional[str] = ""
+    NumeroSumario: Optional[str] = None
+    UnidadFiscal: Optional[str] = None
     # 1. Datos del Actor
     NombreActor: str
     DniActor: int
