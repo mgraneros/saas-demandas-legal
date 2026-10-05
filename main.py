@@ -541,6 +541,8 @@ def generar_demanda(
 
     datos_procesados = {
         "NombreMediador": datos.NombreMediador,
+        "NumeroSumario": datos.NumeroSumario,
+        "UnidadFiscal": datos.UnidadFiscal,
         "NombreActor": datos.NombreActor,
         "DniActor": f"{datos.DniActor:,}".replace(",", "."),
         "ParrafoCompetencia": texto_competencia,
@@ -876,6 +878,8 @@ def preview_demanda(datos: schemas.DatosDemanda):
         "datos_para_revision": {
             "1_DATOS_ACTOR": {
                 "NombreMediador": datos.NombreMediador,
+                "NumeroSumario": datos.NumeroSumario,
+                "UnidadFiscal": datos.UnidadFiscal,
                 "NombreActor": datos.NombreActor,
                 "DniActor": datos.DniActor,
                 "DomicilioActor": datos.DomicilioActor,
