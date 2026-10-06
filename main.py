@@ -1961,3 +1961,33 @@ def procesar_contacto(datos: ContactoRequest, background_tasks: BackgroundTasks)
         enviar_contacto_resend()
 
     return {"status": "success", "mensaje": "Tu mensaje ha sido recibido. Te contactaremos pronto."}
+
+class ModulosUpdate(BaseModel):
+    categorias_ids: List[int]
+
+@app.put("/admin/usuarios/{usuario_id}/modulos", summary="Actualizar módulos de un estudio jurídico")
+def actualizar_modulos_usuario(
+    usuario_id: int,
+    datos: ModulosUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    if not current_user.es_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: Solo los administradores pueden modificar los módulos contratados."
+        )
+
+    usuario_destino = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not usuario_destino:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    nuevos_modulos = db.query(models.Categoria).filter(models.Categoria.id.in_(datos.categorias_ids)).all()
+    usuario_destino.modulos_activos = nuevos_modulos
+    db.commit()
+    
+    return {
+        "mensaje": "Módulos actualizados con éxito", 
+        "usuario": usuario_destino.email,
+        "modulos_activos": [modulo.nombre for modulo in nuevos_modulos]
+    }
