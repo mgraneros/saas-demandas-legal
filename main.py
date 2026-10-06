@@ -461,6 +461,16 @@ def generar_demanda(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"La plantilla especificada (ID: {plantilla_seleccionada}) no existe o el archivo base no está disponible."
         )
+# --- NUEVA REGLA DE SEGURIDAD (EL "PATOVICA"): Validar el acceso al módulo ---
+    if not current_user.es_admin:
+        # Extraemos los IDs de los módulos del titular (hereda el asistente o usa los propios)
+        ids_modulos_permitidos = [mod.id for mod in cuenta_titular.modulos_activos]
+        
+        if plantilla.categoria_id not in ids_modulos_permitidos:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acceso denegado: Tu plan actual no incluye el módulo necesario para generar esta demanda."
+            )
 
     carpeta_salida = "demandas_generadas"
     os.makedirs(carpeta_salida, exist_ok=True)
@@ -824,10 +834,34 @@ def obtener_plantillas(
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     """
-    Devuelve la lista de todas las plantillas activas disponibles en el sistema 
-    para que el usuario elija cuál utilizar al generar su demanda.
+    Devuelve la lista de plantillas activas filtradas por los módulos contratados.
+    Los asistentes heredan automáticamente los módulos de su cuenta madre.
+    Los administradores ven todo el catálogo.
     """
-    plantillas = db.query(models.Plantilla).filter(models.Plantilla.activa == True).all()
+    # 1. Administradores ven todo
+    if current_user.es_admin:
+        return db.query(models.Plantilla).filter(models.Plantilla.activa == True).all()
+    
+    # 2. Lógica de herencia: Determinar de quién leemos los módulos
+    usuario_a_consultar = current_user
+    if current_user.cuenta_madre_id:
+        titular = db.query(models.Usuario).filter(models.Usuario.id == current_user.cuenta_madre_id).first()
+        if titular:
+            usuario_a_consultar = titular
+            
+    # 3. Extraer los IDs de los módulos permitidos (del titular o del usuario directo)
+    ids_categorias_permitidas = [modulo.id for modulo in usuario_a_consultar.modulos_activos]
+    
+    # 4. Si no hay módulos activos, devolver lista vacía
+    if not ids_categorias_permitidas:
+        return []
+
+    # 5. Filtrar las plantillas
+    plantillas = db.query(models.Plantilla).filter(
+        models.Plantilla.activa == True,
+        models.Plantilla.categoria_id.in_(ids_categorias_permitidas)
+    ).all()
+    
     return plantillas
     
 

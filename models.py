@@ -1,7 +1,28 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, JSON, Table
 from sqlalchemy.orm import relationship
 from database import Base
+
+# <-- NUEVO: TABLA INTERMEDIA PARA LA RELACIÓN MUCHOS A MUCHOS -->
+# Conecta a los usuarios con los módulos (categorías) que tienen contratados
+usuario_categoria = Table(
+    'usuario_categoria',
+    Base.metadata,
+    Column('usuario_id', Integer, ForeignKey('usuarios.id', ondelete="CASCADE"), primary_key=True),
+    Column('categoria_id', Integer, ForeignKey('categorias.id', ondelete="CASCADE"), primary_key=True)
+)
+
+# <-- NUEVO: TABLA DE CATEGORÍAS (MÓDULOS) -->
+class Categoria(Base):
+    __tablename__ = "categorias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, unique=True, index=True, nullable=False)  # Ej: "Tránsito", "Laboral"
+    activa = Column(Boolean, default=True)
+
+    # Relaciones
+    plantillas = relationship("Plantilla", back_populates="categoria_obj")
+
 
 # --- TABLA DE USUARIOS ---
 class Usuario(Base):
@@ -19,10 +40,13 @@ class Usuario(Base):
     cuenta_madre_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     rol_estudio = Column(String(50), default="titular")
 
-    # Relaciones
+    # Relaciones Originales
     demandas = relationship("DemandaGenerada", back_populates="usuario")
     suscripcion = relationship("Suscripcion", back_populates="usuario", uselist=False)
     logs = relationship("AuditoriaLog", back_populates="usuario")
+    
+    # <-- NUEVO: Módulos contratados por este estudio -->
+    modulos_activos = relationship("Categoria", secondary=usuario_categoria, backref="usuarios")
 
 
 # --- TABLA DE PLANTILLAS Y TIPOS DE DEMANDA ---
@@ -31,12 +55,16 @@ class Plantilla(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, nullable=False)            # Ej: "Demanda Tránsito Auto/Moto"
-    categoria = Column(String, nullable=False)         # Ej: "Daños y Perjuicios", "Laboral"
+    categoria = Column(String, nullable=False)         # Columna string original (se mantiene por seguridad)
     descripcion = Column(Text, nullable=True)
     ruta_archivo = Column(String, nullable=False)      # Ej: "templates/Borrador_Demanda_Auto_Moto.docx"
     activa = Column(Boolean, default=True)
 
-    # Relaciones
+    # <-- NUEVO: Vínculo real con la tabla de Categorías -->
+    categoria_id = Column(Integer, ForeignKey("categorias.id"), nullable=True)
+    categoria_obj = relationship("Categoria", back_populates="plantillas")
+
+    # Relaciones Originales
     demandas = relationship("DemandaGenerada", back_populates="plantilla")
 
 
@@ -57,7 +85,6 @@ class DemandaGenerada(Base):
     archivo_generado = Column(String, nullable=True)
     notas_internas = Column(String, nullable=True)
     
-    # <-- NUEVO CAMPO PARA ARCHIVADO LÓGICO (SOFT DELETE) -->
     archivada = Column(Boolean, default=False)
 
     # Relaciones
