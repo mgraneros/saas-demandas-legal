@@ -828,19 +828,30 @@ def descargar_demanda_nube(
         raise HTTPException(status_code=500, detail="Error al conectar con la bóveda de seguridad en la nube.")
     
 
-@app.get("/plantillas", response_model=List[schemas.PlantillaOut], summary="Listar plantillas de demandas disponibles")
+@app.get("/plantillas", summary="Listar plantillas de demandas disponibles")
 def obtener_plantillas(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(verificar_suscripcion_activa)
 ):
     """
-    Devuelve la lista de plantillas activas filtradas por los módulos contratados.
-    Los asistentes heredan automáticamente los módulos de su cuenta madre.
-    Los administradores ven todo el catálogo.
+    Devuelve TODAS las plantillas del sistema.
+    Inyecta el campo 'acceso_permitido' (booleano) evaluando si el usuario
+    (o su cuenta titular) tiene contratado el módulo correspondiente.
     """
-    # 1. Administradores ven todo
+    # Traemos TODAS las plantillas activas de la base de datos
+    todas_las_plantillas = db.query(models.Plantilla).filter(models.Plantilla.activa == True).all()
+    
+    # 1. Administradores tienen acceso total
     if current_user.es_admin:
-        return db.query(models.Plantilla).filter(models.Plantilla.activa == True).all()
+        return [
+            {
+                "id": p.id, 
+                "nombre": p.nombre, 
+                "categoria_id": p.categoria_id, 
+                "descripcion": p.descripcion,
+                "acceso_permitido": True
+            } for p in todas_las_plantillas
+        ]
     
     # 2. Lógica de herencia: Determinar de quién leemos los módulos
     usuario_a_consultar = current_user
@@ -849,20 +860,21 @@ def obtener_plantillas(
         if titular:
             usuario_a_consultar = titular
             
-    # 3. Extraer los IDs de los módulos permitidos (del titular o del usuario directo)
+    # 3. Extraer IDs de módulos permitidos
     ids_categorias_permitidas = [modulo.id for modulo in usuario_a_consultar.modulos_activos]
     
-    # 4. Si no hay módulos activos, devolver lista vacía
-    if not ids_categorias_permitidas:
-        return []
-
-    # 5. Filtrar las plantillas
-    plantillas = db.query(models.Plantilla).filter(
-        models.Plantilla.activa == True,
-        models.Plantilla.categoria_id.in_(ids_categorias_permitidas)
-    ).all()
-    
-    return plantillas
+    # 4. Armar la respuesta inyectando si tiene acceso o no
+    resultados = []
+    for p in todas_las_plantillas:
+        resultados.append({
+            "id": p.id,
+            "nombre": p.nombre,
+            "categoria_id": p.categoria_id,
+            "descripcion": p.descripcion,
+            "acceso_permitido": p.categoria_id in ids_categorias_permitidas
+        })
+        
+    return resultados
     
 
 @app.post("/preview-demanda/")
