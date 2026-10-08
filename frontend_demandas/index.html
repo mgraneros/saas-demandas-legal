@@ -828,6 +828,44 @@
   </div>
 </div>
 
+<!-- ... Todo el contenido visible de tu página ... -->
+
+    <!-- 1. MODAL UP-SELLING / MÓDULO BLOQUEADO (Aquí pegás el modal) -->
+    <div class="modal fade" id="modalUpgrade" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title font-weight-bold d-flex align-items-center gap-2">
+              <span>🔒</span> Módulo Restringido
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <div class="mb-3">
+              <span style="font-size: 3rem;">⚡</span>
+            </div>
+            <h4 id="upgrade-modulo-nombre" class="fw-bold mb-2" style="color: var(--accent-gold);">Módulo Laboral</h4>
+            <p class="text-muted small px-3">
+              Esta plantilla no está incluida en tu suscripción actual. Actualizá el plan de tu estudio jurídico para desbloquear el catálogo completo.
+            </p>
+          </div>
+          <div class="modal-footer border-0 pt-0 d-flex justify-content-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Entendido</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="solicitarUpgrade()">
+              🚀 Solicitar Acceso
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. TUS ARCHIVOS JS (Scripts) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+
+  </body>
+</html>
+
 <!-- JS de Bootstrap (NECESARIO PARA QUE EL MODAL ABRA) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="auth-guard.js"></script>
@@ -2328,12 +2366,22 @@ async function cargarPlantillas() {
   }
 }
 
-// Alerta friendly al intentar interactuar con un modulo bloqueado
-document.getElementById('select-plantilla').addEventListener('change', (e) => {
+// Listener para abrir el Modal cuando se selecciona un módulo bloqueado
+document.getElementById('select-plantilla')?.addEventListener('change', (e) => {
   const selectedOption = e.target.options[e.target.selectedIndex];
   if (selectedOption && selectedOption.dataset.bloqueada === "true") {
     const modulo = selectedOption.dataset.categoria;
-    alert(`🔒 Mejorá tu plan para acceder al módulo: ${modulo}`);
+    
+    // Asignar el nombre del módulo al modal y mostrarlo
+    const tituloModal = document.getElementById('upgrade-modulo-nombre');
+    if (tituloModal) tituloModal.textContent = modulo;
+    
+    const modalEl = document.getElementById('modalUpgrade');
+    if (modalEl) {
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+    
     e.target.value = ""; // Resetear selección
   }
 });
