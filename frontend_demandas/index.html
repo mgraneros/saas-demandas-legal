@@ -861,7 +861,7 @@
 
     <!-- 2. TUS ARCHIVOS JS (Scripts) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js"></script>
+    
 
   </body>
 </html>
@@ -2431,7 +2431,17 @@ document.getElementById('select-plantilla')?.addEventListener('change', (e) => {
 });
 
 /**
- * 1. Oipe'a modal de módulos, oguereko ID de usuario ha omongora opavave checkboxes.
+ * Función auxiliar para obtener el token de sesión de forma segura
+ */
+function obtenerTokenSeguro() {
+  if (typeof getToken === 'function') {
+    return getToken();
+  }
+  return localStorage.getItem('token') || localStorage.getItem('access_token') || '';
+}
+
+/**
+ * 1. Abre el modal de módulos y prepara la interfaz
  */
 async function abrirModalModulosUsuario(usuarioId) {
   const idLimpio = parseInt(usuarioId);
@@ -2442,7 +2452,6 @@ async function abrirModalModulosUsuario(usuarioId) {
 
   console.log("ID recibido al abrir modal:", idLimpio);
 
-  // Oñongatu ID input concealed ha dataset-pe
   const inputUserId = document.getElementById('admin-user-id-modulos');
   if (inputUserId) inputUserId.value = idLimpio;
 
@@ -2453,13 +2462,14 @@ async function abrirModalModulosUsuario(usuarioId) {
   }
   modalEl.dataset.userId = idLimpio;
 
-  // Ombojuavy jey checkboxes
+  // Resetear checkboxes
   document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
 
-  // Oheka usuario módulo-kuéra oĩva activo backend-pe
+  // Intentar cargar módulos actuales
   try {
+    const token = obtenerTokenSeguro();
     const res = await fetch(`https://saas-demandas-legal.onrender.com/admin/usuarios/${idLimpio}`, {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (res.ok) {
@@ -2476,13 +2486,12 @@ async function abrirModalModulosUsuario(usuarioId) {
     console.warn("No se pudieron pre-cargar los módulos actuales del usuario:", err);
   }
 
-  // Oipe'a modal
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
 }
 
 /**
- * 2. Ohecha ID ha ombohasa guardarModulosUsuario-pe.
+ * 2. Ejecuta el guardado recuperando el ID
  */
 function ejecutarGuardarModulos() {
   const inputUserId = document.getElementById('admin-user-id-modulos');
@@ -2501,7 +2510,7 @@ function ejecutarGuardarModulos() {
 }
 
 /**
- * 3. Omondo petición PUT backend-pe ombo pyahu hag̃ua módulo-kuéra.
+ * 3. Envía la actualización PUT al servidor
  */
 async function guardarModulosUsuario(usuarioId) {
   const idNumerico = parseInt(usuarioId);
@@ -2516,6 +2525,7 @@ async function guardarModulosUsuario(usuarioId) {
 
   const url = `https://saas-demandas-legal.onrender.com/admin/usuarios/${idNumerico}/modulos`;
   const bodyData = { categorias_ids: categoriasIds };
+  const token = obtenerTokenSeguro();
 
   console.log("Haciendo PUT a:", url);
   console.log("Body enviado:", bodyData);
@@ -2525,7 +2535,7 @@ async function guardarModulosUsuario(usuarioId) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(bodyData)
     });
@@ -2533,14 +2543,12 @@ async function guardarModulosUsuario(usuarioId) {
     if (res.ok) {
       alert("✅ Módulos actualizados con éxito para este usuario.");
       
-      // Omboty modal
       const modalEl = document.getElementById('modalGestionModulos');
       if (modalEl) {
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
       }
 
-      // Ombojuavy tabla de usuarios oĩramo
       if (typeof cargarUsuariosAdmin === 'function') {
         cargarUsuariosAdmin();
       }
