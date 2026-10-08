@@ -2430,100 +2430,128 @@ document.getElementById('select-plantilla')?.addEventListener('change', (e) => {
   }
 });
 
-async function guardarModulosUsuario(usuarioId) {
-  // Capturar todos los checkboxes seleccionados en el panel de admin
-  const checkboxes = document.querySelectorAll('.modulo-cb:checked');
-  const categoriasIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+/**
+ * 1. Oipe'a modal de módulos, oguereko ID de usuario ha omongora opavave checkboxes.
+ */
+async function abrirModalModulosUsuario(usuarioId) {
+  const idLimpio = parseInt(usuarioId);
+  if (isNaN(idLimpio)) {
+    alert("❌ Error: ID de usuario inválido.");
+    return;
+  }
 
+  console.log("ID recibido al abrir modal:", idLimpio);
+
+  // Oñongatu ID input concealed ha dataset-pe
+  const inputUserId = document.getElementById('admin-user-id-modulos');
+  if (inputUserId) inputUserId.value = idLimpio;
+
+  const modalEl = document.getElementById('modalGestionModulos');
+  if (!modalEl) {
+    console.error("No se encontró el elemento #modalGestionModulos en el DOM.");
+    return;
+  }
+  modalEl.dataset.userId = idLimpio;
+
+  // Ombojuavy jey checkboxes
+  document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
+
+  // Oheka usuario módulo-kuéra oĩva activo backend-pe
   try {
-    const res = await fetch(`https://saas-demandas-legal.onrender.com/admin/usuarios/${usuarioId}/modulos`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`
-      },
-      body: JSON.stringify({
-        categorias_ids: categoriasIds
-      })
+    const res = await fetch(`https://saas-demandas-legal.onrender.com/admin/usuarios/${idLimpio}`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
     });
 
     if (res.ok) {
-      alert("✅ Módulos actualizados con éxito para este usuario.");
-    } else {
-      const err = await res.json();
-      alert(`⚠️ Error al actualizar módulos: ${err.message || 'Sin autorización'}`);
+      const usuario = await res.json();
+      const modulosActivos = usuario.categorias_ids || usuario.modulos || [];
+      
+      document.querySelectorAll('.modulo-cb').forEach(cb => {
+        if (modulosActivos.includes(parseInt(cb.value))) {
+          cb.checked = true;
+        }
+      });
     }
-  } catch (error) {
-    console.error("Error actualizando módulos:", error);
-    alert("❌ Error de conexión al guardar los cambios.");
+  } catch (err) {
+    console.warn("No se pudieron pre-cargar los módulos actuales del usuario:", err);
   }
+
+  // Oipe'a modal
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 }
 
-// Al renderizar las filas de la tabla de usuarios en el Panel de Admin:
-async function guardarModulosUsuario(usuarioId) {
+/**
+ * 2. Ohecha ID ha ombohasa guardarModulosUsuario-pe.
+ */
+function ejecutarGuardarModulos() {
+  const inputUserId = document.getElementById('admin-user-id-modulos');
+  const modalEl = document.getElementById('modalGestionModulos');
+
+  const usuarioId = (inputUserId && inputUserId.value) ? inputUserId.value : (modalEl ? modalEl.dataset.userId : null);
+
+  console.log("ID recuperado para guardar:", usuarioId);
+
   if (!usuarioId || usuarioId === "undefined") {
     alert("❌ Error: No se pudo identificar el ID del usuario.");
+    return;
+  }
+
+  guardarModulosUsuario(usuarioId);
+}
+
+/**
+ * 3. Omondo petición PUT backend-pe ombo pyahu hag̃ua módulo-kuéra.
+ */
+async function guardarModulosUsuario(usuarioId) {
+  const idNumerico = parseInt(usuarioId);
+
+  if (isNaN(idNumerico)) {
+    alert("❌ Error: El ID del usuario no es un número válido.");
     return;
   }
 
   const checkboxes = document.querySelectorAll('.modulo-cb:checked');
   const categoriasIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
+  const url = `https://saas-demandas-legal.onrender.com/admin/usuarios/${idNumerico}/modulos`;
+  const bodyData = { categorias_ids: categoriasIds };
+
+  console.log("Haciendo PUT a:", url);
+  console.log("Body enviado:", bodyData);
+
   try {
-    const res = await fetch(`https://saas-demandas-legal.onrender.com/admin/usuarios/${usuarioId}/modulos`, {
+    const res = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${getToken()}`
       },
-      body: JSON.stringify({
-        categorias_ids: categoriasIds
-      })
+      body: JSON.stringify(bodyData)
     });
 
     if (res.ok) {
       alert("✅ Módulos actualizados con éxito para este usuario.");
+      
+      // Omboty modal
       const modalEl = document.getElementById('modalGestionModulos');
       if (modalEl) {
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
       }
+
+      // Ombojuavy tabla de usuarios oĩramo
+      if (typeof cargarUsuariosAdmin === 'function') {
+        cargarUsuariosAdmin();
+      }
     } else {
       const err = await res.json().catch(() => ({ detail: 'Error de respuesta del servidor' }));
-      console.error("Respuesta de error del backend:", err);
+      console.error("Respuesta de error del backend:", res.status, err);
       alert(`⚠️ Error (${res.status}): ${err.detail || err.message || 'Operación rechazada'}`);
     }
   } catch (error) {
     console.error("Error detallado al guardar módulos:", error);
     alert(`❌ Error de red/conexión: ${error.message}`);
-  }
-}
-
-function ejecutarGuardarModulos() {
-  const usuarioId = document.getElementById('admin-user-id-modulos').value;
-  guardarModulosUsuario(usuarioId);
-}
-
-function abrirModalModulosUsuario(usuarioId) {
-  const inputUserId = document.getElementById('admin-user-id-modulos');
-  if (inputUserId) {
-    inputUserId.value = usuarioId;
-  }
-
-  // Desmarcar checkboxes previos
-  document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
-
-  const modalEl = document.getElementById('modalGestionModulos');
-  if (modalEl) {
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
-  }
-}
-
-function ejecutarGuardarModulos() {
-  const usuarioId = document.getElementById('admin-user-id-modulos').value;
-  if (usuarioId) {
-    guardarModulosUsuario(usuarioId);
   }
 }
 </script>
