@@ -2460,14 +2460,43 @@ async function guardarModulosUsuario(usuarioId) {
 }
 
 // Al renderizar las filas de la tabla de usuarios en el Panel de Admin:
-function abrirModalModulosUsuario(usuarioId) {
-  document.getElementById('admin-user-id-modulos').value = usuarioId;
-  
-  // Limpiar/Resetear checkboxes
-  document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
+async function guardarModulosUsuario(usuarioId) {
+  if (!usuarioId || usuarioId === "undefined") {
+    alert("❌ Error: No se pudo identificar el ID del usuario.");
+    return;
+  }
 
-  const modal = new bootstrap.Modal(document.getElementById('modalGestionModulos'));
-  modal.show();
+  const checkboxes = document.querySelectorAll('.modulo-cb:checked');
+  const categoriasIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+  try {
+    const res = await fetch(`https://saas-demandas-legal.onrender.com/admin/usuarios/${usuarioId}/modulos`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({
+        categorias_ids: categoriasIds
+      })
+    });
+
+    if (res.ok) {
+      alert("✅ Módulos actualizados con éxito para este usuario.");
+      const modalEl = document.getElementById('modalGestionModulos');
+      if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+    } else {
+      const err = await res.json().catch(() => ({ detail: 'Error de respuesta del servidor' }));
+      console.error("Respuesta de error del backend:", err);
+      alert(`⚠️ Error (${res.status}): ${err.detail || err.message || 'Operación rechazada'}`);
+    }
+  } catch (error) {
+    console.error("Error detallado al guardar módulos:", error);
+    alert(`❌ Error de red/conexión: ${error.message}`);
+  }
 }
 
 function ejecutarGuardarModulos() {
@@ -2476,7 +2505,12 @@ function ejecutarGuardarModulos() {
 }
 
 function abrirModalModulosUsuario(usuarioId) {
-  document.getElementById('admin-user-id-modulos').value = usuarioId;
+  const inputUserId = document.getElementById('admin-user-id-modulos');
+  if (inputUserId) {
+    inputUserId.value = usuarioId;
+  }
+
+  // Desmarcar checkboxes previos
   document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
 
   const modalEl = document.getElementById('modalGestionModulos');
