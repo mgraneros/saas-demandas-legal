@@ -2295,6 +2295,77 @@ function toggleComisaria() {
         inputComisaria.value = ''; // Limpiamos el valor si deciden ocultarlo
     }
 }
+
+async function cargarPlantillas() {
+  try {
+    const res = await fetch('https://saas-demandas-legal.onrender.com/plantillas', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const plantillas = await res.json();
+    
+    const select = document.getElementById('select-plantilla');
+    select.innerHTML = '<option value="">-- Seleccione una Plantilla --</option>';
+
+    plantillas.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.id;
+
+      if (p.acceso_permitido) {
+        // Opción habilitada normal
+        option.textContent = p.nombre;
+      } else {
+        // Opción bloqueada (Up-selling)
+        option.textContent = `🔒 ${p.nombre} (Requiere Plan Superior)`;
+        option.disabled = true; // Evita selección normal
+        option.dataset.bloqueada = "true";
+        option.dataset.categoria = p.categoria_nombre || "este módulo";
+      }
+
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error cargando plantillas:", error);
+  }
+}
+
+// Alerta friendly al intentar interactuar con un modulo bloqueado
+document.getElementById('select-plantilla').addEventListener('change', (e) => {
+  const selectedOption = e.target.options[e.target.selectedIndex];
+  if (selectedOption && selectedOption.dataset.bloqueada === "true") {
+    const modulo = selectedOption.dataset.categoria;
+    alert(`🔒 Mejorá tu plan para acceder al módulo: ${modulo}`);
+    e.target.value = ""; // Resetear selección
+  }
+});
+
+async function guardarModulosUsuario(usuarioId) {
+  // Capturar todos los checkboxes seleccionados en el panel de admin
+  const checkboxes = document.querySelectorAll('.modulo-cb:checked');
+  const categoriasIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+  try {
+    const res = await fetch(`https://saas-demandas-legal.onrender.com/admin/usuarios/${usuarioId}/modulos`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({
+        categorias_ids: categoriasIds
+      })
+    });
+
+    if (res.ok) {
+      alert("✅ Módulos actualizados con éxito para este usuario.");
+    } else {
+      const err = await res.json();
+      alert(`⚠️ Error al actualizar módulos: ${err.message || 'Sin autorización'}`);
+    }
+  } catch (error) {
+    console.error("Error actualizando módulos:", error);
+    alert("❌ Error de conexión al guardar los cambios.");
+  }
+}
 </script>
 </body>
 </html>
