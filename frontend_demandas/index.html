@@ -865,6 +865,44 @@
 
   </body>
 </html>
+<!-- MODAL GESTIÓN DE MÓDULOS (ADMIN) -->
+<div class="modal fade" id="modalGestionModulos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title font-weight-bold">⚙️ Gestionar Módulos del Usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small">Seleccioná los módulos contratados que este usuario podrá utilizar:</p>
+        <input type="hidden" id="admin-user-id-modulos">
+        
+        <div class="d-flex flex-column gap-2 my-3">
+          <div class="form-check">
+            <input class="form-check-input modulo-cb" type="checkbox" value="1" id="mod_1">
+            <label class="form-check-label" for="mod_1">Módulo 1: Accidentes de Tránsito (Civil)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input modulo-cb" type="checkbox" value="2" id="mod_2">
+            <label class="form-check-label" for="mod_2">Módulo 2: Derecho Laboral / Despidos</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input modulo-cb" type="checkbox" value="3" id="mod_3">
+            <label class="form-check-label" for="mod_3">Módulo 3: Familias y Sucesiones</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input modulo-cb" type="checkbox" value="4" id="mod_4">
+            <label class="form-check-label" for="mod_4">Módulo 4: Previsional / Jubilaciones</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top border-secondary">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="ejecutarGuardarModulos()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- JS de Bootstrap (NECESARIO PARA QUE EL MODAL ABRA) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -1600,6 +1638,9 @@ function renderizarTablaUsuarios(usuarios) {
       <td>
         <button class="btn btn-sm ${u.activo ? 'btn-outline-danger' : 'btn-outline-success'} me-1" onclick="toggleActivoUsuario(${u.id}, ${u.activo})">
           ${u.activo ? 'Desactivar' : 'Activar'}
+        </button>
+        <button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalModulosUsuario(${u.id})">
+          ⚙️ Módulos
         </button>
         <button class="btn btn-sm btn-outline-info" onclick="auditarUsuario(${u.id})">
           🔍 Auditar
@@ -2339,28 +2380,31 @@ async function cargarPlantillas() {
     const res = await fetch('https://saas-demandas-legal.onrender.com/plantillas', {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
-    const plantillas = await res.json();
     
+    const plantillas = await res.json();
     const select = document.getElementById('select-plantilla');
+    if (!select) return;
+
     select.innerHTML = '<option value="">-- Seleccione una Plantilla --</option>';
 
     plantillas.forEach(p => {
       const option = document.createElement('option');
       option.value = p.id;
 
-      if (p.acceso_permitido) {
-        // Opción habilitada normal
+      // Evaluamos estrictamente si el backend otorgó permiso explícito
+      const tieneAcceso = p.acceso_permitido === true;
+
+      if (tieneAcceso) {
         option.textContent = p.nombre;
       } else {
-        // Opción bloqueada (Up-selling)
-        option.textContent = `🔒 ${p.nombre} (Requiere Plan Superior)`;
-        option.disabled = true; // Evita selección normal
+        option.textContent = `🔒 ${p.nombre} (Requiere Módulo)`;
         option.dataset.bloqueada = "true";
-        option.dataset.categoria = p.categoria_nombre || "este módulo";
+        option.dataset.categoria = p.categoria_nombre || p.nombre;
       }
 
       select.appendChild(option);
     });
+
   } catch (error) {
     console.error("Error cargando plantillas:", error);
   }
@@ -2412,6 +2456,40 @@ async function guardarModulosUsuario(usuarioId) {
   } catch (error) {
     console.error("Error actualizando módulos:", error);
     alert("❌ Error de conexión al guardar los cambios.");
+  }
+}
+
+// Al renderizar las filas de la tabla de usuarios en el Panel de Admin:
+function abrirModalModulosUsuario(usuarioId) {
+  document.getElementById('admin-user-id-modulos').value = usuarioId;
+  
+  // Limpiar/Resetear checkboxes
+  document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
+
+  const modal = new bootstrap.Modal(document.getElementById('modalGestionModulos'));
+  modal.show();
+}
+
+function ejecutarGuardarModulos() {
+  const usuarioId = document.getElementById('admin-user-id-modulos').value;
+  guardarModulosUsuario(usuarioId);
+}
+
+function abrirModalModulosUsuario(usuarioId) {
+  document.getElementById('admin-user-id-modulos').value = usuarioId;
+  document.querySelectorAll('.modulo-cb').forEach(cb => cb.checked = false);
+
+  const modalEl = document.getElementById('modalGestionModulos');
+  if (modalEl) {
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
+function ejecutarGuardarModulos() {
+  const usuarioId = document.getElementById('admin-user-id-modulos').value;
+  if (usuarioId) {
+    guardarModulosUsuario(usuarioId);
   }
 }
 </script>
