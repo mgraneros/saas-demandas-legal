@@ -447,7 +447,8 @@ def generar_demanda(
     diccionario_plantillas = {
         "auto_moto": 1,
         "auto_auto": 2,
-        "vehiculo_peaton": 3
+        "vehiculo_peaton": 3,
+        "pasajero_colectivo": 4
     }
     plantilla_seleccionada = diccionario_plantillas.get(datos.TipoDemanda, 1)
 
@@ -503,7 +504,8 @@ def generar_demanda(
         dano_moral + 
         dano_psicologico + 
         gastos_farmacia + 
-        gastos_medicos
+        gastos_medicos +
+        (datos.LiquiDanoEsteticoNum or 0.0)
     )
 
     try:
@@ -577,6 +579,10 @@ def generar_demanda(
         "DomicilioActor": datos.DomicilioActor,
         "NombreDemandado": datos.NombreDemandado,
         "DniDemandado": datos.DniDemandado,
+        "CuitDemandado": datos.CuitDemandado,
+        "LineaColectivo": datos.LineaColectivo,
+        "InternoColectivo": datos.InternoColectivo,
+        "LiquiDanoEsteticoNum": formatear_moneda(datos.LiquiDanoEsteticoNum) if datos.LiquiDanoEsteticoNum else "0,00",
         "DomicilioDemandado": datos.DomicilioDemandado,
         "AutoDemandado": datos.AutoDemandado,
         "FechaHecho": fecha_hecho_formateada,

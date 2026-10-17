@@ -71,6 +71,9 @@ class DatosDemanda(BaseModel):
     NombreAseguradora: str
     CuitAseguradora: str
     DomicilioAseguradora: str
+    CuitDemandado: Optional[str] = None
+    LineaColectivo: Optional[str] = None
+    InternoColectivo: Optional[str] = None
     
     # 3. Hechos y Lesiones
     FechaHecho: str
@@ -93,6 +96,7 @@ class DatosDemanda(BaseModel):
     
     # 5. Competencia y Liquidación
     OpcionCompetencia: str
+    LiquiDanoEsteticoNum: Optional[float] = 0.0
     LiquiDanoMaterialNum: float
     PuntosdeIncapacidad: float
 
