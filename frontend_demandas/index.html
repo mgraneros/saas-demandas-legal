@@ -322,7 +322,7 @@
                       <input type="text" class="form-control form-control-sm" id="DniDemandado" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
                     <!-- CAMPOS: Solo Colectivo -->
-                    <div class="col-md-12 mb-2 campo-solo-colectivo" style="display: none;">
+                    <div class="col-md-6 mb-2 campo-solo-colectivo" style="display: none;">
                       <label class="form-label small fw-bold text-info">CUIT Empresa de Colectivos (Extraído por IA)</label>
                       <input type="text" class="form-control form-control-sm" id="CuitDemandado" placeholder="Ej: 30-12345678-9">
                     </div>
@@ -339,7 +339,7 @@
                       <label class="form-label small">Domicilio Demandado</label>
                       <input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required>
                     </div>
-                    <div class="col-md-12 mb-2">
+                    <div class="col-md-12 mb-2 campo-ocultar-colectivo">
                       <label class="form-label small">Vehículo Demandado (marca, modelo, dominio)</label>
                       <input type="text" class="form-control form-control-sm" id="AutoDemandado" required>
                     </div>
