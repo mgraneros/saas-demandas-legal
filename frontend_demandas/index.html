@@ -1011,7 +1011,7 @@ function cambiarTipoDemanda() {
     camposOcultarColectivo.forEach(campo => campo.style.display = 'block');
   }
 
-  // 3. Lógica Compartida: Peatón o Colectivo
+  // // 3. Lógica Compartida: Peatón o Colectivo
   if (selector === "vehiculo_peaton" || selector === "pasajero_colectivo") {
     camposSoloVehiculo.forEach(campo => {
       campo.style.display = 'none';
@@ -1022,15 +1022,10 @@ function cambiarTipoDemanda() {
       }
     });
 
-    if (selector === "vehiculo_peaton") {
-      camposSoloPeaton.forEach(campo => campo.style.display = 'flex');
-    } else {
-      camposSoloPeaton.forEach(campo => {
-        campo.style.display = 'none';
-        const input = campo.querySelector('input');
-        if(input) input.value = ''; 
-      });
-    }
+    // Modificación clave: Mostramos Unidad Fiscal y Sumario para ambos (Peatón y Colectivo)
+    camposSoloPeaton.forEach(campo => {
+        campo.style.display = 'flex'; 
+    });
 
   } else {
     camposSoloVehiculo.forEach(campo => {
