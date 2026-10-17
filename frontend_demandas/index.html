@@ -270,7 +270,7 @@
                   <!--Campo Mediador, Unidad Fisal y Sumario-->
                   <div class="row mb-3 align-items-end campo-solo-peaton" style="display: none;">
                     <div class="col-md-4 mb-2" id="contenedor-mediador">
-                      <label class="form-label small text-info">Nombre del Mediador (Acta de Mediación)</label>
+                      <label class="form-label small text-info fw-bold">Nombre del Mediador</label>
                       <input type="text" class="form-control form-control-sm" id="NombreMediador" placeholder="Ej: Dr. Juan Pérez">
                     </div>
                     <div class="col-md-4 mb-2">
@@ -1175,6 +1175,9 @@ function obtenerPayloadFormulario() {
       "NombreAseguradora": document.getElementById("NombreAseguradora").value,
       "CuitAseguradora": document.getElementById("CuitAseguradora").value,
       "DomicilioAseguradora": document.getElementById("DomicilioAseguradora").value,
+      "CuitDemandado": document.getElementById("CuitDemandado") ? document.getElementById("CuitDemandado").value : "",
+      "LineaColectivo": document.getElementById("LineaColectivo") ? document.getElementById("LineaColectivo").value : "",
+      "InternoColectivo": document.getElementById("InternoColectivo") ? document.getElementById("InternoColectivo").value : "",
       "FechaHecho": document.getElementById("FechaHecho").value,
       "HoraHecho": document.getElementById("HoraHecho").value,
       "LugarHecho": document.getElementById("LugarHecho").value,
@@ -1198,7 +1201,8 @@ function obtenerPayloadFormulario() {
       "OpcionCompetencia": document.querySelector('input[name="OpcionCompetencia"]:checked')?.value || "", 
       "ListaDocumental": documentosSeleccionados,
       "LiquiDanoMaterialNum": parseFloat(document.getElementById("LiquiDanoMaterialNum").value) || 0.0,
-      "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0
+      "PuntosdeIncapacidad": parseFloat(document.getElementById("PuntosdeIncapacidad").value) || 0.0,
+      "LiquiDanoEsteticoNum": parseFloat(document.getElementById("LiquiDanoEsteticoNum") ? document.getElementById("LiquiDanoEsteticoNum").value : 0) || 0.0
     };
 }
 

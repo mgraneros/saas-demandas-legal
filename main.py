@@ -940,6 +940,9 @@ def preview_demanda(datos: schemas.DatosDemanda):
             "2_DATOS_DEMANDADO_Y_SEGURO": {
                 "NombreDemandado": datos.NombreDemandado,
                 "DniDemandado": datos.DniDemandado,
+                "CuitDemandado": datos.CuitDemandado,
+                "LineaColectivo": datos.LineaColectivo,
+                "InternoColectivo": datos.InternoColectivo,
                 "DomicilioDemandado": datos.DomicilioDemandado,
                 "AutoDemandado": datos.AutoDemandado,
                 "NombreAseguradora": datos.NombreAseguradora,
@@ -969,6 +972,7 @@ def preview_demanda(datos: schemas.DatosDemanda):
                 "Texto_Competencia_Asignado": texto_competencia,
                 "PuntosdeIncapacidad_Ingresado": datos.PuntosdeIncapacidad,
                 "Daño_Material_Ingresado": formatear_moneda(datos.LiquiDanoMaterialNum),
+                "Daño_Estetico_Ingresado": formatear_moneda(datos.LiquiDanoEsteticoNum) if hasattr(datos, 'LiquiDanoEsteticoNum') and datos.LiquiDanoEsteticoNum else "$ 0,00",
                 "Incapacidad_Fisica_Calculada": formatear_moneda(incapacidad_fisica),
                 "Daño_Moral_Calculado": formatear_moneda(dano_moral),
                 "Daño_Psicologico_Calculado": formatear_moneda(dano_psicologico),
