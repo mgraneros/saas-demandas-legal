@@ -910,7 +910,8 @@ def preview_demanda(datos: schemas.DatosDemanda):
         dano_moral + 
         dano_psicologico + 
         gastos_farmacia + 
-        gastos_medicos
+        gastos_medicos +
+        (datos.LiquiDanoEsteticoNum or 0.0)
     )
 
     # 2. Selección del texto de competencia
@@ -1385,16 +1386,20 @@ async def extraer_datos_acta(
             "NombreActor": "",
             "DomicilioActor": "",
             "DniDemandado": "",
+            "CuitDemandado": "",
             "NombreDemandado": "",
             "DomicilioDemandado": "",
+            "LineaColectivo": "",
+            "InternoColectivo": "",
             "NombreAseguradora": "",
             "CuitAseguradora": "",
             "DomicilioAseguradora": ""
         }
         
         Si no encuentras un dato específico en el documento, deja el valor como un string vacío "".
-        Asegúrate de limpiar los números de DNI y CUIT quitando puntos si los tuvieran.
+        Asegúrate de limpiar los números de DNI y CUIT quitando puntos o guiones.
         Para el NombreMediador, extrae el nombre completo del mediador interviniente (generalmente precedido por Dr./Dra.).
+        Si el demandado es una empresa de transporte o línea de colectivo, extrae su CUIT en CuitDemandado, el número de la línea en LineaColectivo (solo el número) y el interno del vehículo en InternoColectivo si estuviera disponible.
         """
 
         respuesta = await modelo.generate_content_async([

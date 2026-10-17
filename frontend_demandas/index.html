@@ -1098,14 +1098,15 @@ async function procesarActaIA() {
         if (info.NombreDemandado) document.getElementById('NombreDemandado').value = info.NombreDemandado;
         if (info.DniDemandado) document.getElementById('DniDemandado').value = info.DniDemandado;
         if (info.DomicilioDemandado) document.getElementById('DomicilioDemandado').value = info.DomicilioDemandado;
+        if (info.CuitDemandado && document.getElementById('CuitDemandado')) document.getElementById('CuitDemandado').value = info.CuitDemandado;
+        if (info.LineaColectivo && document.getElementById('LineaColectivo')) document.getElementById('LineaColectivo').value = info.LineaColectivo;
+        if (info.InternoColectivo && document.getElementById('InternoColectivo')) document.getElementById('InternoColectivo').value = info.InternoColectivo;
         if (info.NombreAseguradora) document.getElementById('NombreAseguradora').value = info.NombreAseguradora;
         if (info.CuitAseguradora) document.getElementById('CuitAseguradora').value = info.CuitAseguradora;
         if (info.DomicilioAseguradora) document.getElementById('DomicilioAseguradora').value = info.DomicilioAseguradora;
-        
-        // Cargar mediador si la IA lo encontró
         if (info.NombreMediador && document.getElementById('NombreMediador')) {
             document.getElementById('NombreMediador').value = info.NombreMediador;
-        } // <-- ESTA ERA LA LLAVE QUE FALTABA
+        } 
 
         Swal.fire({
           title: '¡Datos Extraídos!',
