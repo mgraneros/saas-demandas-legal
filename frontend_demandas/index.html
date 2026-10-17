@@ -263,7 +263,7 @@
                         <option value="auto_moto" selected>Daños y Perjuicios: Auto vs. Moto</option>
                         <option value="auto_auto">Daños y Perjuicios: Auto vs. Auto</option>
                         <option value="vehiculo_peaton">Daños y Perjuicios: Vehículo vs. Peatón</option>
-                        <option value="modelo_4" disabled>Modelo 4 (Próximamente...)</option>
+                        <option value="pasajero_colectivo">Pasajero de Colectivo</option>
                       </select>
                     </div>
                   </div>
@@ -321,6 +321,20 @@
                       <label class="form-label small">DNI Demandado</label>
                       <input type="text" class="form-control form-control-sm" id="DniDemandado" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
+                    <!-- CAMPOS: Solo Colectivo -->
+                    <div class="col-md-12 mb-2 campo-solo-colectivo" style="display: none;">
+                      <label class="form-label small fw-bold text-info">CUIT Empresa de Colectivos (Extraído por IA)</label>
+                      <input type="text" class="form-control form-control-sm" id="CuitDemandado" placeholder="Ej: 30-12345678-9">
+                    </div>
+                    <div class="col-md-6 mb-2 campo-solo-colectivo" style="display: none;">
+                      <label class="form-label small">Línea de Colectivo</label>
+                      <input type="text" class="form-control form-control-sm" id="LineaColectivo" placeholder="Ej: Línea 60">
+                    </div>
+                    <div class="col-md-6 mb-2 campo-solo-colectivo" style="display: none;">
+                      <label class="form-label small">Número de Interno</label>
+                      <input type="text" class="form-control form-control-sm" id="InternoColectivo" placeholder="Ej: 45">
+                    </div>
+                    <!-- Fin campos Colectivo -->
                     <div class="col-md-12 mb-2">
                       <label class="form-label small">Domicilio Demandado</label>
                       <input type="text" class="form-control form-control-sm" id="DomicilioDemandado" required>
@@ -345,7 +359,7 @@
 
 <!-- 3. Hechos y Lesiones -->
                   <h6 class="text-primary border-bottom pb-2 mt-3">3. Hechos y Lesiones</h6>
-                   <div class="row mb-3">
+                    <div class="row mb-3">
                     <div class="col-md-4 mb-2"><label class="form-label small">Fecha del Hecho</label><input type="date" class="form-control form-control-sm" id="FechaHecho" required></div>
     
                     <div class="col-md-4 mb-2 campo-solo-peaton flex-column" style="display: none;"><label class="form-label small">Hora del Hecho</label><input type="time" class="form-control form-control-sm" id="HoraHecho"></div>
@@ -528,11 +542,15 @@
                       </div>
                     </div>
                     
-                    <div class="col-md-6 mb-2 campo-solo-vehiculo">
+                    <div class="col-md-4 mb-2 campo-solo-vehiculo">
                       <label class="form-label small fw-bold">Monto Presupuesto Reparación ($)</label>
                       <input type="number" class="form-control form-control-sm" id="LiquiDanoMaterialNum" value="0">
                     </div>
-                    <div class="col-md-6 mb-2">
+                    <div class="col-md-4 mb-2">
+                      <label class="form-label small fw-bold">Monto Daño Estético ($)</label>
+                      <input type="number" class="form-control form-control-sm" id="LiquiDanoEsteticoNum" value="0">
+                    </div>
+                    <div class="col-md-4 mb-2">
                       <label class="form-label small fw-bold">Incapacidad Total (%)</label>
                       <input type="number" class="form-control form-control-sm " id="PuntosdeIncapacidad" value="0" readonly>
                     </div>
@@ -958,7 +976,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selector = document.getElementById("TipoDemandaSelector").value;
     const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
     const camposSoloVehiculo = document.querySelectorAll('.campo-solo-vehiculo');
-    const camposSoloPeaton = document.querySelectorAll('.campo-solo-peaton'); // <-- NUEVO GRUPO
+    const camposSoloPeaton = document.querySelectorAll('.campo-solo-peaton');
     
     // 1. Lógica para Auto vs Auto
     if (selector === "auto_auto") {
