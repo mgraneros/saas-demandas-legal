@@ -267,10 +267,10 @@
                       </select>
                     </div>
                   </div>
-                  <!--Campo Mediador, Unidad Fisal y Sumario (Solo para Peatón)-->
+                  <!--Campo Mediador, Unidad Fisal y Sumario-->
                   <div class="row mb-3 align-items-end campo-solo-peaton" style="display: none;">
-                    <div class="col-md-4 mb-2">
-                      <label class="form-label small text-info">Nombre del Mediador</label>
+                    <div class="col-md-4 mb-2" id="contenedor-mediador">
+                      <label class="form-label small text-info">Nombre del Mediador (Acta de Mediación)</label>
                       <input type="text" class="form-control form-control-sm" id="NombreMediador" placeholder="Ej: Dr. Juan Pérez">
                     </div>
                     <div class="col-md-4 mb-2">
@@ -1011,7 +1011,7 @@ function cambiarTipoDemanda() {
     camposOcultarColectivo.forEach(campo => campo.style.display = 'block');
   }
 
-  // // 3. Lógica Compartida: Peatón o Colectivo
+// 3. Lógica Compartida: Peatón o Colectivo
   if (selector === "vehiculo_peaton" || selector === "pasajero_colectivo") {
     camposSoloVehiculo.forEach(campo => {
       campo.style.display = 'none';
@@ -1022,10 +1022,21 @@ function cambiarTipoDemanda() {
       }
     });
 
-    // Modificación clave: Mostramos Unidad Fiscal y Sumario para ambos (Peatón y Colectivo)
+    // Mostramos la fila entera (que contiene Sumario y U. Fiscal)
     camposSoloPeaton.forEach(campo => {
         campo.style.display = 'flex'; 
     });
+
+    // Lógica específica para ocultar solo el Mediador si es Colectivo
+    const contenedorMediador = document.getElementById("contenedor-mediador");
+    if (contenedorMediador) {
+        if (selector === "vehiculo_peaton") {
+            contenedorMediador.style.display = "block"; // Se muestra para Peatón
+        } else {
+            contenedorMediador.style.display = "none";  // Se oculta para Colectivo
+            document.getElementById("NombreMediador").value = ""; // Limpiamos el dato
+        }
+    }
 
   } else {
     camposSoloVehiculo.forEach(campo => {
