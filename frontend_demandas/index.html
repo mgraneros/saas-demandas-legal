@@ -317,7 +317,7 @@
                       <label class="form-label small">Nombre Demandado</label>
                       <input type="text" class="form-control form-control-sm" id="NombreDemandado" required>
                     </div>
-                    <div class="col-md-6 mb-2">
+                    <div class="col-md-6 mb-2 campo-ocultar-colectivo">
                       <label class="form-label small">DNI Demandado</label>
                       <input type="text" class="form-control form-control-sm" id="DniDemandado" pattern="\d{7,8}" maxlength="8" minlength="7" title="Ingrese un DNI válido de 7 u 8 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
@@ -977,7 +977,8 @@ function cambiarTipoDemanda() {
   const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
   const camposSoloVehiculo = document.querySelectorAll('.campo-solo-vehiculo');
   const camposSoloPeaton = document.querySelectorAll('.campo-solo-peaton');
-  const camposSoloColectivo = document.querySelectorAll('.campo-solo-colectivo'); // <-- NUEVO GRUPO
+  const camposSoloColectivo = document.querySelectorAll('.campo-solo-colectivo');
+  const camposOcultarColectivo = document.querySelectorAll('.campo-ocultar-colectivo'); // <-- NUEVA VARIABLE
 
   // 1. Lógica para Auto vs Auto
   if (selector === "auto_auto") {
@@ -990,20 +991,27 @@ function cambiarTipoDemanda() {
     });
   }
 
-  // 2. NUEVA LÓGICA: Pasajero de Colectivo
+  // 2. LÓGICA: Pasajero de Colectivo
   if (selector === "pasajero_colectivo") {
     camposSoloColectivo.forEach(campo => campo.style.display = 'block');
+    // Si es colectivo, ocultamos el DNI del Demandado (y todo lo que tenga esta clase)
+    camposOcultarColectivo.forEach(campo => {
+      campo.style.display = 'none';
+      const input = campo.querySelector('input');
+      if(input) input.value = ''; 
+    });
   } else {
     camposSoloColectivo.forEach(campo => {
       campo.style.display = 'none';
       const input = campo.querySelector('input');
       if(input) input.value = ''; 
     });
+    // Si NO es colectivo, volvemos a mostrar el DNI del Demandado
+    camposOcultarColectivo.forEach(campo => campo.style.display = 'block');
   }
 
-  // 3. Lógica Compartida: Peatón o Colectivo (Ninguno de los dos usa Vehículo Propio ni Reparación)
+  // 3. Lógica Compartida: Peatón o Colectivo
   if (selector === "vehiculo_peaton" || selector === "pasajero_colectivo") {
-    // Ocultamos los datos del vehículo del actor y presupuesto del taller
     camposSoloVehiculo.forEach(campo => {
       campo.style.display = 'none';
       const input = campo.querySelector('input');
@@ -1013,7 +1021,6 @@ function cambiarTipoDemanda() {
       }
     });
 
-    // Manejo específico del Mediador (solo para peatón)
     if (selector === "vehiculo_peaton") {
       camposSoloPeaton.forEach(campo => campo.style.display = 'flex');
     } else {
@@ -1025,7 +1032,6 @@ function cambiarTipoDemanda() {
     }
 
   } else {
-    // Si es Auto vs Moto o Auto vs Auto: Mostramos Vehículos
     camposSoloVehiculo.forEach(campo => {
       campo.style.display = 'block';
       const input = campo.querySelector('input');
@@ -1033,7 +1039,6 @@ function cambiarTipoDemanda() {
          input.setAttribute('required', 'required');
       }
     });
-    // Ocultamos mediador
     camposSoloPeaton.forEach(campo => {
       campo.style.display = 'none';
       const input = campo.querySelector('input');
