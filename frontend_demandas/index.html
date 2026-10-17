@@ -263,7 +263,7 @@
                         <option value="auto_moto" selected>Daños y Perjuicios: Auto vs. Moto</option>
                         <option value="auto_auto">Daños y Perjuicios: Auto vs. Auto</option>
                         <option value="vehiculo_peaton">Daños y Perjuicios: Vehículo vs. Peatón</option>
-                        <option value="pasajero_colectivo">Pasajero de Colectivo</option>
+                        <option value="pasajero_colectivo">Daños y Perjuicios: Pasajero de Colectivo</option>
                       </select>
                     </div>
                   </div>
@@ -972,53 +972,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
 // --- LÓGICA DEL SELECTOR DE TIPO DE DEMANDA ---
-  function cambiarTipoDemanda() {
-    const selector = document.getElementById("TipoDemandaSelector").value;
-    const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
-    const camposSoloVehiculo = document.querySelectorAll('.campo-solo-vehiculo');
-    const camposSoloPeaton = document.querySelectorAll('.campo-solo-peaton');
-    
-    // 1. Lógica para Auto vs Auto
-    if (selector === "auto_auto") {
-      camposAutoAuto.forEach(campo => campo.style.display = 'block');
-    } else {
-      camposAutoAuto.forEach(campo => {
-        campo.style.display = 'none';
-        const input = campo.querySelector('input');
-        if(input) input.value = ''; 
-      });
-    }
+function cambiarTipoDemanda() {
+  const selector = document.getElementById("TipoDemandaSelector").value;
+  const camposAutoAuto = document.querySelectorAll('.campo-auto-auto');
+  const camposSoloVehiculo = document.querySelectorAll('.campo-solo-vehiculo');
+  const camposSoloPeaton = document.querySelectorAll('.campo-solo-peaton');
+  const camposSoloColectivo = document.querySelectorAll('.campo-solo-colectivo'); // <-- NUEVO GRUPO
 
-    // 2. Lógica para Peatón
+  // 1. Lógica para Auto vs Auto
+  if (selector === "auto_auto") {
+    camposAutoAuto.forEach(campo => campo.style.display = 'block');
+  } else {
+    camposAutoAuto.forEach(campo => {
+      campo.style.display = 'none';
+      const input = campo.querySelector('input');
+      if(input) input.value = ''; 
+    });
+  }
+
+  // 2. NUEVA LÓGICA: Pasajero de Colectivo
+  if (selector === "pasajero_colectivo") {
+    camposSoloColectivo.forEach(campo => campo.style.display = 'block');
+  } else {
+    camposSoloColectivo.forEach(campo => {
+      campo.style.display = 'none';
+      const input = campo.querySelector('input');
+      if(input) input.value = ''; 
+    });
+  }
+
+  // 3. Lógica Compartida: Peatón o Colectivo (Ninguno de los dos usa Vehículo Propio ni Reparación)
+  if (selector === "vehiculo_peaton" || selector === "pasajero_colectivo") {
+    // Ocultamos los datos del vehículo del actor y presupuesto del taller
+    camposSoloVehiculo.forEach(campo => {
+      campo.style.display = 'none';
+      const input = campo.querySelector('input');
+      if(input) {
+        input.removeAttribute('required');
+        if (input.type === "number") input.value = "0";
+      }
+    });
+
+    // Manejo específico del Mediador (solo para peatón)
     if (selector === "vehiculo_peaton") {
-      // Ocultamos vehículos
-      camposSoloVehiculo.forEach(campo => {
-        campo.style.display = 'none';
-        const input = campo.querySelector('input');
-        if(input) {
-          input.removeAttribute('required');
-          if (input.type === "number") input.value = "0";
-        }
-      });
-      // Mostramos mediador (exclusivo peatón)
       camposSoloPeaton.forEach(campo => campo.style.display = 'flex');
     } else {
-      // Mostramos vehículos
-      camposSoloVehiculo.forEach(campo => {
-        campo.style.display = 'block';
-        const input = campo.querySelector('input');
-        if(input && input.id !== "LiquiDanoMaterialNum") {
-           input.setAttribute('required', 'required');
-        }
-      });
-      // Ocultamos mediador
       camposSoloPeaton.forEach(campo => {
         campo.style.display = 'none';
         const input = campo.querySelector('input');
         if(input) input.value = ''; 
       });
     }
+
+  } else {
+    // Si es Auto vs Moto o Auto vs Auto: Mostramos Vehículos
+    camposSoloVehiculo.forEach(campo => {
+      campo.style.display = 'block';
+      const input = campo.querySelector('input');
+      if(input && input.id !== "LiquiDanoMaterialNum") {
+         input.setAttribute('required', 'required');
+      }
+    });
+    // Ocultamos mediador
+    camposSoloPeaton.forEach(campo => {
+      campo.style.display = 'none';
+      const input = campo.querySelector('input');
+      if(input) input.value = ''; 
+    });
   }
+}
   // --- FUNCIÓN: PROCESAR ACTA CON IA ---
 async function procesarActaIA() {
     const fileInput = document.getElementById('actaFile');
