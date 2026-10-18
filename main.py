@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Any
 from pydantic import BaseModel
@@ -1410,11 +1411,38 @@ async def extraer_datos_acta(
         Si el demandado es una empresa de transporte o línea de colectivo, extrae su CUIT en CuitDemandado, el número de la línea en LineaColectivo (solo el número) y el interno del vehículo en InternoColectivo si estuviera disponible.
         """
 
-        respuesta = await modelo.generate_content_async([
-            {"mime_type": mime_type, "data": contenido_archivo}, 
-            prompt
-        ])
-        
+        # --- NUEVO: SISTEMA DE REINTENTOS (RETRY) ---
+        max_reintentos = 3
+        intento_actual = 0
+        respuesta = None
+
+        while intento_actual < max_reintentos:
+            try:
+                print(f"▶️ [DEBUG IA] Intento {intento_actual + 1} de {max_reintentos}...")
+                respuesta = await modelo.generate_content_async([
+                    {"mime_type": mime_type, "data": contenido_archivo}, 
+                    prompt
+                ])
+                break  # Si tiene éxito, salimos del bucle
+            except Exception as e:
+                error_msg = str(e).lower()
+                if "429" in error_msg or "quota" in error_msg:
+                    intento_actual += 1
+                    if intento_actual < max_reintentos:
+                        espera = 2 * intento_actual # Espera progresiva: 2s, luego 4s
+                        print(f"⚠️ [DEBUG IA] Servidor saturado (Error 429). Esperando {espera} segundos antes de reintentar...")
+                        await asyncio.sleep(espera)
+                    else:
+                        print("❌ [DEBUG IA] Se agotaron los reintentos automáticos.")
+                        raise HTTPException(
+                            status_code=429, 
+                            detail="Nuestros servidores de IA están saturados en este momento. Por favor, aguardá unos minutos y volvé a intentar."
+                        )
+                else:
+                    # Si es un error distinto (ej. credenciales inválidas), corta de inmediato
+                    raise e
+        # ---------------------------------------------
+
         print("✅ [DEBUG IA] 4. ¡Respuesta de Gemini recibida con éxito!")
 
         texto_limpio = respuesta.text.replace("```json", "").replace("```", "").strip()
@@ -1431,20 +1459,11 @@ async def extraer_datos_acta(
         print("❌ [DEBUG IA] Error: La respuesta de la IA no era un JSON válido.")
         raise HTTPException(status_code=500, detail="La IA no devolvió un formato JSON válido. Intenta nuevamente.")
     
+    except HTTPException as http_exc:
+        raise http_exc # Respetamos los errores HTTP controlados (429, 413, 400)
     except Exception as e:
-        error_msg = str(e)
-        print(f"❌ [DEBUG IA] Error crítico: {error_msg}")
-        
-        # --- NUEVA LÓGICA: Escudo contra el límite de cuota (429) ---
-        if "429" in error_msg or "quota" in error_msg.lower():
-            raise HTTPException(
-                status_code=429, 
-                detail="Nuestros servidores de IA están procesando un alto volumen de actas. Por favor, aguardá 1 minuto y volvé a intentar."
-            )
-        # ------------------------------------------------------------
-        
-        # Si es otro error raro, sigue mostrándolo como antes
-        raise HTTPException(status_code=500, detail=f"Error interno al procesar el acta con IA: {error_msg}")
+        print(f"❌ [DEBUG IA] Error crítico: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno al procesar el acta con IA: {str(e)}")
 
 @app.get("/modelos-ia", summary="Listar modelos permitidos por mi API Key")
 def listar_modelos():
