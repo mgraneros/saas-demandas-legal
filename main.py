@@ -1708,6 +1708,20 @@ def registrar_plantillas(db: Session = Depends(get_db)):
     else:
         p3.ruta_archivo = "templates/Borrador_Demanda_Vehiculo_Peaton.docx"
     
+    p4 = db.query(models.Plantilla).filter(models.Plantilla.id == 4).first()
+    if not p4:
+        nueva_p4 = models.Plantilla(
+            id=4, 
+            nombre="Pasajero de Colectivo", 
+            categoria="Accidentes de Tránsito", 
+            descripcion="Demanda por accidente como pasajero de transporte público",
+            ruta_archivo="templates/Borrador_Plantilla_Demanda_Otros_Colectivo.docx", 
+            activa=True
+        )
+        db.add(nueva_p4)
+    else:
+        p4.ruta_archivo = "templates/Borrador_Plantilla_Demanda_Otros_Colectivo.docx"
+    
     db.commit()
     return {"mensaje": "¡Las plantillas se registraron y actualizaron correctamente en la base de datos con la ruta 'templates/'!"}
     
