@@ -651,6 +651,14 @@ def generar_demanda(
                 print("📧 [BACKGROUND] Correo despachado con éxito.")
             except Exception as mail_err:
                 print(f"❌ [BACKGROUND] Error enviando correo: {mail_err}")
+            
+            # 3. LIMPIEZA: Borrar el archivo temporal del disco del servidor    
+            try:
+                if os.path.exists(ruta_salida):
+                    os.remove(ruta_salida)
+                    print(f"🧹 [BACKGROUND] Archivo temporal eliminado: {ruta_salida}")
+            except Exception as del_err:
+                print(f"❌ [BACKGROUND] Error borrando archivo temporal: {del_err}")
 
         # Le decimos a FastAPI que ejecute esto después de entregarle el Word al usuario
         background_tasks.add_task(tareas_post_generacion)
