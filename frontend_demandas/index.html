@@ -882,8 +882,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
 
-  </body>
-</html>
 <!-- MODAL GESTIÓN DE MÓDULOS (ADMIN) -->
 <div class="modal fade" id="modalGestionModulos" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -1280,7 +1278,7 @@ async function ejecutarPreview() {
   }
 }
 
-  async function descargarWord() {
+async function descargarWord() {
     const payload = obtenerPayloadFormulario();
     const resultadoBox = document.getElementById("resultadoAuditoria");
     const token = localStorage.getItem("access_token");
@@ -1290,9 +1288,9 @@ async function ejecutarPreview() {
     Swal.fire({
         title: 'Procesando...',
         text: 'Generando la demanda, por favor aguardá un instante.',
-        allowOutsideClick: false, // Evita que se cierre si hacen clic afuera
+        allowOutsideClick: false,
         didOpen: () => {
-            Swal.showLoading(); // Activa la animación de carga
+            Swal.showLoading();
         }
     });
 
@@ -1306,7 +1304,12 @@ async function ejecutarPreview() {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) throw new Error("Error en el servidor al generar el documento.");
+      // --- CAMBIO CLAVE: Leer el error exacto del servidor ---
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Disparamos el error usando el texto que mandó Python (ej: "La cuenta principal ya no tiene demandas disponibles...")
+        throw new Error(errorData.detail || "Error en el servidor al generar el documento.");
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -1317,10 +1320,10 @@ async function ejecutarPreview() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    // 1. Vaciamos el formulario (Reemplazá 'form-demanda' por el ID real de tu <form>)
+      
+      // Vaciamos el formulario y limpiamos el borrador
       document.getElementById('formularioDemanda').reset();
       localStorage.removeItem('demandaBorradorSaaS');
-    // 2. Volvemos a ocultar los campos condicionales (Esguince, Fractura, etc)
       document.querySelectorAll('.extra-input').forEach(input => input.classList.add('d-none'));
 
       resultadoBox.textContent += "\n¡Documento generado y descargado con éxito!";
@@ -1335,10 +1338,12 @@ async function ejecutarPreview() {
 
     } catch (error) {
       resultadoBox.textContent += `\nError crítico: ${error.message}`;
+      
+      // --- CAMBIO CLAVE: Mostrar el mensaje dinámico en el cartel ---
       Swal.fire({
-        title: 'Error de Generación',
-        text: 'Hubo un problema al crear el documento. Intente nuevamente.',
-        icon: 'error',
+        title: 'Atención',
+        text: error.message, // Acá va a mostrar dinámicamente si falta saldo, si no tiene plan, etc.
+        icon: 'warning', 
         confirmButtonText: 'Cerrar',
         confirmButtonColor: '#dc3545'
       });
