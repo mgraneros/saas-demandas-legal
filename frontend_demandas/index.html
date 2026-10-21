@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Tu CSS Personalizado -->
     <link rel="stylesheet" href="styles.css">
+    <!-- Importamos Chart.js para los gráficos del panel admin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <!-- Envoltorio Principal Flex -->
@@ -713,6 +715,18 @@
         <div class="card bg-warning text-dark p-3 shadow-sm">
           <h5>Ingresos Mensuales</h5>
           <h2 id="metric-ingresos" class="fw-bold mb-0">$0</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico de Adopción -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow-sm p-3" style="background: var(--bg-card); border-color: var(--border-color);">
+          <h5 class="fw-bold mb-3" style="color: var(--text-main);">Distribución por Tipo de Demanda</h5>
+          <div style="position: relative; height: 250px; width: 100%;">
+            <canvas id="graficoDemandas"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -1624,7 +1638,11 @@ async function cargarPanelAdmin() {
         metricIngresos.textContent = `$${ingresos.toLocaleString('es-AR')}`;
       }
 
-      // 3. Traer y renderizar usuarios
+      // --- 3. NUEVO: CARGAR GRÁFICO DE DEMANDAS ---
+      await cargarGraficoDemandas(token);
+      // --------------------------------------------
+
+      // 4. Traer y renderizar usuarios
       const resUsuarios = await fetch(`${API_URL}/admin/usuarios`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -2695,6 +2713,57 @@ document.addEventListener('change', (e) => {
 
 // Restauramos usando window.load para asegurar que todo el HTML ya exista
 window.addEventListener('load', restaurarBorrador);
+
+let chartDemandasInstancia = null; // Variable global para guardar el gráfico y evitar que se duplique
+
+async function cargarGraficoDemandas(token) {
+  try {
+    const res = await fetch(`${API_URL}/admin/estadisticas/graficos`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    
+    if (res.ok) {
+      const datos = await res.json();
+      const ctx = document.getElementById('graficoDemandas').getContext('2d');
+
+      // Si ya existía un gráfico, lo destruimos antes de dibujar el nuevo para evitar bugs visuales
+      if (chartDemandasInstancia) {
+        chartDemandasInstancia.destroy();
+      }
+
+      chartDemandasInstancia = new Chart(ctx, {
+        type: 'doughnut', // Tipo de gráfico: rosquilla
+        data: {
+          labels: datos.etiquetas,
+          datasets: [{
+            data: datos.valores,
+            backgroundColor: [
+              '#0d6efd', // Azul
+              '#198754', // Verde
+              '#ffc107', // Amarillo
+              '#dc3545', // Rojo
+              '#6f42c1'  // Violeta
+            ],
+            borderWidth: 2,
+            borderColor: '#1e1e2d' // Borde oscuro que combina con tu tema
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { color: '#cbd5e1' } // Letra clara para fondo oscuro
+            }
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error al cargar el gráfico de demandas:", error);
+  }
+}
 
 </script>
 </body>
