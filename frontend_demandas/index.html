@@ -2620,7 +2620,7 @@ async function guardarModulosUsuario(usuarioId) {
     alert(`❌ Error de red/conexión: ${error.message}`);
   }
 
-  // ==========================================
+// ==========================================
 // SISTEMA DE GUARDADO AUTOMÁTICO (BORRADOR)
 // ==========================================
 
@@ -2629,7 +2629,7 @@ function guardarBorrador() {
     const datosBorrador = {};
 
     campos.forEach(campo => {
-        if (campo.id && campo.type !== 'file') {
+        if (campo.id && campo.type !== 'file' && campo.type !== 'button' && campo.type !== 'submit') {
             if (campo.type === 'checkbox' || campo.type === 'radio') {
                 datosBorrador[campo.id] = campo.checked;
             } else {
@@ -2639,6 +2639,7 @@ function guardarBorrador() {
     });
 
     localStorage.setItem('demandaBorradorSaaS', JSON.stringify(datosBorrador));
+    console.log("💾 Borrador guardado."); // Aviso invisible para saber que funciona
 }
 
 function restaurarBorrador() {
@@ -2647,7 +2648,19 @@ function restaurarBorrador() {
     if (guardado) {
         const datosBorrador = JSON.parse(guardado);
         
+        // 1. Primero restauramos el selector principal y activamos el cambio de vista
+        if (datosBorrador["TipoDemandaSelector"]) {
+            const selector = document.getElementById("TipoDemandaSelector");
+            if (selector) {
+                selector.value = datosBorrador["TipoDemandaSelector"];
+                if (typeof cambiarTipoDemanda === 'function') cambiarTipoDemanda();
+            }
+        }
+
+        // 2. Luego restauramos el resto de los datos en los campos visibles
         for (const idCampo in datosBorrador) {
+            if (idCampo === "TipoDemandaSelector") continue; // Este ya lo cargamos
+            
             const campo = document.getElementById(idCampo);
             if (campo && campo.type !== 'file') {
                 if (campo.type === 'checkbox' || campo.type === 'radio') {
@@ -2658,18 +2671,12 @@ function restaurarBorrador() {
             }
         }
         console.log("✅ Borrador restaurado con éxito.");
-        
-        // Refrescamos la vista por si había seleccionado Pasajero de Colectivo u otro
-        if (typeof cambiarTipoDemanda === 'function') {
-            cambiarTipoDemanda();
-        }
     }
 }
 
-// Activamos el escuchador
-document.addEventListener('DOMContentLoaded', () => {
+// Inicialización a prueba de fallos (sin importar en qué milisegundo cargue la web)
+function iniciarBorrador() {
     restaurarBorrador();
-
     const campos = document.querySelectorAll('input, textarea, select');
     campos.forEach(campo => {
         if (campo.type !== 'file') {
@@ -2677,7 +2684,14 @@ document.addEventListener('DOMContentLoaded', () => {
             campo.addEventListener('change', guardarBorrador);
         }
     });
-});
+}
+
+// Verifica si la página ya cargó o si todavía está cargando
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarBorrador);
+} else {
+    setTimeout(iniciarBorrador, 200); // Le damos 0.2 segundos de margen por las dudas
+}
 }
 </script>
 </body>
