@@ -4,6 +4,7 @@
 function forzarCierreSesion(motivo = "Sesión finalizada.") {
   localStorage.removeItem("access_token");
   localStorage.removeItem("token");
+  localStorage.removeItem("demandaBorradorSaaS");
   sessionStorage.clear();
   alert(motivo);
   window.location.href = "login.html";

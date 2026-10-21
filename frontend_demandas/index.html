@@ -1319,6 +1319,7 @@ async function ejecutarPreview() {
       window.URL.revokeObjectURL(url);
     // 1. Vaciamos el formulario (Reemplazá 'form-demanda' por el ID real de tu <form>)
       document.getElementById('formularioDemanda').reset();
+      localStorage.removeItem('demandaBorradorSaaS');
     // 2. Volvemos a ocultar los campos condicionales (Esguince, Fractura, etc)
       document.querySelectorAll('.extra-input').forEach(input => input.classList.add('d-none'));
 
@@ -2618,6 +2619,65 @@ async function guardarModulosUsuario(usuarioId) {
     console.error("Error detallado al guardar módulos:", error);
     alert(`❌ Error de red/conexión: ${error.message}`);
   }
+
+  // ==========================================
+// SISTEMA DE GUARDADO AUTOMÁTICO (BORRADOR)
+// ==========================================
+
+function guardarBorrador() {
+    const campos = document.querySelectorAll('input, textarea, select');
+    const datosBorrador = {};
+
+    campos.forEach(campo => {
+        if (campo.id && campo.type !== 'file') {
+            if (campo.type === 'checkbox' || campo.type === 'radio') {
+                datosBorrador[campo.id] = campo.checked;
+            } else {
+                datosBorrador[campo.id] = campo.value;
+            }
+        }
+    });
+
+    localStorage.setItem('demandaBorradorSaaS', JSON.stringify(datosBorrador));
+}
+
+function restaurarBorrador() {
+    const guardado = localStorage.getItem('demandaBorradorSaaS');
+    
+    if (guardado) {
+        const datosBorrador = JSON.parse(guardado);
+        
+        for (const idCampo in datosBorrador) {
+            const campo = document.getElementById(idCampo);
+            if (campo && campo.type !== 'file') {
+                if (campo.type === 'checkbox' || campo.type === 'radio') {
+                    campo.checked = datosBorrador[idCampo];
+                } else {
+                    campo.value = datosBorrador[idCampo];
+                }
+            }
+        }
+        console.log("✅ Borrador restaurado con éxito.");
+        
+        // Refrescamos la vista por si había seleccionado Pasajero de Colectivo u otro
+        if (typeof cambiarTipoDemanda === 'function') {
+            cambiarTipoDemanda();
+        }
+    }
+}
+
+// Activamos el escuchador
+document.addEventListener('DOMContentLoaded', () => {
+    restaurarBorrador();
+
+    const campos = document.querySelectorAll('input, textarea, select');
+    campos.forEach(campo => {
+        if (campo.type !== 'file') {
+            campo.addEventListener('input', guardarBorrador);
+            campo.addEventListener('change', guardarBorrador);
+        }
+    });
+});
 }
 </script>
 </body>
