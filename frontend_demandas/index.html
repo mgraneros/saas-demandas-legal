@@ -2639,7 +2639,7 @@ function guardarBorrador() {
     });
 
     localStorage.setItem('demandaBorradorSaaS', JSON.stringify(datosBorrador));
-    console.log("💾 Borrador guardado."); // Aviso invisible para saber que funciona
+    console.log("💾 Borrador guardado."); 
 }
 
 function restaurarBorrador() {
@@ -2648,7 +2648,7 @@ function restaurarBorrador() {
     if (guardado) {
         const datosBorrador = JSON.parse(guardado);
         
-        // 1. Primero restauramos el selector principal y activamos el cambio de vista
+        // 1. Restaurar selector principal
         if (datosBorrador["TipoDemandaSelector"]) {
             const selector = document.getElementById("TipoDemandaSelector");
             if (selector) {
@@ -2657,9 +2657,9 @@ function restaurarBorrador() {
             }
         }
 
-        // 2. Luego restauramos el resto de los datos en los campos visibles
+        // 2. Restaurar el resto
         for (const idCampo in datosBorrador) {
-            if (idCampo === "TipoDemandaSelector") continue; // Este ya lo cargamos
+            if (idCampo === "TipoDemandaSelector") continue;
             
             const campo = document.getElementById(idCampo);
             if (campo && campo.type !== 'file') {
@@ -2674,24 +2674,21 @@ function restaurarBorrador() {
     }
 }
 
-// Inicialización a prueba de fallos (sin importar en qué milisegundo cargue la web)
-function iniciarBorrador() {
-    restaurarBorrador();
-    const campos = document.querySelectorAll('input, textarea, select');
-    campos.forEach(campo => {
-        if (campo.type !== 'file') {
-            campo.addEventListener('input', guardarBorrador);
-            campo.addEventListener('change', guardarBorrador);
-        }
-    });
-}
+// Usamos delegación de eventos: el documento escucha todo lo que se tipea
+document.addEventListener('input', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        guardarBorrador();
+    }
+});
 
-// Verifica si la página ya cargó o si todavía está cargando
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', iniciarBorrador);
-} else {
-    setTimeout(iniciarBorrador, 200); // Le damos 0.2 segundos de margen por las dudas
-}
+document.addEventListener('change', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        guardarBorrador();
+    }
+});
+
+// Restauramos usando window.load para asegurar que todo el HTML ya exista
+window.addEventListener('load', restaurarBorrador);
 }
 </script>
 </body>
