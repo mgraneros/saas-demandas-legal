@@ -1193,21 +1193,32 @@ def obtener_estadisticas_admin(
             detail="Acceso denegado. Se requieren permisos de administrador."
         )
 
-    total_usuarios = db.query(models.Usuario).count()
-    total_demandas = db.query(models.DemandaGenerada).count()
+    # 1. Total usuarios (excluyendo admins)
+    total_usuarios = db.query(models.Usuario).filter(models.Usuario.es_admin == False).count()
     
-    # 1. Total para la tarjeta (incluye las pruebas gratuitas)
-    suscripciones_activas = db.query(models.Suscripcion).filter(
-        models.Suscripcion.activa == True
-    ).count()
-
-    # 2. Filtro de pagas para el cálculo (excluimos el plan "Free" o "Prueba")
-    suscripciones_pagas = db.query(models.Suscripcion).filter(
+    # 2. Total demandas (cruzando con Usuario para excluir admins)
+    total_demandas = db.query(models.DemandaGenerada).join(
+        models.Usuario, models.DemandaGenerada.usuario_id == models.Usuario.id
+    ).filter(models.Usuario.es_admin == False).count()
+    
+    # 3. Suscripciones activas (excluyendo admins)
+    suscripciones_activas = db.query(models.Suscripcion).join(
+        models.Usuario, models.Suscripcion.usuario_id == models.Usuario.id
+    ).filter(
         models.Suscripcion.activa == True,
-        models.Suscripcion.plan != "Free" 
+        models.Usuario.es_admin == False
     ).count()
 
-    # 3. Cálculo de ingresos (Modifica el 25000 por tu tarifa real)
+    # 4. Suscripciones pagas para cálculo de ingresos (excluyendo "Free" y admins)
+    suscripciones_pagas = db.query(models.Suscripcion).join(
+        models.Usuario, models.Suscripcion.usuario_id == models.Usuario.id
+    ).filter(
+        models.Suscripcion.activa == True,
+        models.Suscripcion.plan != "Free",
+        models.Usuario.es_admin == False
+    ).count()
+
+    # Cálculo de ingresos
     tarifa_mensual = 25000 
     ingresos_estimados = suscripciones_pagas * tarifa_mensual
 
@@ -1223,20 +1234,24 @@ def obtener_graficos_admin(
     db: Session = Depends(get_db),
     current_user: models.Usuario = Depends(get_current_user)
 ):
-    # 1. Bloqueo de seguridad: solo admins
     if not getattr(current_user, "es_admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acceso denegado."
         )
 
-    # 2. Agrupar y contar las demandas generadas por ID de plantilla
+    # Agrupar y contar demandas, excluyendo las generadas por admins
     resultados = db.query(
         models.DemandaGenerada.plantilla_id,
         func.count(models.DemandaGenerada.id)
-    ).group_by(models.DemandaGenerada.plantilla_id).all()
+    ).join(
+        models.Usuario, models.DemandaGenerada.usuario_id == models.Usuario.id
+    ).filter(
+        models.Usuario.es_admin == False
+    ).group_by(
+        models.DemandaGenerada.plantilla_id
+    ).all()
 
-    # 3. Diccionario para traducir el ID de la base de datos a un nombre comercial legible
     nombres_plantillas = {
         1: "Auto vs Moto",
         2: "Auto vs Auto",
@@ -1244,14 +1259,12 @@ def obtener_graficos_admin(
         4: "Pasajero Colectivo"
     }
 
-    # 4. Formatear la respuesta exacta que necesita Chart.js en el frontend
     datos_grafico = {
         "etiquetas": [],
         "valores": []
     }
 
     for plantilla_id, total in resultados:
-        # Si el ID existe en el diccionario, usa el nombre; si no, dice "Otros"
         nombre = nombres_plantillas.get(plantilla_id, f"Otros (ID: {plantilla_id})")
         datos_grafico["etiquetas"].append(nombre)
         datos_grafico["valores"].append(total)
