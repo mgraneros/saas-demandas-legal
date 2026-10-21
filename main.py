@@ -43,6 +43,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 # Módulos propios del proyecto
 from database import get_db, engine
@@ -1216,6 +1217,46 @@ def obtener_estadisticas_admin(
         "demandas_generadas": total_demandas,
         "ingresos_mensuales": ingresos_estimados
     }
+
+@app.get("/admin/estadisticas/graficos", summary="Datos para el gráfico de demandas")
+def obtener_graficos_admin(
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    # 1. Bloqueo de seguridad: solo admins
+    if not getattr(current_user, "es_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado."
+        )
+
+    # 2. Agrupar y contar las demandas generadas por ID de plantilla
+    resultados = db.query(
+        models.DemandaGenerada.plantilla_id,
+        func.count(models.DemandaGenerada.id)
+    ).group_by(models.DemandaGenerada.plantilla_id).all()
+
+    # 3. Diccionario para traducir el ID de la base de datos a un nombre comercial legible
+    nombres_plantillas = {
+        1: "Auto vs Moto",
+        2: "Auto vs Auto",
+        3: "Vehículo vs Peatón",
+        4: "Pasajero Colectivo"
+    }
+
+    # 4. Formatear la respuesta exacta que necesita Chart.js en el frontend
+    datos_grafico = {
+        "etiquetas": [],
+        "valores": []
+    }
+
+    for plantilla_id, total in resultados:
+        # Si el ID existe en el diccionario, usa el nombre; si no, dice "Otros"
+        nombre = nombres_plantillas.get(plantilla_id, f"Otros (ID: {plantilla_id})")
+        datos_grafico["etiquetas"].append(nombre)
+        datos_grafico["valores"].append(total)
+
+    return datos_grafico
 
 
 @app.get("/suscripcion/estado", summary="Verificar el estado de la suscripción actual")
