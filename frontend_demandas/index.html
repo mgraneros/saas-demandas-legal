@@ -2619,6 +2619,7 @@ async function guardarModulosUsuario(usuarioId) {
     console.error("Error detallado al guardar módulos:", error);
     alert(`❌ Error de red/conexión: ${error.message}`);
   }
+}
 
 // ==========================================
 // SISTEMA DE GUARDADO AUTOMÁTICO (BORRADOR)
@@ -2689,7 +2690,7 @@ document.addEventListener('change', (e) => {
 
 // Restauramos usando window.load para asegurar que todo el HTML ya exista
 window.addEventListener('load', restaurarBorrador);
-}
+
 </script>
 </body>
 </html>
