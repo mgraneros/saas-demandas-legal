@@ -1228,9 +1228,8 @@ async function ejecutarPreview() {
   const payload = obtenerPayloadFormulario();
   const resultadoBox = document.getElementById("resultadoAuditoria");
   const token = localStorage.getItem("access_token");
-  const btnAuditar = document.getElementById("btnAuditar"); // Capturamos el botón
+  const btnAuditar = document.getElementById("btnAuditar");
   
-  // 1. Cambiamos el botón a estado "Cargando" y lo deshabilitamos
   if (btnAuditar) {
     btnAuditar.disabled = true;
     btnAuditar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>En proceso...';
@@ -1238,7 +1237,6 @@ async function ejecutarPreview() {
   
   resultadoBox.textContent = "Validando datos con el servidor...";
 
-  // 2. Mostramos un popup de carga que bloquea la pantalla
   Swal.fire({
     title: 'Auditando datos',
     html: 'Por favor espere unos segundos...',
@@ -1263,7 +1261,7 @@ async function ejecutarPreview() {
       throw new Error(JSON.stringify(errorData, null, 2));
     }
 
-const data = await response.json();
+    const data = await response.json();
     
     // --- INICIO DEL NUEVO RESUMEN EJECUTIVO PROTEGIDO ---
     const d = data.datos_para_revision;
@@ -1316,13 +1314,10 @@ const data = await response.json();
       </div>
     `;
 
-    // Bloqueamos el click derecho en la caja de resultados
     document.getElementById("panel-auditoria-seguro").addEventListener("contextmenu", e => e.preventDefault());
-    // --- FIN DEL NUEVO RESUMEN EJECUTIVO PROTEGIDO ---
-
+    
     document.getElementById("btnGenerarWord").disabled = false;
 
-    // El popup de éxito pisa automáticamente al de carga
     Swal.fire({
       title: '¡Validación Exitosa!',
       text: 'Los datos están correctos. Ya puede generar la demanda.',
@@ -1334,9 +1329,7 @@ const data = await response.json();
   } catch (error) {
     resultadoBox.textContent = `Error de validación:\n${error.message}`;
     document.getElementById("btnGenerarWord").disabled = true;
-  }
 
-    // El popup de error pisa automáticamente al de carga
     Swal.fire({
       title: 'Error de Validación',
       text: 'Verifique que los campos ingresados sean correctos.',
@@ -1345,7 +1338,6 @@ const data = await response.json();
       confirmButtonColor: '#dc3545'
     });
   } finally {
-    // 3. Restauramos el botón a la normalidad pase lo que pase
     if (btnAuditar) {
       btnAuditar.disabled = false;
       btnAuditar.innerHTML = '1. Auditar Datos (Preview)';
