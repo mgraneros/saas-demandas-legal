@@ -242,20 +242,24 @@
                 <form id="formularioDemanda">
 
                   <!-- Sección de Autocompletado con IA -->
-                  <div class="row mb-4 card p-3 border rounded mx-0 mt-3">
+                  <div class="row mb-4 card p-3 border rounded mx-0 mt-3" style="overflow: hidden;">
                     <div class="col-12">
                       <h6 class="text-primary mb-3">🤖 Autocompletar con Acta de Mediación (IA)</h6>
-                      <div class="d-flex align-items-center gap-3">
-                        <input class="form-control form-control-sm w-auto" type="file" id="actaFile" accept=".pdf, image/jpeg, image/png">
-                        <button type="button" class="btn btn-primary btn-sm" id="btnExtraerIA" onclick="procesarActaIA()">
+                      <!-- Usamos flex-column para celulares y flex-md-row para PC -->
+                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2">
+                        <input class="form-control form-control-sm flex-grow-1" type="file" id="actaFile" accept=".pdf, image/jpeg, image/png">
+                        <button type="button" class="btn btn-primary btn-sm text-nowrap" id="btnExtraerIA" onclick="procesarActaIA()">
                           Procesar Documento
                         </button>
-                        <span id="loadingIA" class="text-primary small fw-bold" style="display: none;">
-                          ⏳ Leyendo documento con IA...
+                        <span id="loadingIA" class="text-primary small fw-bold text-nowrap" style="display: none;">
+                          ⏳ Leyendo...
                         </span>
                       </div>
                     </div>
                   </div>
+                </form>
+              </div>
+            </div>
 
                   <!-- Selector de Tipo de Demanda -->
                   <div class="row mb-4 mt-3">
