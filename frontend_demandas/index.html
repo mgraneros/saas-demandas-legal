@@ -576,13 +576,18 @@
                 <h5 class="mb-0">Auditoría y Cálculos</h5>
               </div>
               <div class="card-body">
-                <p class="text-muted small">Los resultados estructurados de la API aparecerán aquí antes de generar el documento final.</p>
-                <pre id="resultadoAuditoria" class="bg-dark text-success p-3 rounded" style="min-height: 400px; max-height: 700px; overflow-y: auto;">Esperando ejecución...</pre>
+                <p class="text-muted small">Revise este resumen ejecutivo de cálculos y competencia antes de generar la demanda.</p>
+                <div id="panel-auditoria-seguro" class="p-3 rounded proteccion-anticopia fondo-marca-agua" style="min-height: 400px; max-height: 700px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border-color);">
+                  <div id="resultadoAuditoria" style="position: relative; z-index: 2; color: var(--text-main);">
+                    <div class="text-center text-muted mt-5">
+                      <span style="font-size: 3rem;">🔍</span>
+                      <p class="mt-3">Complete los datos y presione "Auditar Datos" para ver la liquidación calculada por el sistema.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+            </div>
     </section>
 
     <!-- ================= SECCIÓN 2: HISTORIAL ================= -->
@@ -1258,8 +1263,63 @@ async function ejecutarPreview() {
       throw new Error(JSON.stringify(errorData, null, 2));
     }
 
-    const data = await response.json();
-    resultadoBox.textContent = JSON.stringify(data.datos_para_revision, null, 4);
+const data = await response.json();
+    
+    // --- INICIO DEL NUEVO RESUMEN EJECUTIVO PROTEGIDO ---
+    const d = data.datos_para_revision;
+    
+    resultadoBox.innerHTML = `
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+        <h6 style="color: var(--accent-gold); font-weight: 700; margin: 0;">RESUMEN EJECUTIVO DEL CASO</h6>
+      </div>
+
+      <div style="background: rgba(107, 90, 126, 0.1); border-left: 4px solid var(--accent-blue); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+        <span style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase;">Partes Involucradas</span>
+        <span style="display: block; font-size: 0.85rem; margin-top: 4px;"><strong>Actor:</strong> ${d["1_DATOS_ACTOR"].NombreActor}</span>
+        <span style="display: block; font-size: 0.85rem;"><strong>Demandado:</strong> ${d["2_DATOS_DEMANDADO_Y_SEGURO"].NombreDemandado}</span>
+        <span style="display: block; font-size: 0.85rem;"><strong>Aseguradora:</strong> ${d["2_DATOS_DEMANDADO_Y_SEGURO"].NombreAseguradora}</span>
+      </div>
+
+      <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+        <span style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--accent-green); text-transform: uppercase;">Competencia Judicial</span>
+        <span style="display: block; font-size: 0.85rem; font-style: italic; margin-top: 4px;">"${d["5_COMPETENCIA_Y_LIQUIDACION"].OpcionCompetencia_Elegida}"</span>
+      </div>
+
+      <div style="background: rgba(217, 119, 6, 0.1); border-left: 4px solid var(--accent-gold); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+        <span style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; margin-bottom: 8px;">Liquidación Final</span>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px dashed var(--border-color); margin-bottom: 4px; padding-bottom: 2px;">
+          <span>Daño Material / Estético:</span>
+          <span>${d["5_COMPETENCIA_Y_LIQUIDACION"].Daño_Material_Ingresado}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px dashed var(--border-color); margin-bottom: 4px; padding-bottom: 2px;">
+          <span>Incapacidad Física (${d["5_COMPETENCIA_Y_LIQUIDACION"].PuntosdeIncapacidad_Ingresado}%):</span>
+          <span>${d["5_COMPETENCIA_Y_LIQUIDACION"].Incapacidad_Fisica_Calculada}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px dashed var(--border-color); margin-bottom: 4px; padding-bottom: 2px;">
+          <span>Daño Psicológico:</span>
+          <span>${d["5_COMPETENCIA_Y_LIQUIDACION"].Daño_Psicologico_Calculado}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px dashed var(--border-color); margin-bottom: 4px; padding-bottom: 2px;">
+          <span>Daño Moral:</span>
+          <span>${d["5_COMPETENCIA_Y_LIQUIDACION"].Daño_Moral_Calculado}</span>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--accent-gold);">
+          <span>TOTAL A RECLAMAR:</span>
+          <span style="color: var(--accent-green);">${d["5_COMPETENCIA_Y_LIQUIDACION"].LIQUIDACION_TOTAL_NUM}</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 1rem; padding: 0.75rem; background: var(--bg-main); border-radius: 6px; border: 1px solid var(--border-color);">
+        <small style="color: var(--text-muted);">Haga clic en <strong>Generar Word Definitivo</strong> para obtener el documento legal completo y editable.</small>
+      </div>
+    `;
+
+    // Bloqueamos el click derecho en la caja de resultados
+    document.getElementById("panel-auditoria-seguro").addEventListener("contextmenu", e => e.preventDefault());
+    // --- FIN DEL NUEVO RESUMEN EJECUTIVO PROTEGIDO ---
+
     document.getElementById("btnGenerarWord").disabled = false;
 
     // El popup de éxito pisa automáticamente al de carga
@@ -1274,6 +1334,7 @@ async function ejecutarPreview() {
   } catch (error) {
     resultadoBox.textContent = `Error de validación:\n${error.message}`;
     document.getElementById("btnGenerarWord").disabled = true;
+  }
 
     // El popup de error pisa automáticamente al de carga
     Swal.fire({

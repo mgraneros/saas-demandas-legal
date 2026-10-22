@@ -519,3 +519,44 @@ div[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
 .swal2-styled.swal2-confirm:hover {
     background-color: var(--accent-blue-hover) !important;
 }
+
+/* ===================================
+   PROTECCIÓN Y ESTILOS DEL VISOR PREVIO
+   =================================== */
+
+/* Bloqueo de selección y copia para el panel de auditoría */
+.proteccion-anticopia {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Si el usuario intenta imprimir en PDF, el panel desaparece */
+@media print {
+  #panel-auditoria-seguro {
+    display: none !important;
+  }
+}
+
+/* Marca de agua sutil de fondo */
+.fondo-marca-agua {
+  position: relative;
+}
+.fondo-marca-agua::after {
+  content: "VISTA PREVIA DE CÁLCULOS";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.03);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="light"] .fondo-marca-agua::after {
+  color: rgba(0, 0, 0, 0.04);
+}
