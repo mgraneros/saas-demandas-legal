@@ -560,3 +560,62 @@ div[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
 [data-theme="light"] .fondo-marca-agua::after {
   color: rgba(0, 0, 0, 0.04);
 }
+
+/* ===================================
+   DISEÑO RESPONSIVE (CELULARES Y TABLETS)
+   =================================== */
+@media (max-width: 768px) {
+  /* 1. Convertir el diseño horizontal principal en vertical */
+  body > .d-flex.min-vh-100 {
+    flex-direction: column !important;
+  }
+
+  /* 2. Transformar el Sidebar en un menú superior */
+  .sidebar {
+    width: 100% !important;
+    min-height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem !important;
+  }
+
+  /* 3. Hacer que los botones del menú se acuesten en fila con scroll lateral */
+  .sidebar .nav {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Evitar que los nombres de los botones se corten */
+  .sidebar .nav-link {
+    white-space: nowrap;
+    margin-bottom: 0;
+  }
+
+  /* 4. Apilar los botones de estado (Modo claro, suscripción, salir) en grilla */
+  .sidebar > div:last-child {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding-top: 1rem !important;
+  }
+  
+  .sidebar > div:last-child > * {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  /* 5. Desanclar el Panel de Auditoría para que fluya hacia abajo naturalmente */
+  .col-lg-5 .sticky-top {
+    position: static !important;
+    margin-top: 2rem;
+  }
+
+  /* 6. Aprovechar al máximo el espacio de la pantalla */
+  main {
+    padding: 1rem !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+}
