@@ -50,3 +50,18 @@ def generate_signed_url(blob_name: str, expiration_minutes: int = 15) -> str:
     )
     
     return url
+
+def download_from_gcp(blob_name: str, local_destination: str) -> str:
+    """
+    Descarga un archivo desde Google Cloud Storage a una ruta temporal local.
+    Ideal para traer las plantillas base (.docx) a la memoria del servidor 
+    justo antes de inyectarles los datos del formulario.
+    """
+    client = get_storage_client()
+    bucket = client.bucket(BUCKET_NAME)
+    blob = bucket.blob(blob_name)
+
+    # Descarga el archivo de la nube a la ruta local especificada
+    blob.download_to_filename(local_destination)
+    
+    return local_destination

@@ -51,7 +51,7 @@ import models
 import schemas
 from models import Usuario as User
 from email_utils import enviar_correo
-from storage_utils import upload_to_gcp, generate_signed_url
+from storage_utils import upload_to_gcp, generate_signed_url, download_from_gcp
 import security
 from security import (
     get_current_user,
@@ -387,13 +387,12 @@ def generar_demanda(
     request: Request, 
     background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db), 
-    current_user: models.Usuario = Depends(get_current_user) # Cambiado a get_current_user para no bloquear asistentes prematuramente
+    current_user: models.Usuario = Depends(get_current_user)
 ):
     # 1. DETERMINAR LA CUENTA TITULAR (MADRE O PROPIA)
     cuenta_titular = current_user
     es_asistente = False
     
-    # Si el current_user tiene configurada una cuenta madre, redirigimos las validaciones a ese ID
     if getattr(current_user, 'cuenta_madre_id', None):
         cuenta_titular = db.query(models.Usuario).filter(models.Usuario.id == current_user.cuenta_madre_id).first()
         es_asistente = True
@@ -404,46 +403,21 @@ def generar_demanda(
                 detail="Error de jerarquía: La cuenta principal (estudio jurídico) asociada no existe."
             )
 
-# 2. VERIFICAR LA SUSCRIPCIÓN DE LA CUENTA TITULAR (En vez del current_user directo)
+    # 2. VERIFICAR LA SUSCRIPCIÓN DE LA CUENTA TITULAR
     suscripcion = db.query(models.Suscripcion).filter(models.Suscripcion.usuario_id == cuenta_titular.id).first()
 
-    # --- NUEVA REGLA: Si NO es administrador, verificamos fechas y créditos ---
     if not current_user.es_admin:
         if not suscripcion:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="La cuenta principal no posee una suscripción activa. Este servicio requiere un plan mensual pago."
-            )
-
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="La cuenta principal no posee una suscripción activa. Este servicio requiere un plan mensual pago.")
         if not suscripcion.activa:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="La suscripción de la cuenta principal se encuentra inactiva."
-            )
-
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="La suscripción de la cuenta principal se encuentra inactiva.")
         if suscripcion.fecha_expiracion and suscripcion.fecha_expiracion < datetime.utcnow():
             suscripcion.activa = False
             db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="La suscripción de la cuenta principal ha expirado."
-            )
-            
-        # Verificar si le quedan demandas a la cuenta titular
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="La suscripción de la cuenta principal ha expirado.")
         if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
             if suscripcion.demandas_restantes < 1:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="La cuenta principal ya no tiene demandas disponibles en su plan actual."
-                )
-        
-    # Verificar si le quedan demandas a la cuenta titular
-    if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
-        if suscripcion.demandas_restantes < 1:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="La cuenta principal ya no tiene demandas disponibles en su plan actual."
-            )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="La cuenta principal ya no tiene demandas disponibles en su plan actual.")
 
     # 3. SELECCIÓN DINÁMICA DE LA PLANTILLA SEGÚN EL FORMULARIO
     diccionario_plantillas = {
@@ -459,16 +433,14 @@ def generar_demanda(
         models.Plantilla.activa == True
     ).first()
 
-    if not plantilla or not os.path.exists(plantilla.ruta_archivo):
+    if not plantilla:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"La plantilla especificada (ID: {plantilla_seleccionada}) no existe o el archivo base no está disponible."
+            detail=f"La plantilla especificada (ID: {plantilla_seleccionada}) no existe o está inactiva."
         )
-# --- NUEVA REGLA DE SEGURIDAD (EL "PATOVICA"): Validar el acceso al módulo ---
+
     if not current_user.es_admin:
-        # Extraemos los IDs de los módulos del titular (hereda el asistente o usa los propios)
         ids_modulos_permitidos = [mod.id for mod in cuenta_titular.modulos_activos]
-        
         if plantilla.categoria_id not in ids_modulos_permitidos:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -477,9 +449,17 @@ def generar_demanda(
 
     carpeta_salida = "demandas_generadas"
     os.makedirs(carpeta_salida, exist_ok=True)
-
     nombre_limpio = datos.NombreActor.replace(' ', '_')
     ruta_salida = os.path.join(carpeta_salida, f"temp_{nombre_limpio}.docx")
+
+    # --- NUEVA LÓGICA: DESCARGAR PLANTILLA DESDE GCP ---
+    ruta_plantilla_local = os.path.join(carpeta_salida, f"base_{plantilla_seleccionada}_{uuid.uuid4().hex[:6]}.docx")
+    try:
+        download_from_gcp(plantilla.ruta_archivo, ruta_plantilla_local)
+    except Exception as e:
+        print(f"Error GCP: {e}")
+        raise HTTPException(status_code=500, detail="Error al descargar la plantilla desde la nube (Google Cloud Storage).")
+    # ---------------------------------------------------
 
     # 4. CÁLCULOS MATEMÁTICOS
     valor_punto_fisico = 3000000.0
@@ -515,14 +495,8 @@ def generar_demanda(
     except ValueError:
         opcion_comp_int = 1
 
-    texto_competencia = PARRAFOS_COMPETENCIA.get(
-        opcion_comp_int, 
-        PARRAFOS_COMPETENCIA[1]
-    )
+    texto_competencia = PARRAFOS_COMPETENCIA.get(opcion_comp_int, PARRAFOS_COMPETENCIA[1])
     
-    # Formatear Fechas
-    
-    # Formatear Fechas
     fecha_medica_formateada = datos.FechaMedica
     if datos.FechaMedica and "-" in datos.FechaMedica:
         anio, mes, dia = datos.FechaMedica.split("-")
@@ -538,9 +512,7 @@ def generar_demanda(
         anio_h, mes_h, dia_h = datos.FechaHecho.split("-")
         fecha_hecho_formateada = f"{dia_h}/{mes_h}/{anio_h}"
 
-    # --- NUEVA LÓGICA PARA "SIN DATOS" ---
     intervencion_limpia = "" if datos.Intervencion == "Sin Datos" else datos.Intervencion
-    # -------------------------------------
 
     # 5. MAPEO DE VARIABLES E INYECCIÓN
     if datos.ListaDocumental:
@@ -548,7 +520,6 @@ def generar_demanda(
     else:
         lista_doc_limpia = []
     if datos.ListadoSecuelas:
-        # Separamos por coma y limpiamos espacios vacíos
         lista_secuelas_limpia = [secuela.strip() for secuela in datos.ListadoSecuelas.split(",") if secuela.strip()]
     else:
         lista_secuelas_limpia = []
@@ -599,10 +570,7 @@ def generar_demanda(
         "TallerNombre": datos.TallerNombre,
         "DirecciónTaller": datos.DirecciónTaller,
         
-        # --- APLICAMOS EL FILTRO AQUÍ ---
         "Intervencion": intervencion_limpia,
-        # --------------------------------
-        
         "ListaDocumental": lista_doc_limpia,
         
         "CentroMedico": datos.CentroMedico,
@@ -614,7 +582,8 @@ def generar_demanda(
     }
 
     try:
-        doc = DocxTemplate(plantilla.ruta_archivo)
+        # AHORA LEEMOS EL ARCHIVO DESCARGADO TEMPORALMENTE DESDE GCP
+        doc = DocxTemplate(ruta_plantilla_local)
         ruta_logo = "assets/logo_defecto.png"
         logo_imagen = InlineImage(doc, ruta_logo, width=Mm(40)) if os.path.exists(ruta_logo) else ""
         datos_procesados["logo_estudio"] = logo_imagen
@@ -630,19 +599,15 @@ def generar_demanda(
         except (ValueError, TypeError):
             dni_val = None
 
-# --- INICIO MAGIA GOOGLE CLOUD Y TAREAS EN SEGUNDO PLANO ---
         nombre_unico = f"demandas/{current_user.id}_{uuid.uuid4().hex[:6]}_{nombre_limpio}.docx"
 
-        # Definimos la función que correrá "por detrás" sin frenar al usuario
         def tareas_post_generacion():
-            # 1. Subida a GCP
             try:
                 upload_to_gcp(ruta_salida, nombre_unico)
                 print(f"🔒 [BACKGROUND] Demanda guardada en GCP como: {nombre_unico}")
             except Exception as e:
                 print(f"❌ [BACKGROUND] Error en GCP: {e}")
             
-            # 2. Envío de Correo
             try:
                 enviar_correo(
                     destinatario=current_user.email,
@@ -654,19 +619,18 @@ def generar_demanda(
             except Exception as mail_err:
                 print(f"❌ [BACKGROUND] Error enviando correo: {mail_err}")
             
-            # 3. LIMPIEZA: Borrar el archivo temporal del disco del servidor    
+            # --- LIMPIEZA DE AMBOS ARCHIVOS (El Word generado y la Plantilla de GCP) ---
             try:
                 if os.path.exists(ruta_salida):
                     os.remove(ruta_salida)
-                    print(f"🧹 [BACKGROUND] Archivo temporal eliminado: {ruta_salida}")
+                if os.path.exists(ruta_plantilla_local):
+                    os.remove(ruta_plantilla_local)
+                print("🧹 [BACKGROUND] Archivos temporales eliminados con éxito.")
             except Exception as del_err:
-                print(f"❌ [BACKGROUND] Error borrando archivo temporal: {del_err}")
+                print(f"❌ [BACKGROUND] Error borrando archivos temporales: {del_err}")
 
-        # Le decimos a FastAPI que ejecute esto después de entregarle el Word al usuario
         background_tasks.add_task(tareas_post_generacion)
-        # --- FIN TAREAS EN SEGUNDO PLANO ---
 
-        # Registramos la demanda a nombre del usuario actual (el asistente) para que pueda verla en "Mis Demandas"
         nueva_demanda = models.DemandaGenerada(
             usuario_id=current_user.id,
             plantilla_id=plantilla.id,
@@ -679,7 +643,6 @@ def generar_demanda(
         )
         db.add(nueva_demanda)
 
-        # 6. IMPACTAR LOS CRÉDITOS Y LA AUDITORÍA A NOMBRE DE LA CUENTA TITULAR
         if hasattr(suscripcion, 'demandas_restantes') and suscripcion.demandas_restantes is not None:
             suscripcion.demandas_restantes -= 1
 
@@ -688,7 +651,7 @@ def generar_demanda(
             detalles_auditoria += f" (Ejecutado por asistente: {current_user.email})"
 
         nuevo_log = models.AuditoriaLog(
-            usuario_id=cuenta_titular.id, # Asignamos el log a la cuenta principal para su control
+            usuario_id=cuenta_titular.id, 
             accion="GENERAR_DEMANDA",
             ip_origen=ip_cliente,
             detalles=detalles_auditoria
