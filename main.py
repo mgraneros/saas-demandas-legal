@@ -258,6 +258,12 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tu cuenta ha sido inhabilitada. Por favor, contactá a soporte."
         )
+        
+    # --- Generamos un ID de sesión único y lo guardamos en la BD ---
+    nuevo_session_token = uuid.uuid4().hex
+    usuario.session_token = nuevo_session_token
+    db.commit()
+    # -----------------------------------------------------------------------
     
     # 3. Si todo está bien, emitimos el token de acceso
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

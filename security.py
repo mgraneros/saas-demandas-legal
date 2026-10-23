@@ -94,6 +94,10 @@ def get_current_user(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+        # --- NUEVO: Extraemos el token de sesión del JWT ---
+        session_id_del_token: str = payload.get("session")
+        # ---------------------------------------------------
+        
         if email is None:
             raise credentials_exception
     except JWTError as e:
@@ -103,6 +107,17 @@ def get_current_user(
     usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
     if usuario is None:
         raise credentials_exception
+        
+    # --- NUEVO: Lógica de Bloqueo de Sesión Única ---
+    # Si el token tiene un session_id pero NO coincide con el de la BD, la sesión fue cerrada
+    if session_id_del_token and usuario.session_token and session_id_del_token != usuario.session_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Se ha iniciado sesión desde otro dispositivo. Por favor, vuelva a ingresar.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    # ------------------------------------------------
+
     return usuario
 
 

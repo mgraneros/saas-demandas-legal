@@ -45,7 +45,7 @@ class Usuario(Base):
     suscripcion = relationship("Suscripcion", back_populates="usuario", uselist=False)
     logs = relationship("AuditoriaLog", back_populates="usuario")
     
-    # <-- NUEVO: Módulos contratados por este estudio -->
+    # Módulos contratados por este estudio -->
     modulos_activos = relationship("Categoria", secondary=usuario_categoria, backref="usuarios")
 
 
