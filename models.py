@@ -39,6 +39,8 @@ class Usuario(Base):
     # Jerarquía de Estudio Jurídico
     cuenta_madre_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     rol_estudio = Column(String(50), default="titular")
+    
+    session_token = Column(String(255), nullable=True)
 
     # Relaciones Originales
     demandas = relationship("DemandaGenerada", back_populates="usuario")

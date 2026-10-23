@@ -244,7 +244,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     usuario = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
     
-    # 1. Verificamos que el usuario exista y la contraseña sea correcta
     if not usuario or not verify_password(form_data.password, usuario.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -252,23 +251,21 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # 2. BLOQUEO DE SEGURIDAD: Verificamos si la cuenta fue deshabilitada por un admin
     if not usuario.activo:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tu cuenta ha sido inhabilitada. Por favor, contactá a soporte."
         )
         
-    # --- Generamos un ID de sesión único y lo guardamos en la BD ---
+    # 1. Generamos un ID de sesión único y lo guardamos en la BD
     nuevo_session_token = uuid.uuid4().hex
     usuario.session_token = nuevo_session_token
     db.commit()
-    # -----------------------------------------------------------------------
     
-    # 3. Si todo está bien, emitimos el token de acceso
+    # 2. Emitimos el token INYECTANDO la sesión (esto es lo que faltaba)
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": usuario.email, "id": usuario.id},
+        data={"sub": usuario.email, "id": usuario.id, "session": nuevo_session_token}, 
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
