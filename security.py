@@ -108,14 +108,15 @@ def get_current_user(
     if usuario is None:
         raise credentials_exception
         
-    # --- NUEVO: Lógica de Bloqueo de Sesión Única ---
-    # Si el token tiene un session_id pero NO coincide con el de la BD, la sesión fue cerrada
-    if session_id_del_token and usuario.session_token and session_id_del_token != usuario.session_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Se ha iniciado sesión desde otro dispositivo. Por favor, vuelva a ingresar.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # --- NUEVO: Lógica ESTRICTA de Bloqueo de Sesión Única ---
+    # Si la BD tiene un token registrado, exigimos que el JWT coincida sí o sí.
+    if usuario.session_token:
+        if not session_id_del_token or session_id_del_token != usuario.session_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Se ha iniciado sesión desde otro dispositivo. Tu sesión ha expirado.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     # ------------------------------------------------
 
     return usuario
